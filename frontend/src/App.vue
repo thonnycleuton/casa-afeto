@@ -1,257 +1,497 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import HealthCard from './components/HealthCard.vue'
-import StatusBadge from './components/StatusBadge.vue'
-import { fetchHealth } from './api/health'
-import type { HealthResponse } from './api/types'
+import { computed, onMounted, ref } from 'vue'
+import {
+  activateProduct,
+  adjustInventory,
+  createProduct,
+  createInventoryEntry,
+  deactivateProduct,
+  fetchInventoryHistory,
+  fetchProducts,
+  updateProduct,
+} from './api/products'
+import type { InventoryMovement, Product, ProductUnit } from './api/types'
 
-const health = ref<HealthResponse | null>(null)
+const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
+const section = ref<'products' | 'inventory'>('products')
+const products = ref<Product[]>([])
+const searchResults = ref<Product[]>([])
+const selectedProductId = ref<number | null>(null)
+const movements = ref<InventoryMovement[]>([])
+const balance = ref('0')
+const search = ref('')
+const editingProductId = ref<number | null>(null)
+const productFormVisible = ref(false)
+const productName = ref('')
+const productUnit = ref<ProductUnit>('UN')
+const entryQuantity = ref('')
+const adjustmentQuantity = ref('')
 const loading = ref(false)
-const error = ref<string | null>(null)
+const error = ref('')
+const notice = ref('')
 
-async function checkHealth(): Promise<void> {
+const selectedProduct = computed(
+  () => products.value.find((product) => product.id === selectedProductId.value) ?? null,
+)
+
+async function loadProducts(): Promise<void> {
+  products.value = await fetchProducts()
+  searchResults.value = products.value
+  if (
+    selectedProductId.value !== null &&
+    !products.value.some((product) => product.id === selectedProductId.value)
+  ) {
+    selectedProductId.value = null
+  }
+}
+
+async function runAction(action: () => Promise<void>): Promise<void> {
+  error.value = ''
+  notice.value = ''
   loading.value = true
-  error.value = null
   try {
-    health.value = await fetchHealth()
-  } catch (err: unknown) {
-    health.value = null
-    if (err instanceof Error) {
-      error.value = err.message
-    } else {
-      error.value = 'Failed to connect to backend'
-    }
+    await action()
+  } catch (cause: unknown) {
+    error.value = cause instanceof Error ? cause.message : 'The operation failed.'
   } finally {
     loading.value = false
   }
 }
 
+async function searchProducts(): Promise<void> {
+  await runAction(async () => {
+    searchResults.value = await fetchProducts(search.value.trim())
+  })
+}
+
+function beginCreate(): void {
+  editingProductId.value = null
+  productFormVisible.value = true
+  productName.value = ''
+  productUnit.value = 'UN'
+}
+
+function beginEdit(product: Product): void {
+  editingProductId.value = product.id
+  productFormVisible.value = true
+  productName.value = product.name
+  productUnit.value = product.base_unit
+}
+
+async function saveProduct(): Promise<void> {
+  await runAction(async () => {
+    const payload = { name: productName.value, base_unit: productUnit.value }
+    if (editingProductId.value === null) {
+      await createProduct(payload)
+      notice.value = 'Product created.'
+    } else {
+      await updateProduct(editingProductId.value, payload)
+      notice.value = 'Product updated.'
+    }
+    editingProductId.value = null
+    productFormVisible.value = false
+    productName.value = ''
+    await loadProducts()
+    if (search.value.trim()) {
+      searchResults.value = await fetchProducts(search.value.trim())
+    }
+  })
+}
+
+async function changeProductState(product: Product): Promise<void> {
+  await runAction(async () => {
+    if (product.active) {
+      await deactivateProduct(product.id)
+      notice.value = 'Product deactivated.'
+    } else {
+      await activateProduct(product.id)
+      notice.value = 'Product activated.'
+    }
+    await loadProducts()
+    if (search.value.trim()) {
+      searchResults.value = await fetchProducts(search.value.trim())
+    }
+  })
+}
+
+async function loadInventory(): Promise<void> {
+  if (selectedProductId.value === null) {
+    movements.value = []
+    balance.value = '0'
+    return
+  }
+  const product = products.value.find((item) => item.id === selectedProductId.value)
+  if (!product) return
+  balance.value = product.inventory_balance
+  movements.value = await fetchInventoryHistory(product.id)
+}
+
+async function recordEntry(): Promise<void> {
+  const productId = selectedProductId.value
+  if (productId === null) return
+  await runAction(async () => {
+    await createInventoryEntry(productId, entryQuantity.value)
+    entryQuantity.value = ''
+    await loadProducts()
+    await loadInventory()
+    notice.value = 'Inventory entry recorded.'
+  })
+}
+
+async function recordAdjustment(): Promise<void> {
+  const productId = selectedProductId.value
+  if (productId === null) return
+  await runAction(async () => {
+    await adjustInventory(productId, adjustmentQuantity.value)
+    adjustmentQuantity.value = ''
+    await loadProducts()
+    await loadInventory()
+    notice.value = 'Inventory adjustment recorded.'
+  })
+}
+
+async function selectProduct(): Promise<void> {
+  await runAction(loadInventory)
+}
+
 onMounted(() => {
-  checkHealth()
+  void runAction(loadProducts)
 })
 </script>
 
 <template>
-  <div class="app-layout">
-    <header class="app-header">
-      <div class="header-container">
-        <div class="brand">
-          <div class="brand-logo">CA</div>
-          <div>
-            <h1 class="brand-title">Casa Afeto</h1>
-            <p class="brand-tagline">Sales & Operations Management System</p>
-          </div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">CA</span>
+        <span class="brand-copy">
+          <strong>Casa Afeto</strong>
+          <span>Administration</span>
+        </span>
+      </div>
+
+      <div class="sidebar-label">Workspace</div>
+      <nav aria-label="Navegação principal" class="side-nav">
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'products' }"
+          :aria-current="section === 'products' ? 'page' : undefined"
+          @click="section = 'products'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" />
+            <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" />
+          </svg>
+          <span>Products</span>
+        </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'inventory' }"
+          :aria-current="section === 'inventory' ? 'page' : undefined"
+          @click="section = 'inventory'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="m3 5 7-3 7 3-7 3-7-3Z" />
+            <path d="m3 9 7 3 7-3M3 13l7 3 7-3" />
+          </svg>
+          <span>Inventory</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="sidebar-footer-mark" aria-hidden="true"></span>
+        <span>M1 · Products &amp; Inventory</span>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <span>Casa Afeto</span>
+          <span class="breadcrumb-separator" aria-hidden="true">/</span>
+          <strong>Products &amp; Inventory</strong>
         </div>
-        <StatusBadge status="online" label="M0 Technical Foundation" />
-      </div>
-    </header>
+        <span class="milestone-label">M1 · Operations</span>
+      </header>
 
-    <main class="app-main">
-      <div class="content-container">
-        <section class="intro-section">
-          <span class="eyebrow">Milestone M0</span>
-          <h2 class="section-title">Technical Foundation Active</h2>
-          <p class="section-desc">
-            The minimal technical foundation has been established to support incremental development of Casa Afeto operations safely.
-          </p>
-        </section>
+      <main class="page-content">
+        <div v-if="error" class="feedback feedback-error" role="alert">
+          <span class="feedback-icon" aria-hidden="true">!</span>
+          <span><strong>The operation could not be completed</strong>{{ error }}</span>
+        </div>
+        <div v-if="notice" class="feedback feedback-success" role="status">
+          <span class="feedback-icon" aria-hidden="true">✓</span>
+          <span>{{ notice }}</span>
+        </div>
+        <div v-if="loading" class="loading-state" role="status">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Updating information...</span>
+        </div>
 
-        <section class="grid-section">
-          <HealthCard
-            :health="health"
-            :loading="loading"
-            :error="error"
-            @refresh="checkHealth"
-          />
+        <section v-if="section === 'products'" aria-labelledby="products-heading">
+          <div class="page-heading">
+            <div>
+              <p class="page-eyebrow">Catalog</p>
+              <h1 id="products-heading">Product management</h1>
+              <p class="page-description">Manage products and keep their inventory units organized.</p>
+            </div>
+            <button class="button primary" type="button" @click="beginCreate">
+              Create product
+            </button>
+          </div>
 
-          <div class="stack-card">
-            <h3 class="stack-title">Approved Technical Stack</h3>
-            <ul class="stack-list">
-              <li>
-                <strong>Backend:</strong>
-                <span>Python + FastAPI (REST / JSON)</span>
-              </li>
-              <li>
-                <strong>Database:</strong>
-                <span>PostgreSQL 16 + SQLAlchemy 2.x</span>
-              </li>
-              <li>
-                <strong>Migrations:</strong>
-                <span>Alembic</span>
-              </li>
-              <li>
-                <strong>Frontend:</strong>
-                <span>Vue 3 + TypeScript + Vite</span>
-              </li>
-              <li>
-                <strong>Testing:</strong>
-                <span>pytest (backend) + Vitest (frontend)</span>
-              </li>
-              <li>
-                <strong>Environment:</strong>
-                <span>Docker & Docker Compose</span>
-              </li>
-            </ul>
+          <form class="search-panel" @submit.prevent="searchProducts">
+            <label for="product-search">Search by name</label>
+            <div class="search-controls">
+              <div class="input-with-icon">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                  <circle cx="8.8" cy="8.8" r="5.8" />
+                  <path d="m13 13 4 4" />
+                </svg>
+                <input
+                  id="product-search"
+                  v-model="search"
+                  type="search"
+                  placeholder="Search products"
+                />
+              </div>
+              <button class="button secondary" type="submit">Search</button>
+              <button
+                v-if="search"
+                class="button ghost"
+                type="button"
+                @click="
+                  search = '';
+                  searchProducts()
+                "
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          <form v-if="productFormVisible" class="card product-form" @submit.prevent="saveProduct">
+            <div class="card-heading">
+              <div>
+                <p class="card-eyebrow">Product details</p>
+                  <h2>{{ editingProductId === null ? 'New product' : 'Edit product' }}</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="product-name">Name</label>
+                <input id="product-name" v-model="productName" required placeholder="e.g. Chocolate" />
+              </div>
+              <div class="form-field">
+                <label for="product-unit">Base unit</label>
+                <select id="product-unit" v-model="productUnit" required>
+                  <option v-for="unit in units" :key="unit" :value="unit">{{ unit }}</option>
+                </select>
+                <span class="field-hint">Select the unit used to track this product's inventory.</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="button primary" type="submit" :disabled="loading">
+                {{ editingProductId === null ? 'Save product' : 'Save changes' }}
+              </button>
+              <button
+                v-if="editingProductId !== null"
+                class="button secondary"
+                type="button"
+                @click="beginCreate"
+              >
+                Cancel edit
+              </button>
+            </div>
+          </form>
+
+          <div class="card table-card">
+            <div class="table-heading">
+              <div>
+                <h2>Product list</h2>
+                <p>Products and their current inventory balances.</p>
+              </div>
+              <span class="table-count">{{ searchResults.length }} items</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Unit</th>
+                    <th class="numeric">Balance</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="product in searchResults" :key="product.id">
+                    <td class="product-name">{{ product.name }}</td>
+                    <td><span class="unit-value">{{ product.base_unit }}</span></td>
+                    <td class="numeric quantity-value">{{ product.inventory_balance }} {{ product.base_unit }}</td>
+                    <td>
+                      <span :class="['status-pill', product.active ? 'status-success' : 'status-muted']">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        {{ product.active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td class="row-actions">
+                      <button class="button compact secondary" type="button" @click="beginEdit(product)">
+                        Edit
+                      </button>
+                      <button class="button compact ghost" type="button" @click="changeProductState(product)">
+                        {{ product.active ? 'Deactivate' : 'Activate' }}
+                      </button>
+                      <button
+                        class="button compact ghost"
+                        type="button"
+                        @click="selectedProductId = product.id; section = 'inventory'; selectProduct()"
+                      >
+                        Inventory
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="searchResults.length === 0">
+                    <td colspan="5" class="empty-state">
+                      <strong>No matching products.</strong>
+                      <span>Try another search or create a product to get started.</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
-      </div>
-    </main>
 
-    <footer class="app-footer">
-      <p>Casa Afeto &bull; Build little, validate, learn, then build the next thing.</p>
-    </footer>
+        <section v-else aria-labelledby="inventory-heading">
+          <div class="page-heading">
+            <div>
+              <p class="page-eyebrow">Inventory control</p>
+              <h1 id="inventory-heading">Inventory</h1>
+              <p class="page-description">Record entries, adjust physical stock, and review movement history.</p>
+            </div>
+          </div>
+
+          <div class="card inventory-selector">
+            <div class="form-field inventory-product-field">
+              <label for="inventory-product">Product</label>
+              <select
+                id="inventory-product"
+                v-model.number="selectedProductId"
+                @change="selectProduct"
+              >
+                <option :value="null" disabled>Select a product</option>
+                <option v-for="product in products" :key="product.id" :value="product.id">
+                  {{ product.name }}{{ product.active ? '' : ' (Inactive)' }}
+                </option>
+              </select>
+            </div>
+            <div v-if="selectedProduct" class="balance-card">
+              <span class="balance-label">Current balance</span>
+              <strong>{{ balance }} <span>{{ selectedProduct.base_unit }}</span></strong>
+              <span :class="['status-pill', selectedProduct.active ? 'status-success' : 'status-muted']">
+                <span class="status-dot" aria-hidden="true"></span>
+                {{ selectedProduct.active ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+
+          <div v-if="selectedProduct" class="inventory-grid">
+            <form class="card operation-card" @submit.prevent="recordEntry">
+              <div class="operation-icon operation-icon-entry" aria-hidden="true">+</div>
+              <div class="card-heading">
+                <div>
+                  <h2>Add inventory</h2>
+                  <p>An entry increases the available balance.</p>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="entry-quantity">Quantity ({{ selectedProduct.base_unit }})</label>
+                <input
+                  id="entry-quantity"
+                  v-model="entryQuantity"
+                  type="number"
+                  :step="selectedProduct.base_unit === 'UN' ? '1' : 'any'"
+                  min="0"
+                  required
+                />
+              </div>
+              <div class="operation-actions">
+                <button class="button primary" type="submit" :disabled="loading || !selectedProduct.active">
+                  Record entry
+                </button>
+              </div>
+              <p v-if="!selectedProduct.active" class="field-hint">Reactivate this product to change inventory.</p>
+            </form>
+
+            <form class="card operation-card" @submit.prevent="recordAdjustment">
+              <div class="operation-icon operation-icon-adjustment" aria-hidden="true">+/-</div>
+              <div class="card-heading">
+                <div>
+                  <h2>Adjust inventory</h2>
+                  <p>Use a positive value to increase or a negative value to decrease inventory.</p>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="adjustment-quantity">Signed quantity ({{ selectedProduct.base_unit }})</label>
+                <input
+                  id="adjustment-quantity"
+                  v-model="adjustmentQuantity"
+                  type="number"
+                  :step="selectedProduct.base_unit === 'UN' ? '1' : 'any'"
+                  required
+                />
+              </div>
+              <div class="operation-actions">
+                <button class="button primary" type="submit" :disabled="loading || !selectedProduct.active">
+                  Record adjustment
+                </button>
+              </div>
+              <p v-if="!selectedProduct.active" class="field-hint">Reactivate this product to change inventory.</p>
+            </form>
+          </div>
+
+          <div v-if="selectedProduct" class="card table-card movement-table">
+            <div class="table-heading">
+              <div>
+                <h2>Movement history</h2>
+                <p>Entries and adjustments recorded for {{ selectedProduct.name }}.</p>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>Date and time</th><th>Type</th><th class="numeric">Quantity</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="movement in movements" :key="movement.id">
+                    <td>{{ new Date(movement.created_at).toLocaleString() }}</td>
+                    <td>
+                      <span :class="['movement-pill', movement.type === 'ENTRY' ? 'movement-entry' : 'movement-adjustment']">
+                        {{ movement.type === 'ENTRY' ? 'Entry' : 'Adjustment' }}
+                      </span>
+                    </td>
+                    <td class="numeric quantity-value">{{ movement.quantity }} {{ selectedProduct.base_unit }}</td>
+                  </tr>
+                  <tr v-if="movements.length === 0">
+                    <td colspan="3" class="empty-state">
+                      <strong>No inventory movements.</strong>
+                      <span>Entries and adjustments will appear here.</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div v-else class="card empty-panel">
+            <span class="empty-panel-mark" aria-hidden="true">—</span>
+            <strong>Select a product</strong>
+            <span>Choose a product above to view its balance and record inventory movements.</span>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.app-layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header {
-  background: #ffffff;
-  border-bottom: 1px solid var(--color-border);
-  padding: 1.25rem 1.5rem;
-}
-
-.header-container {
-  max-width: 1040px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-}
-
-.brand-logo {
-  width: 42px;
-  height: 42px;
-  background: linear-gradient(135deg, #7c2d12, #c2410c);
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 1.125rem;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 6px -1px rgba(124, 45, 18, 0.25);
-}
-
-.brand-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-text-main);
-  letter-spacing: -0.01em;
-}
-
-.brand-tagline {
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-}
-
-.app-main {
-  flex: 1;
-  padding: 3rem 1.5rem;
-}
-
-.content-container {
-  max-width: 1040px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.eyebrow {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-accent);
-  background: rgba(194, 65, 12, 0.1);
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  margin-bottom: 0.75rem;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text-main);
-  letter-spacing: -0.02em;
-}
-
-.section-desc {
-  margin-top: 0.5rem;
-  font-size: 1rem;
-  color: var(--color-text-muted);
-  max-width: 640px;
-}
-
-.grid-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.stack-card {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.stack-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--color-text-main);
-  margin-bottom: 1rem;
-}
-
-.stack-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.stack-list li {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.stack-list li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.stack-list strong {
-  color: var(--color-text-main);
-}
-
-.stack-list span {
-  color: var(--color-text-muted);
-  text-align: right;
-}
-
-.app-footer {
-  border-top: 1px solid var(--color-border);
-  background: #ffffff;
-  padding: 1.5rem;
-  text-align: center;
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-}
-</style>
