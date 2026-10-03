@@ -78,15 +78,29 @@ Examples include:
 * cards;
 * packaging.
 
-A product has a base inventory unit.
+### 4.1 Base Inventory Unit
 
-Examples:
+Every product has a base inventory unit (`base_unit`).
 
-```text
-Chocolate → UN
-Juice     → UN
-Coffee    → UN
-```
+`base_unit` is a controlled value. M1 supports exactly:
+
+* `UN` — unit
+* `KG` — kilogram
+* `G` — gram
+* `L` — liter
+* `ML` — milliliter
+
+M1 does not implement generic unit conversion or a configurable unit catalog. All inventory quantities in M1 are expressed in the product's `base_unit`.
+
+### 4.2 Base Unit Mutability
+
+A product's `base_unit` may be changed only while the product has **no inventory movements**.
+
+Once the product has at least one inventory movement, its `base_unit` becomes immutable to preserve the semantic meaning of historical movements.
+
+### 4.3 Product Name
+
+Product names are **not required to be unique** in M1. Two distinct products may share the same name.
 
 The purchase/commercial unit may differ from the inventory unit.
 
@@ -112,6 +126,8 @@ The conversion factor may vary depending on the acquisition.
 Products can be activated or deactivated.
 
 A deactivated product should not be selectable for new operational activities where active products are required.
+
+An inactive product cannot receive **any** inventory Entry or Adjustment. If an operator needs to modify inventory for an inactive product, the product must first be reactivated. Reactivation does not modify inventory.
 
 Deactivation does not delete historical information involving the product.
 
@@ -182,7 +198,18 @@ Adjustment              -2
 
 The system must preserve inventory movement history.
 
-The current balance can be derived from the relevant inventory movements.
+The current balance is derived from the relevant inventory movements.
+
+### 8.1 Inventory Entry Quantity Rules
+
+An `ENTRY` adds physical inventory.
+
+Rules:
+* quantity MUST be greater than zero (> 0);
+* quantity MUST NOT be zero;
+* quantity MUST NOT be negative;
+* `UN` accepts positive integer quantities only;
+* `KG`, `G`, `L`, and `ML` accept positive decimal quantities.
 
 ---
 
@@ -194,7 +221,17 @@ Corrections must preserve historical information.
 
 The system must not rewrite previous inventory movements to make the history appear different.
 
-Instead, a new adjustment movement should represent the correction.
+Instead, a new adjustment movement represents the correction.
+
+### 9.1 Inventory Adjustment Quantity Rules
+
+An `ADJUSTMENT` represents a correction to physical inventory:
+* quantity MUST NOT be zero;
+* positive values increase inventory;
+* negative values decrease inventory;
+* `UN` accepts integer quantities only;
+* `KG`, `G`, `L`, and `ML` accept decimal quantities;
+* a negative adjustment must never cause the resulting physical balance to become negative.
 
 Example:
 
@@ -240,9 +277,11 @@ This allows Casa Afeto to register the customer's intended basket before repleni
 
 # 11. Negative Inventory Policy
 
-The system must **not allow physical inventory to become negative**.
+The system must **not allow physical inventory to become negative** (`INV-006`).
 
-An inventory movement must not be created if it would cause the available inventory balance of a product to become negative.
+This invariant is absolute. An inventory movement must never be created if it would cause the available physical inventory balance of a product to become negative.
+
+Furthermore, this invariant **must hold under concurrent inventory operations**. Simultaneous modifications targeting the same product's inventory must execute transactionally and serialize validation and movement insertion (`ADR-001`).
 
 For example:
 
@@ -260,7 +299,7 @@ The system must not create:
 Chocolate = -2
 ```
 
-Instead, the shortage must be identified.
+Instead, the shortage must be identified and the operation rejected.
 
 The distinction between commercial planning and physical inventory is important.
 
@@ -909,11 +948,27 @@ Changes to a confirmed sale generate inventory adjustments based on the composit
 
 ### INV-006 — No Negative Physical Inventory
 
-The system must not create an inventory movement that causes the available physical inventory balance of a product to become negative.
+The system must not create an inventory movement that causes the available physical inventory balance of a product to become negative. This invariant is absolute and applies strictly to concurrent inventory operations (`ADR-001`).
 
 ### INV-007 — Confirmation Requires Available Inventory
 
 A sale cannot be confirmed while its required inventory cannot be fulfilled.
+
+### INV-008 — Inactive Products Cannot Receive Inventory Operations
+
+An inactive product cannot receive any inventory Entry or Adjustment. The product must be reactivated before modifying inventory. Reactivation does not alter inventory.
+
+### PROD-001 — Controlled Base Units and Mutability
+
+A product's `base_unit` is a controlled value and must be one of: `UN`, `KG`, `G`, `L`, `ML`. The `base_unit` may be edited only while the product has no inventory movements. Once a movement exists, `base_unit` is immutable.
+
+### PROD-002 — Product Name Non-Uniqueness
+
+Product names are not required to be unique in M1. Multiple products may have the same name.
+
+### SEARCH-001 — Product Search Semantics
+
+Product search is case-insensitive and matches substrings within the product name. Advanced search features (fuzzy search, ranking, full-text index) are out of scope.
 
 ---
 

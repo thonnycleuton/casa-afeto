@@ -797,15 +797,14 @@ The immediate development priority is:
 
 No functionality from later milestones should be implemented merely because it may eventually be useful.
 
-The next development step is therefore to define M1 precisely before implementation begins.
+The M1 specification is finalized with all core business decisions resolved:
 
-Before the M1 specification is finalized, the project must resolve any remaining business ambiguity that directly affects inventory behavior.
+* **Negative inventory policy: RESOLVED**
+  * **Policy:** Physical inventory must never become negative (`INV-006`).
+  * Operations that would produce a negative balance are rejected.
+  * This invariant is absolute and also applies to concurrent inventory operations (`ADR-001`).
 
-The first such decision is:
-
-> **What should happen when an inventory operation would result in negative stock?**
-
-Once this rule is defined, M1 can be specified and implemented with a stable business contract.
+With these decisions established, M1 is ready for implementation with a stable business contract.
 
 ---
 

@@ -153,12 +153,12 @@ That distinction belongs to future functionality.
 
 A product must contain, at minimum:
 
-| Field       | Required | Description                                         |
-| ----------- | -------: | --------------------------------------------------- |
-| `id`        |      Yes | Unique product identifier                           |
-| `name`      |      Yes | Product name                                        |
-| `base_unit` |      Yes | Unit used to represent inventory quantity           |
-| `active`    |      Yes | Whether the product is available for new operations |
+| Field       | Required | Description                                                           |
+| ----------- | -------: | --------------------------------------------------------------------- |
+| `id`        |      Yes | Unique product identifier                                             |
+| `name`      |      Yes | Product name                                                          |
+| `base_unit` |      Yes | Controlled unit used for inventory (`UN`, `KG`, `G`, `L`, `ML`)       |
+| `active`    |      Yes | Whether the product is available for new operations (initially true)  |
 
 The implementation may contain technical metadata such as:
 
@@ -175,31 +175,33 @@ Product name is required.
 
 The system should reject a product without a meaningful name.
 
-The exact validation rules for whitespace, maximum length, and allowed characters should follow the project's existing technical conventions unless a business requirement specifies otherwise.
+Product names are **not required to be unique** in M1 (`PROD-002`). Two distinct products may have the same name. No UNIQUE database constraint is placed on product name.
 
-The agent must not invent unnecessary restrictions.
+The exact validation rules for whitespace, maximum length, and allowed characters should follow the project's existing technical conventions.
 
 ---
 
 # 9. Base Inventory Unit
 
-Every product must have a base inventory unit.
+Every product must have a base inventory unit (`base_unit`).
 
-Examples:
+### 9.1 Controlled Unit Values
 
-```text
-Chocolate → UN
-Juice     → UN
-Coffee    → UN
-```
+`base_unit` is a controlled value (`PROD-001`). M1 supports exactly:
 
-The unit represents how physical inventory is counted.
+* `UN` — unit
+* `KG` — kilogram
+* `G` — gram
+* `L` — liter
+* `ML` — milliliter
 
-M1 should support the minimum unit vocabulary required by the current business.
+Any other unit value must be rejected. M1 does not implement generic unit conversion or a configurable unit catalog. All inventory quantities in M1 are expressed in the product's `base_unit`.
 
-If the existing application has no established unit vocabulary, the implementation should use a simple explicit representation rather than introducing a generic unit-conversion framework.
+### 9.2 Base Unit Mutability
 
-Purchase-unit conversion belongs to future Purchase functionality.
+A product's `base_unit` may be changed only while the product has **no inventory movements**.
+
+Once the product has at least one inventory movement, its `base_unit` becomes immutable to preserve the semantic meaning of historical inventory movements.
 
 ---
 
@@ -209,11 +211,13 @@ Products may be active or inactive.
 
 ## Active
 
-An active product may be selected by future operational features.
+An active product is available for operational activities and inventory operations. When created, a product is active by default.
 
 ## Inactive
 
-An inactive product should not be selectable for new operational operations.
+An inactive product cannot be selected for new operational operations.
+
+Furthermore, an inactive product **cannot receive any inventory Entry or Adjustment** (`INV-008`). If an operator needs to modify inventory for an inactive product, the product must first be reactivated. Reactivation does not modify inventory.
 
 Deactivation must not:
 
@@ -230,23 +234,11 @@ Existing historical references to an inactive product must remain valid.
 
 The user may edit product information.
 
-Editing a product must not rewrite historical inventory movements.
+Editing a product must not rewrite historical inventory movements. For example, changing a product's name must not modify historical movement records; they continue to refer to the same product.
 
-For example, changing:
+### Base Unit Editing Rule
 
-```text
-Chocolate
-```
-
-to:
-
-```text
-Premium Chocolate
-```
-
-must not modify historical inventory movement records.
-
-Historical movements continue to refer to the same product.
+The `base_unit` of a product may only be updated while the product has **no inventory movements**. Once any inventory movement has been recorded for the product, editing the `base_unit` must be rejected.
 
 ---
 
@@ -267,19 +259,20 @@ The exact UI representation is an implementation concern.
 
 # 13. Product Search
 
-The system must allow products to be searched by name.
+The system must allow products to be searched by name (`SEARCH-001`).
 
-Search behavior should remain simple.
+Search behavior:
+* Case-insensitive matching;
+* Substring matching on product name.
 
-M1 does not require:
+Examples: `choc`, `Choc`, `CHOC`, and `ChoC` all match `Chocolate`.
 
+M1 does not require and must not implement:
 * fuzzy search;
 * full-text search infrastructure;
 * relevance ranking;
 * advanced filters;
 * search indexing infrastructure.
-
-If the existing technology stack provides a simple appropriate mechanism, use it.
 
 ---
 
@@ -315,30 +308,38 @@ M1 requires the following movement categories:
 
 ### Entry
 
-Adds physical quantity.
+Adds physical quantity (`ENTRY`).
+
+Rules (`BD-03`):
+* Quantity MUST be greater than zero (> 0);
+* Quantity MUST NOT be zero or negative;
+* `UN` accepts positive integer quantities only (decimals rejected);
+* `KG`, `G`, `L`, and `ML` accept positive decimal quantities.
 
 Example:
-
 ```text
-+20 Chocolate
++20 Chocolate (UN)
++0.5 Leite (L)
 ```
 
 ### Adjustment
 
-Corrects the recorded quantity.
+Corrects recorded physical quantity (`ADJUSTMENT`).
 
 An adjustment may be positive or negative.
 
+Rules (`BD-04`):
+* Quantity MUST NOT be zero (0 rejected);
+* Positive values increase inventory, negative values decrease inventory;
+* `UN` accepts integer quantities only (decimals rejected);
+* `KG`, `G`, `L`, and `ML` accept decimal quantities;
+* A negative adjustment must never cause the resulting physical balance to become negative.
+
 Example:
-
 ```text
-+3 Chocolate
-```
-
-or:
-
-```text
--2 Chocolate
++3 Chocolate (UN)
+-2 Chocolate (UN)
+-0.25 Farinha (KG)
 ```
 
 M1 does not implement sale, purchase, expiration, loss, or production movement types.
@@ -353,20 +354,28 @@ A movement must contain, at minimum:
 | ------------ | -------: | --------------------------- |
 | `id`         |      Yes | Unique movement identifier  |
 | `product_id` |      Yes | Product affected            |
-| `quantity`   |      Yes | Quantity change             |
-| `type`       |      Yes | Movement category           |
+| `quantity`   |      Yes | Quantity change (signed)    |
+| `type`       |      Yes | Movement category (`ENTRY` / `ADJUSTMENT`) |
 | `created_at` |      Yes | Movement creation timestamp |
 
 The movement quantity must preserve its sign or otherwise unambiguously represent the direction of the movement.
-
-For example:
 
 ```text
 ENTRY       +20
 ADJUSTMENT   -3
 ```
 
-The implementation must choose one consistent representation.
+### Explicitly Excluded Fields (Out of Scope for M1)
+
+The M1 data model for `InventoryMovement` strictly excludes speculative fields:
+* `reason`
+* `notes`
+* `reference`
+* `user_id`
+* `sale_id`
+* `lot_id`
+
+These belong to future milestones and must not be added to M1 models.
 
 ---
 
@@ -428,9 +437,11 @@ For M1, the simplest correct implementation should be preferred.
 
 # 19. Negative Inventory Policy
 
-Physical inventory must never become negative.
+Physical inventory must never become negative (`INV-006`).
 
-Before creating a negative inventory movement, the system must verify that the resulting balance remains greater than or equal to zero.
+This invariant is absolute. Before creating a negative inventory movement, the system must verify that the resulting balance remains greater than or equal to zero.
+
+Furthermore, this invariant **must hold under concurrent operations** (`BD-05`, `ADR-001`). Race conditions where concurrent adjustments or entries evaluate against stale balance state and produce a negative balance must be prevented through database transaction isolation and row-level locking (`SELECT FOR UPDATE` or equivalent).
 
 Example:
 
@@ -551,10 +562,11 @@ The system must provide a way to inspect movements associated with a product.
 At minimum, the history should allow the user to identify:
 
 * date/time;
-* movement type;
+* movement type (`ENTRY` or `ADJUSTMENT`);
 * quantity change;
-* resulting balance, if practical;
 * product.
+
+Each movement preserves its historical quantity, type, and timestamp. A running or resulting balance per movement row is **not required** and not stored. The current balance is obtained through the inventory balance capability.
 
 The system should present movements in a clear chronological order.
 
@@ -562,25 +574,27 @@ The exact presentation is an implementation decision.
 
 ---
 
-# 24. Inventory Transaction Integrity
+# 24. Inventory Transaction Integrity & Concurrency
 
 Inventory changes must be atomic from the business perspective.
 
 For an inventory operation:
 
 ```text
-Validate
+Validate input
     ↓
-Create movement
+Lock product inventory state (SELECT FOR UPDATE)
     ↓
-Update/derive balance
+Calculate balance & validate resulting balance >= 0
+    ↓
+Create immutable movement
+    ↓
+Commit transaction
 ```
 
 The system must not leave a partially completed inventory operation.
 
-For example, it must not be possible to create a movement record while failing to maintain the inventory state expected by the application.
-
-The implementation mechanism depends on the persistence technology.
+Concurrent inventory modifications targeting the same product must be serialized at the database transaction level (`ADR-001`) to guarantee that `INV-006` cannot be violated by race conditions.
 
 ---
 
@@ -603,9 +617,9 @@ Inventory: 15
 
 The inventory history remains intact.
 
-Future business functionality may determine how inactive products are handled operationally.
+An inactive product **cannot receive any inventory Entry or Adjustment** (`INV-008`). If an operator needs to adjust or add inventory for an inactive product, the product must first be reactivated. Reactivation does not alter inventory.
 
-M1 should only enforce that inactive products cannot be selected for new operations that require active products.
+M1 enforces that inactive products cannot be selected for new operations requiring active products.
 
 ---
 
@@ -623,17 +637,27 @@ Inventory corrections preserve the original movement history.
 
 ### INV-006 — No Negative Physical Inventory
 
-The system must not create an inventory movement that causes the available physical inventory balance of a product to become negative.
+The system must not create an inventory movement that causes the available physical inventory balance of a product to become negative. This invariant is absolute and applies strictly to concurrent operations (`ADR-001`).
 
 ### INV-003 — Insufficient Stock May Be Selected
 
-A product with insufficient inventory may be selected for future basket/sale operations, provided the shortage is clearly indicated.
+A product with insufficient inventory may be selected for future basket/sale operations, provided the shortage is clearly indicated. M1 provides the inventory state and information required for later milestones to implement this behavior.
 
-M1 only needs to provide the inventory state and information required for later milestones to implement this behavior.
+### INV-008 — Inactive Products Cannot Receive Inventory Operations
 
-### Product Activation
+An inactive product cannot receive any inventory Entry or Adjustment.
 
-An inactive product must not be selectable for new operations requiring active products.
+### PROD-001 — Controlled Base Units and Mutability
+
+A product's `base_unit` must be one of: `UN`, `KG`, `G`, `L`, `ML`. It is editable only while the product has no inventory movements; once a movement exists, `base_unit` is immutable.
+
+### PROD-002 — Product Name Non-Uniqueness
+
+Product names are not required to be unique in M1.
+
+### SEARCH-001 — Product Search Semantics
+
+Product search is case-insensitive and matches substrings within the product name.
 
 ---
 
@@ -668,14 +692,17 @@ At minimum:
 ### Product
 
 * missing required product name;
-* invalid base unit;
+* invalid base unit (not one of `UN`, `KG`, `G`, `L`, `ML`);
+* attempt to modify `base_unit` after inventory movements exist;
 * attempt to use an inactive product where an active product is required.
 
 ### Inventory
 
-* zero/invalid quantity where not allowed;
-* inventory adjustment that would produce a negative balance;
-* unknown product;
+* invalid Entry quantity (zero, negative, or non-integer for `UN`);
+* invalid Adjustment quantity (zero, or non-integer for `UN`);
+* inventory adjustment that would produce a negative balance (< 0);
+* inventory Entry or Adjustment attempted on an inactive product;
+* unknown product identifier;
 * invalid movement type.
 
 Error messages should explain what prevented the operation.
@@ -694,15 +721,15 @@ Every inventory movement references an existing product.
 
 ### Quantity invariant
 
-Inventory quantities must use a consistent unit representation.
+Inventory quantities must use a consistent unit representation conforming to the product's `base_unit`.
 
 ### Negative inventory invariant
 
-The resulting physical inventory balance must never be negative.
+The resulting physical inventory balance must never be negative, including under concurrent operations.
 
 ### Historical invariant
 
-Existing inventory movements must not be silently rewritten or deleted as part of a normal correction.
+Existing inventory movements must not be silently rewritten or deleted as part of an adjustment or correction.
 
 ### Activation invariant
 

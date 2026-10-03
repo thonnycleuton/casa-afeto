@@ -816,21 +816,24 @@ Do not create detailed specifications for all milestones in advance.
 
 # 15. Current Phase Status
 
-| Milestone                       | Status  | Notes                                                                   |
-| ------------------------------- | ------- | ----------------------------------------------------------------------- |
-| M1 — Products & Inventory       | Pending | Negative inventory policy must be defined before detailed specification |
-| M2 — Baskets & Basket Templates | Planned | Depends on M1                                                           |
-| M3 — Customers                  | Planned | Depends on M2                                                           |
-| M4 — Sales                      | Planned | Depends on M1, M2, M3                                                   |
-| M5 — Payments                   | Planned | Depends on M1–M4                                                        |
+| Milestone                       | Status                   | Notes                                                                        |
+| ------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| M1 — Products & Inventory       | Ready for implementation | Core business decisions resolved; documentation finalized for implementation |
+| M2 — Baskets & Basket Templates | Planned                  | Depends on M1                                                                |
+| M3 — Customers                  | Planned                  | Depends on M2                                                                |
+| M4 — Sales                      | Planned                  | Depends on M1, M2, M3                                                        |
+| M5 — Payments                   | Planned                  | Depends on M1–M4                                                             |
 
 The current development focus is:
 
 > **M1 — Products & Inventory**
 
-Before creating the detailed M1 specification, the remaining relevant business decision must be resolved:
+Core business decisions for M1 have been resolved:
 
-> **What should happen when an inventory operation would result in negative stock?**
+* **Negative inventory policy: RESOLVED**
+  * **Policy:** Physical inventory must never become negative (`INV-006`).
+  * Operations that would produce a negative balance are rejected.
+  * The invariant is absolute and applies also to concurrent inventory operations (`ADR-001`).
 
 ---
 

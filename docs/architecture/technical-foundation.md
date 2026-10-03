@@ -1,7 +1,7 @@
 # Casa Afeto — Technical Foundation
 
 **Version:** 0.1
-**Status:** Proposed
+**Status:** Active
 **Purpose:** Establish the initial technical foundation for the Casa Afeto system.
 
 ---
@@ -487,20 +487,20 @@ A stack change requires:
 
 The technical foundation is considered established when:
 
-* [ ] Backend project can start.
-* [ ] Frontend project can start.
-* [ ] PostgreSQL can run locally.
-* [ ] Backend can connect to PostgreSQL.
-* [ ] Database migrations work.
-* [ ] A basic automated backend test runs.
-* [ ] A basic frontend test runs.
-* [ ] API documentation is available.
-* [ ] Development configuration is documented.
-* [ ] Secrets are not committed.
-* [ ] Docker-based development environment works, where applicable.
-* [ ] Project structure is documented.
-* [ ] No feature from M1 has been implemented merely as part of M0.
-* [ ] The project can be handed to another developer/agent and started without undocumented manual steps.
+* [x] Backend project can start.
+* [x] Frontend project can start.
+* [x] PostgreSQL can run locally.
+* [x] Backend can connect to PostgreSQL.
+* [x] Database migrations work.
+* [x] A basic automated backend test runs.
+* [x] A basic frontend test runs.
+* [x] API documentation is available.
+* [x] Development configuration is documented.
+* [x] Secrets are not committed.
+* [x] Docker-based development environment works, where applicable.
+* [x] Project structure is documented.
+* [x] No feature from M1 has been implemented merely as part of M0.
+* [x] The project can be handed to another developer/agent and started without undocumented manual steps.
 
 ---
 

@@ -13,7 +13,8 @@ export async function apiClient<T>(endpoint: string, options?: RequestInit): Pro
   })
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`)
+    const body = (await response.json()) as { detail?: string }
+    throw new Error(body.detail ?? `API Error: ${response.status} ${response.statusText}`)
   }
 
   return response.json() as Promise<T>

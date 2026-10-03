@@ -2,11 +2,9 @@ from sqlalchemy import text
 from app.core.database import Base, engine
 
 
-def test_no_business_tables_in_metadata() -> None:
-    """M0 requirement: verify that no business entities/tables are defined in ORM Base metadata."""
-    assert len(Base.metadata.tables) == 0, (
-        f"M0 must not introduce business tables, but found: {list(Base.metadata.tables.keys())}"
-    )
+def test_m1_tables_in_metadata() -> None:
+    """Verify M1 defines only the approved product and inventory tables."""
+    assert set(Base.metadata.tables) == {"products", "inventory_movements"}
 
 
 def test_database_connection() -> None:

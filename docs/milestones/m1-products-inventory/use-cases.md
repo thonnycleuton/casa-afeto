@@ -93,12 +93,16 @@ None.
 2. The operator chooses to create a product.
 3. The system requests the product information.
 4. The operator enters the product name.
-5. The operator selects or enters the base inventory unit.
+5. The operator selects or enters the base inventory unit (`base_unit`: `UN`, `KG`, `G`, `L`, `ML`).
 6. The operator submits the product.
-7. The system validates the required information.
+7. The system validates the required information:
+   - Product name must be non-empty;
+   - Base unit must be one of `UN`, `KG`, `G`, `L`, `ML` (`BD-01`).
 8. The system creates the product.
 9. The product is initially active.
 10. The system confirms successful creation.
+
+Product names are **not required to be unique** in M1 (`PROD-002`). Two distinct products may have the same name.
 
 ## Example
 
@@ -113,6 +117,7 @@ Result:
 Product: Chocolate
 Unit: UN
 Active: Yes
+Inventory balance: 0
 ```
 
 ## Alternative Flows
@@ -127,15 +132,15 @@ If the operator does not provide a product name:
 
 ### A2 — Invalid unit
 
-If the base inventory unit is invalid:
+If the submitted base inventory unit is not one of `UN`, `KG`, `G`, `L`, `ML`:
 
 1. The system rejects the operation.
-2. The system informs the operator.
+2. The system informs the operator that only `UN`, `KG`, `G`, `L`, and `ML` are valid units.
 3. No product is created.
 
 ## Postconditions
 
-A new active product exists.
+A new active product exists with zero inventory balance.
 
 No inventory movement is created.
 
@@ -155,9 +160,12 @@ Allow the operator to update product information.
 
 1. The operator opens the product.
 2. The system displays its current information.
-3. The operator changes editable information.
+3. The operator changes editable information (e.g., name, or `base_unit` if permitted).
 4. The operator saves the changes.
-5. The system validates the changes.
+5. The system validates the changes:
+   - Name must be non-empty;
+   - If `base_unit` was changed, the product must have **zero inventory movements** (`BD-02`);
+   - If `base_unit` was changed, the new value must be one of `UN`, `KG`, `G`, `L`, `ML`.
 6. The system persists the updated product.
 7. The system confirms the update.
 
@@ -165,10 +173,10 @@ Allow the operator to update product information.
 
 ```text
 Before:
-Chocolate
+Chocolate (UN, movements: 0)
 
 After:
-Premium Chocolate
+Premium Chocolate (KG)
 ```
 
 ## Alternative Flows
@@ -184,6 +192,14 @@ No changes are made.
 The system rejects the change and explains the validation problem.
 
 The previous product information remains unchanged.
+
+### A3 — Attempt to edit base unit when inventory movements exist
+
+If the operator attempts to change `base_unit` on a product that has at least one inventory movement:
+
+1. The system rejects the change to `base_unit`.
+2. The system informs the operator that `base_unit` cannot be changed after inventory movements have been recorded (`BD-02`).
+3. The existing `base_unit` remains unchanged.
 
 ## Important Behavior
 
@@ -328,7 +344,7 @@ None.
 
 1. The operator opens the product list.
 2. The operator enters a search term.
-3. The system searches product names.
+3. The system searches product names case-insensitively using substring matching (`SEARCH-001`, `BD-08`).
 4. The system displays matching products.
 
 ## Example
@@ -339,7 +355,7 @@ Search:
 choc
 ```
 
-Possible result:
+Matches (`choc`, `Choc`, `CHOC`, `ChoC`):
 
 ```text
 Chocolate
@@ -361,7 +377,7 @@ No error is generated merely because the search has no matches.
 
 ## Goal
 
-Record a positive physical inventory entry.
+Record a positive physical inventory entry (`ENTRY`).
 
 ## Preconditions
 
@@ -375,8 +391,11 @@ Record a positive physical inventory entry.
 3. The operator chooses to add inventory.
 4. The operator enters the quantity.
 5. The operator submits the operation.
-6. The system validates the quantity.
-7. The system creates an inventory entry movement.
+6. The system validates the quantity (`BD-03`):
+   - Quantity must be greater than zero (> 0);
+   - If the product's base unit is `UN`, quantity must be a positive integer;
+   - If the product's base unit is `KG`, `G`, `L`, or `ML`, quantity must be a positive decimal.
+7. The system creates an `ENTRY` inventory movement.
 8. The system updates or derives the inventory balance.
 9. The system displays the resulting balance.
 
@@ -410,11 +429,12 @@ ENTRY +20
 
 ### A1 — Invalid quantity
 
-If the quantity is invalid:
+If the quantity is invalid (zero, negative, or a decimal value for a `UN` product):
 
 1. The system rejects the operation.
-2. No movement is created.
-3. The inventory remains unchanged.
+2. The system informs the operator of the validation rule.
+3. No movement is created.
+4. The inventory remains unchanged.
 
 ### A2 — Product not found
 
@@ -424,9 +444,9 @@ No movement is created.
 
 ### A3 — Inactive product
 
-The system does not allow a normal inventory entry for an inactive product.
+The system rejects inventory entry for an inactive product (`INV-008`, `BD-07`).
 
-The operation is rejected without creating a movement.
+The operation is rejected without creating a movement. The product must first be reactivated.
 
 ## Postconditions
 
@@ -440,7 +460,7 @@ The product's inventory balance has increased by the specified quantity.
 
 ## Goal
 
-Correct the recorded inventory to match the physical quantity.
+Correct the recorded inventory to match the physical quantity (`ADJUSTMENT`).
 
 ## Preconditions
 
@@ -452,11 +472,15 @@ Correct the recorded inventory to match the physical quantity.
 1. The operator selects a product.
 2. The system displays the current balance.
 3. The operator chooses to adjust inventory.
-4. The operator specifies the quantity adjustment.
+4. The operator specifies the signed quantity adjustment (`BD-04`):
+   - Quantity must not be zero;
+   - Positive values increase inventory; negative values decrease inventory;
+   - If `base_unit` is `UN`, quantity must be an integer;
+   - If `base_unit` is `KG`, `G`, `L`, or `ML`, quantity may be a decimal.
 5. The operator submits the adjustment.
-6. The system calculates the resulting balance.
-7. The system verifies that the resulting balance will not be negative.
-8. The system creates an adjustment movement.
+6. The system calculates the resulting balance: `current_balance + adjustment`.
+7. The system verifies that the resulting balance will not be negative (`INV-006`).
+8. Under transactional serialization (`ADR-001`), the system creates an `ADJUSTMENT` movement.
 9. The system updates or derives the balance.
 10. The system displays the resulting balance.
 
@@ -465,13 +489,13 @@ Correct the recorded inventory to match the physical quantity.
 Current:
 
 ```text
-Chocolate = 17
+Chocolate = 17 UN
 ```
 
 Physical count:
 
 ```text
-Chocolate = 19
+Chocolate = 19 UN
 ```
 
 Adjustment:
@@ -483,7 +507,7 @@ Adjustment:
 Result:
 
 ```text
-Chocolate = 19
+Chocolate = 19 UN
 ```
 
 ## Negative Adjustment Example
@@ -491,13 +515,13 @@ Chocolate = 19
 Current:
 
 ```text
-Chocolate = 20
+Chocolate = 20 UN
 ```
 
 Physical count:
 
 ```text
-Chocolate = 17
+Chocolate = 17 UN
 ```
 
 Adjustment:
@@ -509,7 +533,7 @@ Adjustment:
 Result:
 
 ```text
-Chocolate = 17
+Chocolate = 17 UN
 ```
 
 ## Alternative Flows
@@ -519,7 +543,7 @@ Chocolate = 17
 Current:
 
 ```text
-Chocolate = 2
+Chocolate = 2 UN
 ```
 
 Requested adjustment:
@@ -538,14 +562,16 @@ The system must:
 Result:
 
 ```text
-Chocolate = 2
+Chocolate = 2 UN
 ```
 
 ### A2 — Invalid quantity
 
-The system rejects the operation.
+If the quantity is zero, or if a decimal quantity is submitted for a `UN` product:
 
-No movement is created.
+1. The system rejects the operation.
+2. No movement is created.
+3. The balance remains unchanged.
 
 ### A3 — Product not found
 
@@ -555,9 +581,13 @@ No movement is created.
 
 ### A4 — Inactive product
 
-The system does not allow the normal adjustment operation for an inactive product.
+The system rejects inventory adjustment for an inactive product (`INV-008`, `BD-07`).
 
-No movement is created.
+No movement is created. The product must first be reactivated.
+
+## Concurrency Safety
+
+Simultaneous adjustments targeting the same product are serialized at the database transaction level (`ADR-001`). Two concurrent negative adjustments that individually appear valid against a stale balance cannot both commit if their combined effect would produce a negative balance.
 
 ## Important Behavior
 
@@ -741,7 +771,7 @@ Rejected
 
 ## 15.2 Historical Movements Are Preserved
 
-No normal product or inventory operation may rewrite previous inventory movements.
+No product or inventory operation may rewrite previous inventory movements. Corrections are represented by new movements.
 
 Corrections are represented by new movements.
 
@@ -1033,19 +1063,19 @@ The user should receive enough information to understand what action is required
 
 # 20. Use Case Traceability
 
-| Use Case                              | Specification Section  | Business Rules               |
-| ------------------------------------- | ---------------------- | ---------------------------- |
-| UC-M1-01 Create Product               | Product                | Product requirements         |
-| UC-M1-02 Edit Product                 | Product Editing        | Historical preservation      |
-| UC-M1-03 Activate Product             | Product Activation     | Product activation           |
-| UC-M1-04 Deactivate Product           | Product Activation     | Non-destructive deactivation |
-| UC-M1-05 List Products                | Product Listing        | —                            |
-| UC-M1-06 Search Products              | Product Search         | —                            |
-| UC-M1-07 Add Inventory                | Inventory Entry        | INV-001                      |
-| UC-M1-08 Adjust Inventory             | Inventory Adjustment   | INV-001, INV-002, INV-006    |
-| UC-M1-09 View Inventory Balance       | Inventory Balance      | INV-001                      |
-| UC-M1-10 View Inventory History       | Movement History       | INV-002                      |
-| UC-M1-11 Check Inventory Availability | Inventory Availability | INV-003, INV-006             |
+| Use Case                              | Specification Section  | Business Rules                               |
+| ------------------------------------- | ---------------------- | -------------------------------------------- |
+| UC-M1-01 Create Product               | Product                | PROD-001, PROD-002                           |
+| UC-M1-02 Edit Product                 | Product Editing        | PROD-001 (mutability), Historical preservation |
+| UC-M1-03 Activate Product             | Product Activation     | Product activation                           |
+| UC-M1-04 Deactivate Product           | Product Activation     | Non-destructive deactivation, INV-008        |
+| UC-M1-05 List Products                | Product Listing        | —                                            |
+| UC-M1-06 Search Products              | Product Search         | SEARCH-001                                   |
+| UC-M1-07 Add Inventory                | Inventory Entry        | INV-001, INV-008                             |
+| UC-M1-08 Adjust Inventory             | Inventory Adjustment   | INV-001, INV-002, INV-006, INV-008           |
+| UC-M1-09 View Inventory Balance       | Inventory Balance      | INV-001                                      |
+| UC-M1-10 View Inventory History       | Movement History       | INV-002                                      |
+| UC-M1-11 Check Inventory Availability | Inventory Availability | INV-003, INV-006                             |
 
 ---
 

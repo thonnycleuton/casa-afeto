@@ -24,7 +24,7 @@ For the complete product vision, see:
 
 ## Current Status
 
-The project is currently in the **initial foundation stage**.
+The M0 technical foundation is established; M1 — Products & Inventory is implemented and awaiting human validation and acceptance.
 
 The first development phase is:
 
@@ -241,13 +241,15 @@ Any significant change to the roadmap should be deliberate and documented.
 
 ## Current Next Step
 
-The immediate next step is to complete the foundation documentation and finalize the business decisions required for:
+The foundational business decisions for **M1 — Products & Inventory** are finalized:
 
-**M1 — Products & Inventory**
+* **Negative inventory policy: RESOLVED**
+  * **Policy:** Physical inventory must never become negative.
+  * Operations that would produce a negative balance are rejected.
+  * This invariant is absolute and also applies to concurrent inventory operations.
+  * Technical concurrency decision documented in `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
 
-Before M1 implementation begins, all business behavior that materially affects the milestone must be sufficiently defined.
-
-The first pending business decision is the policy for **negative inventory**.
+The M1 implementation is available for automated verification and owner-led manual validation. M1 remains subject to human acceptance before work proceeds to M2.
 
 ---
 
@@ -348,4 +350,3 @@ alembic revision -m "description_of_change"
 > **When something has been decided, implement it faithfully and simply.**
 >
 > **When the business has not decided, ask instead of guessing.**
-
