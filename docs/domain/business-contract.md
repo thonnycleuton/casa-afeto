@@ -1,581 +1,573 @@
-# Casa Afeto — Business Contract
+# Contrato de Negócio da Casa Afeto
 
-**Document version:** 0.3
-**Status:** Active
-
----
-
-## 1. Purpose
-
-This document describes the current business behavior of Casa Afeto that must guide the development of the Sales Management System.
-
-It represents business decisions that have already been established.
-
-It is not an implementation specification.
-
-When implementation details are required, milestone specifications and architecture decisions should define them without changing the business behavior documented here.
+**Versão do documento:** 0.3
+**Status:** Ativo
 
 ---
 
-# 2. Business Overview
+## 1. Finalidade
 
-Casa Afeto sells personalized breakfast baskets and gift baskets.
+Este documento descreve o comportamento atual de negócio da Casa Afeto que deve orientar o desenvolvimento do Sistema de Gestão de Vendas.
 
-The operational flow is approximately:
+Ele representa decisões de negócio já estabelecidas.
+
+Não é uma especificação de implementação.
+
+Quando forem necessários detalhes de implementação, as especificações de marcos e decisões de arquitetura devem defini-los sem alterar o comportamento de negócio documentado aqui.
+
+---
+
+## 2. Visão Geral do Negócio
+
+Casa Afeto vende cestas de café da manhã personalizadas e cestas de presente.
+
+O fluxo operacional é aproximadamente:
 
 ```text
-Customer contacts Casa Afeto
+Cliente entra em contato com a Casa Afeto
         ↓
-Chooses a basket
+Escolhe uma cesta
         ↓
-Basket is customized if necessary
+Cesta é personalizada, se necessário
         ↓
-Delivery date is agreed
+Data de entrega é combinada
         ↓
-Payment is received
+Pagamento é recebido
         ↓
-Basket is prepared
+Cesta é preparada
         ↓
-Basket is delivered
+Cesta é entregue
 ```
 
-The system will support this operation through:
+O sistema vai suportar esta operação por meio de:
 
-* Products
-* Inventory
-* Basket Templates
-* Baskets
-* Customers
-* Sales
-* Payments
-
----
-
-# 3. Customer
-
-A **Customer** is the person who makes the purchase.
-
-A customer may purchase one or more baskets over time.
-
-The customer is associated with a Sale.
-
-Recipient information does not need to be represented as a separate Customer or Person entity during the initial implementation.
+* Produtos
+* Estoque
+* Templates de Cesta
+* Cestas
+* Clientes
+* Vendas
+* Pagamentos
 
 ---
 
-# 4. Product
+## 3. Cliente
 
-A **Product** is an item that can be used as part of a basket.
+Um **Cliente** é a pessoa que realiza a compra.
 
-Examples include:
+Um cliente pode comprar uma ou mais cestas ao longo do tempo.
 
-* cereal bars;
+O cliente está associado a uma Venda.
+
+Informações do destinatário não precisam ser representadas como uma entidade separada de Cliente ou Pessoa durante a implementação inicial.
+
+---
+
+## 4. Produto
+
+Um **Produto** é um item que pode ser usado como parte de uma cesta.
+
+Exemplos incluem:
+
+* barras de cereal;
 * chocolate;
-* juice;
-* cake;
-* coffee;
-* mugs;
-* cards;
-* packaging.
+* suco;
+* bolo;
+* café;
+* canecas;
+* cartões;
+* materiais de embalagem.
 
-### 4.1 Base Inventory Unit
+### 4.1 Unidade Base de Estoque
 
-Every product has a base inventory unit (`base_unit`).
+Todo produto possui uma unidade base de estoque (`base_unit`).
 
-`base_unit` is a controlled value. M1 supports exactly:
+`base_unit` é um valor controlado. M1 suporta exatamente:
 
-* `UN` — unit
-* `KG` — kilogram
-* `G` — gram
-* `L` — liter
-* `ML` — milliliter
+* `UN` — unidade
+* `KG` — quilograma
+* `G` — grama
+* `L` — litro
+* `ML` — mililitro
 
-M1 does not implement generic unit conversion or a configurable unit catalog. All inventory quantities in M1 are expressed in the product's `base_unit`.
+M1 não implementa conversão genérica de unidades nem um catálogo configurável de unidades. Todas as quantidades de estoque em M1 são expressas na `base_unit` do produto.
 
-### 4.2 Base Unit Mutability
+### 4.2 Mutabilidade da Unidade Base
 
-A product's `base_unit` may be changed only while the product has **no inventory movements**.
+A `base_unit` de um produto só pode ser alterada enquanto o produto não possui **nenhuma movimentação de estoque**.
 
-Once the product has at least one inventory movement, its `base_unit` becomes immutable to preserve the semantic meaning of historical movements.
+Uma vez que o produto tenha pelo menos uma movimentação de estoque, sua `base_unit` se torna imutável para preservar o significado semântico das movimentações históricas.
 
-### 4.3 Product Name
+### 4.3 Nome do Produto
 
-Product names are **not required to be unique** in M1. Two distinct products may share the same name.
+Nomes de produtos não são **obrigatoriamente únicos** em M1. Dois produtos distintos podem compartilhar o mesmo nome.
 
-The purchase/commercial unit may differ from the inventory unit.
+A unidade comercial de compra pode diferir da unidade de estoque.
 
-For example:
+Por exemplo:
 
 ```text
-Purchase:
-1 box of cereal bars
+Compra:
+1 caixa de barras de cereal
 
-Box:
-24 units
+Caixa:
+24 unidades
 
-Inventory:
+Estoque:
 +24 UN
 ```
 
-The conversion factor may vary depending on the acquisition.
+O fator de conversão pode variar conforme a aquisição.
 
 ---
 
-# 5. Product Activation
+## 5. Ativação do Produto
 
-Products can be activated or deactivated.
+Produtos podem ser ativados ou desativados.
 
-A deactivated product should not be selectable for new operational activities where active products are required.
+Um produto desativado não deve ser selecionável para novas atividades operacionais onde produtos ativos são exigidos.
 
-An inactive product cannot receive **any** inventory Entry or Adjustment. If an operator needs to modify inventory for an inactive product, the product must first be reactivated. Reactivation does not modify inventory.
+Um produto inativo não pode receber **nenhuma** Entrada ou Ajuste de Estoque. Se um operador precisar modificar o estoque de um produto inativo, o produto deve primeiro ser reativado. A reativação não modifica o estoque.
 
-Deactivation does not delete historical information involving the product.
+A desativação não exclui informações históricas envolvendo o produto.
 
 ---
 
-# 6. Product Cost
+## 6. Custo do Produto
 
-A product may be acquired at different prices over time.
+Um produto pode ser adquirido a preços diferentes ao longo do tempo.
 
-Example:
+Exemplo:
 
 ```text
-Normal acquisition:
-Cereal bar = R$ 2.50 / unit
+Aquisição normal:
+Cereal bar = R$ 2,50 / unidade
 
-Special acquisition:
-Cereal bar = R$ 1.80 / unit
+Aquisição especial:
+Cereal bar = R$ 1,80 / unidade
 ```
 
-Historical acquisition costs must not be overwritten.
+Custos históricos de aquisição não devem ser sobrescritos.
 
-Product cost therefore belongs to the acquisition/inventory context rather than being treated as a single permanent property of the Product.
+O custo do produto, portanto, pertence ao contexto de aquisição/estoque e não deve ser tratado como uma única propriedade permanente do Produto.
 
-The future inventory-lot model should allow different quantities of the same product to have different acquisition costs.
+O modelo futuro de lote de estoque permitirá que diferentes quantidades do mesmo produto tenham custos de aquisição diferentes.
 
 ---
 
-# 7. Purchase
+## 7. Compra
 
-A **Purchase** represents an acquisition of products by Casa Afeto.
+Uma **Compra** representa uma aquisição de produtos pela Casa Afeto.
 
-A purchase contains one or more purchase items.
+Uma compra contém um ou mais itens de compra.
 
-A purchase item may use a commercial unit different from the product's inventory unit.
+Um item de compra pode usar uma unidade comercial diferente da unidade de estoque do produto.
 
-Example:
+Exemplo:
 
 ```text
-Purchase item:
-1 box
+Item de compra:
+1 caixa
 
-Conversion:
-1 box = 24 units
+Conversão:
+1 caixa = 24 unidades
 
-Inventory quantity:
-24 units
+Quantidade de estoque:
+24 unidades
 ```
 
-The actual acquisition price must be preserved.
+O preço real de aquisição deve ser preservado.
 
-Purchase management is not part of the initial Phase 1 implementation.
+Gestão de compras não faz parte da implementação inicial da Fase 1.
 
 ---
 
-# 8. Inventory
+## 8. Estoque
 
-Inventory represents the physical stock available for products.
+Estoque representa o material físico disponível para produtos.
 
-Conceptually, inventory is movement-based.
+Conceitualmente, o estoque é baseado em movimentações.
 
-Examples of movements include:
+Exemplos de movimentações incluem:
 
 ```text
-Purchase / Entry       +20
-Sale / Consumption      -3
-Adjustment              -2
+Compra / Entrada       +20
+Venda / Consumo        -3
+Ajuste                 -2
 ```
 
-The system must preserve inventory movement history.
+O sistema deve preservar o histórico de movimentações de estoque.
 
-The current balance is derived from the relevant inventory movements.
+O saldo atual é derivado das movimentações relevantes de estoque.
 
-### 8.1 Inventory Entry Quantity Rules
+### 8.1 Regras de Quantidade para Entrada de Estoque
 
-An `ENTRY` adds physical inventory.
+Uma `ENTRY` adiciona estoque físico.
 
-Rules:
-* quantity MUST be greater than zero (> 0);
-* quantity MUST NOT be zero;
-* quantity MUST NOT be negative;
-* `UN` accepts positive integer quantities only;
-* `KG`, `G`, `L`, and `ML` accept positive decimal quantities.
+Regras:
+* quantidade DEVE ser maior que zero (> 0);
+* quantidade NÃO DEVE ser zero;
+* quantidade NÃO DEVE ser negativa;
+* `UN` aceita apenas quantidades inteiras positivas;
+* `KG`, `G`, `L` e `ML` aceitam quantidades decimais positivas.
 
 ---
 
-# 9. Inventory Correction
+## 9. Correção de Estoque
 
-Inventory may need to be corrected when the system's recorded quantity differs from the physical quantity.
+O estoque pode precisar ser corrigido quando a quantidade registrada no sistema difere da quantidade física.
 
-Corrections must preserve historical information.
+Correções devem preservar as informações históricas.
 
-The system must not rewrite previous inventory movements to make the history appear different.
+O sistema não deve reescrever movimentações anteriores de estoque para fazer o histórico parecer diferente.
 
-Instead, a new adjustment movement represents the correction.
+Em vez disso, uma nova movimentação de ajuste representa a correção.
 
-### 9.1 Inventory Adjustment Quantity Rules
+### 9.1 Regras de Quantidade para Ajuste de Estoque
 
-An `ADJUSTMENT` represents a correction to physical inventory:
-* quantity MUST NOT be zero;
-* positive values increase inventory;
-* negative values decrease inventory;
-* `UN` accepts integer quantities only;
-* `KG`, `G`, `L`, and `ML` accept decimal quantities;
-* a negative adjustment must never cause the resulting physical balance to become negative.
+Um `ADJUSTMENT` representa uma correção no estoque físico:
+* quantidade NÃO DEVE ser zero;
+* valores positivos aumentam o estoque;
+* valores negativos diminuem o estoque;
+* `UN` aceita apenas quantidades inteiras;
+* `KG`, `G`, `L` e `ML` aceitam quantidades decimais;
+* um ajuste negativo nunca deve causar que o saldo físico resultante fique negativo.
 
-Example:
+Exemplo:
 
 ```text
-Recorded balance: 20
-Physical balance: 17
+Saldo registrado: 20
+Saldo físico: 17
 
-Adjustment:
+Ajuste:
 -3
 ```
 
-The original movements remain unchanged.
+As movimentações originais permanecem inalteradas.
 
 ---
 
-# 10. Inventory Availability
+## 10. Disponibilidade do Estoque
 
-Inventory availability is relevant when products are used in baskets and sales.
+A disponibilidade do estoque é relevante quando os produtos são usados em cestas e vendas.
 
-A product may be selected for a basket even when the current available inventory is insufficient.
+Um produto pode ser selecionado para uma cesta mesmo quando o estoque disponível atual é insuficiente.
 
-However, the shortage must be clearly visible to the user.
+No entanto, a falta de estoque deve ficar claramente visível ao usuário.
 
-Example:
+Exemplo:
 
 ```text
-Inventory:
-Chocolate = 0
-
-Basket:
-Chocolate × 2
-
-Result:
-Allowed
-
-Warning:
-Insufficient inventory — 2 units required.
+Disponível: 2
+Solicitado: 5
+Falta: 3
 ```
 
-This allows Casa Afeto to register the customer's intended basket before replenishing the missing products.
+O produto permanece válido, mas o usuário precisa saber que ele não tem estoque suficiente para a operação.
 
 ---
 
-# 11. Negative Inventory Policy
+## 11. Política para Estoque Negativo
 
-The system must **not allow physical inventory to become negative** (`INV-006`).
+O sistema **não deve permitir que o estoque físico se torne negativo** (`INV-006`).
 
-This invariant is absolute. An inventory movement must never be created if it would cause the available physical inventory balance of a product to become negative.
+Esse invariante é absoluto. Uma movimentação de estoque nunca deve ser criada se fizer com que o saldo de estoque físico disponível de um produto se torne negativo.
 
-Furthermore, this invariant **must hold under concurrent inventory operations**. Simultaneous modifications targeting the same product's inventory must execute transactionally and serialize validation and movement insertion (`ADR-001`).
+Além disso, esse invariante **deve ser mantido durante operações concorrentes de estoque**. Modificações simultâneas que afetem o estoque do mesmo produto devem ser executadas transacionalmente, serializando a validação e a inserção da movimentação (`ADR-001`).
 
-For example:
+Por exemplo:
 
 ```text
-Inventory:
+Estoque:
 Chocolate = 1
 
-Required consumption:
+Consumo necessário:
 Chocolate × 3
 ```
 
-The system must not create:
+O sistema não deve criar:
 
 ```text
 Chocolate = -2
 ```
 
-Instead, the shortage must be identified and the operation rejected.
+Em vez disso, a falta deve ser identificada e a operação rejeitada.
 
-The distinction between commercial planning and physical inventory is important.
+A distinção entre planejamento comercial e estoque físico é importante.
 
-### Basket/Sale composition
+### Composição de Cesta/Venda
 
-A basket or sale may contain a product for which there is insufficient inventory.
+Uma cesta ou venda pode conter um produto para o qual não há estoque suficiente.
 
-This represents a future requirement.
+Isso representa uma necessidade futura.
 
-### Inventory movement
+### Movimentação de Estoque
 
-A physical inventory deduction may only occur when sufficient inventory exists.
+Uma dedução de estoque físico só pode ocorrer quando houver estoque suficiente.
 
-Therefore:
-
-```text
-Basket creation
-    ↓
-May contain insufficient-stock product
-    ↓
-Warning shown
-    ↓
-Inventory remains unchanged
-```
-
-and:
+Portanto:
 
 ```text
-Sale confirmation
+Criação da cesta
     ↓
-Required inventory checked
+Pode conter produto sem estoque suficiente
     ↓
-Sufficient stock?
-    ├── Yes → deduct inventory
-    └── No  → confirmation blocked
+Aviso exibido
+    ↓
+Estoque permanece inalterado
 ```
 
-A sale cannot be confirmed while its required inventory cannot be fulfilled.
+e:
 
-This policy does not require the system to implement automatic replenishment.
+```text
+Confirmação da venda
+    ↓
+Estoque necessário verificado
+    ↓
+Há estoque suficiente?
+    ├── Sim → deduzir estoque
+    └── Não → bloquear confirmação
+```
 
-Future functionality may identify products that need to be purchased to fulfill pending sales.
+Uma venda não pode ser confirmada enquanto não for possível atender ao estoque necessário.
+
+Esta política não exige que o sistema implemente reposição automática.
+
+Uma funcionalidade futura poderá identificar produtos que precisam ser comprados para atender às vendas pendentes.
 
 ---
 
-# 12. Inventory Lots
+# 12. Lotes de Estoque
 
-The future inventory model should support multiple lots of the same product.
+O modelo futuro de estoque deve oferecer suporte a vários lotes do mesmo produto.
 
-Different lots may have different:
+Lotes diferentes podem ter:
 
-* acquisition costs;
-* quantities;
-* expiration dates.
+* custos de aquisição diferentes;
+* quantidades diferentes;
+* datas de vencimento diferentes.
 
-Example:
+Exemplo:
 
 ```text
 Chocolate
 
-Lot A
-Quantity: 10
-Unit cost: R$ 2.50
-Expiration: 2026-11-10
+Lote A
+Quantidade: 10
+Custo unitário: R$ 2,50
+Vencimento: 2026-11-10
 
-Lot B
-Quantity: 20
-Unit cost: R$ 1.80
-Expiration: 2026-10-20
+Lote B
+Quantidade: 20
+Custo unitário: R$ 1,80
+Vencimento: 2026-10-20
 ```
 
-The current provisional business policy is to prefer the lot with the nearest expiration when selecting stock for consumption.
+A política de negócio provisória atual é preferir o lote com vencimento mais próximo ao selecionar estoque para consumo.
 
-This is conceptually similar to FEFO.
+Conceitualmente, isso é semelhante a FEFO.
 
-This policy is provisional and may be changed as the business evolves.
+Esta política é provisória e poderá mudar conforme o negócio evoluir.
 
-Lot management is not part of the initial Phase 1 implementation.
+A gestão de lotes não faz parte da implementação inicial da Fase 1.
 
 ---
 
-# 13. Basket Template
+# 13. Template de Cesta
 
-A **Basket Template** represents a reusable standard composition for a basket.
+Um **Template de Cesta** representa uma composição padrão reutilizável para uma cesta.
 
-A template contains products and quantities.
+Um template contém produtos e quantidades.
 
-Example:
+Exemplo:
 
 ```text
-Breakfast Classic
+Clássica de Café da Manhã
 
-Coffee × 1
-Juice × 1
+Café × 1
+Suco × 1
 Chocolate × 2
-Cake × 1
+Bolo × 1
 ```
 
-Templates can be activated or deactivated.
+Templates podem ser ativados ou desativados.
 
 ---
 
-# 14. Basket
+# 14. Cesta
 
-A **Basket** is a concrete basket prepared for a particular sale.
+Uma **Cesta** é uma cesta concreta preparada para uma venda específica.
 
-A basket may:
+Uma cesta pode:
 
-* be created from a template;
-* be created without a template;
-* have its composition customized;
-* contain multiple quantities of the same product.
+* ser criada a partir de um template;
+* ser criada sem um template;
+* ter sua composição personalizada;
+* conter várias unidades do mesmo produto.
 
-Example:
+Exemplo:
 
 ```text
 Chocolate × 3
-Juice × 1
-Cake × 1
+Suco × 1
+Bolo × 1
 ```
 
-A basket is not required to maintain the same composition as its template.
+Não é obrigatório que uma cesta mantenha a mesma composição de seu template.
 
 ---
 
-# 15. Basket and Template Independence
+# 15. Independência entre Cesta e Template
 
-When a basket is created from a template, the basket receives its own concrete composition.
+Quando uma cesta é criada a partir de um template, ela recebe sua própria composição concreta.
 
-Future changes to the template must not modify existing baskets.
+Alterações futuras no template não devem modificar cestas existentes.
 
-Example:
+Exemplo:
 
 ```text
 Template:
 Chocolate × 2
-Juice × 1
+Suco × 1
 
         ↓
 
-Basket:
+Cesta:
 Chocolate × 2
-Juice × 1
+Suco × 1
 
-        ↓ template changes
+        ↓ template alterado
 
 Template:
 Chocolate × 1
-Juice × 2
+Suco × 2
 ```
 
-The existing basket remains:
+A cesta existente permanece:
 
 ```text
 Chocolate × 2
-Juice × 1
+Suco × 1
 ```
 
 ---
 
-# 16. Basket Customization
+# 16. Personalização da Cesta
 
-A concrete basket may be customized after creation.
+Uma cesta concreta pode ser personalizada após sua criação.
 
-Customization may include:
+A personalização pode incluir:
 
-* adding a product;
-* removing a product;
-* changing quantity;
-* substituting a product.
+* adicionar um produto;
+* remover um produto;
+* alterar a quantidade;
+* substituir um produto.
 
-Customization may be required because of:
+A personalização pode ser necessária por causa de:
 
-* customer preference;
-* product availability;
-* operational decisions.
+* preferência do cliente;
+* disponibilidade de produtos;
+* decisões operacionais.
 
-A basket may contain a product even when the current inventory is insufficient, provided the shortage is visible.
-
----
-
-# 17. Basket Without Template
-
-A basket may be created without using a Basket Template.
-
-This allows Casa Afeto to create personalized or exceptional baskets without first creating a reusable template.
+Uma cesta pode conter um produto mesmo quando o estoque atual é insuficiente, desde que a falta esteja visível.
 
 ---
 
-# 18. Basket Cost
+# 17. Cesta sem Template
 
-The cost of a basket is determined from the products and quantities composing it.
+Uma cesta pode ser criada sem usar um Template de Cesta.
 
-Because product acquisition costs may vary, the cost calculation should eventually consider the relevant inventory/acquisition context.
-
-The detailed lot-selection and costing strategy will be specified when inventory lots are implemented.
+Isso permite que a Casa Afeto crie cestas personalizadas ou excepcionais sem antes criar um template reutilizável.
 
 ---
 
-# 19. Basket Pricing
+# 18. Custo da Cesta
 
-Casa Afeto currently uses approximately 2× product cost as a common pricing reference.
+O custo de uma cesta é determinado pelos produtos e quantidades que a compõem.
 
-This is a **suggestion**, not a mandatory pricing rule.
+Como os custos de aquisição dos produtos podem variar, o cálculo do custo deverá, futuramente, considerar o contexto relevante de estoque/aquisição.
 
-Conceptually:
+A estratégia detalhada de seleção de lotes e cálculo de custos será especificada quando os lotes de estoque forem implementados.
+
+---
+
+# 19. Precificação da Cesta
+
+Atualmente, a Casa Afeto usa aproximadamente 2× o custo dos produtos como referência comum de precificação.
+
+Isso é uma **sugestão**, não uma regra obrigatória de precificação.
+
+Conceitualmente:
 
 ```text
-Basket Cost
+Custo da Cesta
     ↓
-Suggested Price
+Preço Sugerido
     ↓
-Final Selling Price
+Preço Final de Venda
 ```
 
-The user may manually define the final selling price.
+O usuário pode definir manualmente o preço final de venda.
 
-Example:
+Exemplo:
 
 ```text
-Cost:             R$ 85
-Suggested price:  R$ 170
+Custo:             R$ 85
+Preço sugerido:    R$ 170
 
-Possible final price:
+Possíveis preços finais:
 R$ 155
 R$ 170
 R$ 185
 ```
 
-The final selling price is controlled by the user.
+O preço final de venda é controlado pelo usuário.
 
-If basket composition changes, cost and suggested price should be recalculated.
+Se a composição da cesta mudar, o custo e o preço sugerido devem ser recalculados.
 
-The final price may remain manually controlled/overridden.
-
----
-
-# 20. Sale
-
-A **Sale** represents a commercial transaction with a Customer.
-
-A sale contains:
-
-* one Customer;
-* one or more Baskets;
-* sale-level information;
-* payment information associated with the sale.
-
-A sale must contain at least one basket.
-
-A sale may contain multiple baskets.
+O preço final pode continuar sendo controlado/sobrescrito manualmente.
 
 ---
 
-# 21. Basket Delivery Information
+# 20. Venda
 
-Each basket may have its own delivery/recipient information.
+Uma **Venda** representa uma transação comercial com um Cliente.
 
-This includes, as required:
+Uma venda contém:
 
-* recipient;
-* delivery address;
-* delivery date;
-* relevant notes.
+* um Cliente;
+* uma ou mais Cestas;
+* informações no nível da venda;
+* informações de pagamento associadas à venda.
 
-Multiple baskets in the same sale may share the same address.
+Uma venda deve conter pelo menos uma cesta.
 
-The recipient does not need to be modeled as an independent Customer entity during the initial implementation.
+Uma venda pode conter várias cestas.
 
 ---
 
-# 22. Sale Lifecycle
+# 21. Informações de Entrega da Cesta
 
-The operational sale lifecycle is represented by statuses.
+Cada cesta pode ter suas próprias informações de entrega/destinatário.
 
-The initial status model is:
+Isso inclui, conforme necessário:
+
+* destinatário;
+* endereço de entrega;
+* data de entrega;
+* observações relevantes.
+
+Várias cestas na mesma venda podem compartilhar o mesmo endereço.
+
+O destinatário não precisa ser modelado como uma entidade Cliente independente durante a implementação inicial.
+
+---
+
+# 22. Ciclo de Vida da Venda
+
+O ciclo de vida operacional da venda é representado por status.
+
+O modelo inicial de status é:
 
 ```text
 DRAFT
@@ -589,464 +581,464 @@ READY
 DELIVERED
 ```
 
-A sale may also become:
+Uma venda também pode se tornar:
 
 ```text
 CANCELLED
 ```
 
-The exact implementation of status transitions belongs to the relevant milestone specification.
+A implementação exata das transições de status pertence à especificação do marco relevante.
 
-The statuses represent operational state and should not be confused with payment state.
-
----
-
-# 23. Draft Sale
-
-A draft sale represents a sale that is being prepared but has not yet been confirmed.
-
-A draft sale may be changed.
-
-Creating a draft sale does not deduct inventory.
+Os status representam o estado operacional e não devem ser confundidos com o estado do pagamento.
 
 ---
 
-# 24. Sale Confirmation
+# 23. Venda em Rascunho
 
-A sale is confirmed when the required business conditions are satisfied.
+Uma venda em rascunho representa uma venda em preparação que ainda não foi confirmada.
 
-The payment requirement is:
+Uma venda em rascunho pode ser alterada.
 
-> A sale is confirmed when at least 50% of its total value has been paid.
+A criação de uma venda em rascunho não deduz estoque.
 
-Example:
+---
+
+# 24. Confirmação da Venda
+
+Uma venda é confirmada quando as condições de negócio necessárias são atendidas.
+
+A exigência de pagamento é:
+
+> Uma venda é confirmada quando pelo menos 50% de seu valor total tiver sido pago.
+
+Exemplo:
 
 ```text
-Sale total: R$ 200
+Total da venda: R$ 200
 
-Paid:
+Pago:
 R$ 100
 
-Paid percentage:
+Percentual pago:
 50%
 
-Result:
-Sale may be confirmed.
+Resultado:
+A venda pode ser confirmada.
 ```
 
-Inventory availability is also required.
+A disponibilidade de estoque também é obrigatória.
 
-A sale cannot be confirmed if the required inventory cannot be fulfilled.
+Uma venda não pode ser confirmada se não for possível atender ao estoque necessário.
 
-Therefore:
+Portanto:
 
 ```text
-Confirmation requirements
+Requisitos para confirmação
 
-At least 50% paid
-        AND
-Required inventory available
+Pelo menos 50% pago
+        E
+Estoque necessário disponível
         ↓
-Sale may be confirmed
+A venda pode ser confirmada
 ```
 
 ---
 
-# 25. Inventory Deduction on Sale Confirmation
+# 25. Dedução de Estoque na Confirmação da Venda
 
-When a sale is confirmed, the required inventory is deducted.
+Quando uma venda é confirmada, o estoque necessário é deduzido.
 
-Example:
+Exemplo:
 
 ```text
-Before confirmation:
+Antes da confirmação:
 
 Chocolate = 20
-Juice     = 8
+Suco      = 8
 
-Sale:
+Venda:
 
 Chocolate × 2
-Juice × 1
+Suco × 1
 
-After confirmation:
+Após a confirmação:
 
 Chocolate = 18
-Juice     = 7
+Suco      = 7
 ```
 
-The deduction represents the physical consumption/commitment of inventory for the confirmed sale.
+A dedução representa o consumo/compromisso físico do estoque para a venda confirmada.
 
-The system must never create a movement that causes physical inventory to become negative.
+O sistema nunca deve criar uma movimentação que faça o estoque físico ficar negativo.
 
 ---
 
-# 26. Changes After Confirmation
+# 26. Alterações Após a Confirmação
 
-A confirmed sale may be modified.
+Uma venda confirmada pode ser modificada.
 
-When the basket composition changes after confirmation, inventory must be adjusted according to the difference between the original and new compositions.
+Quando a composição da cesta mudar após a confirmação, o estoque deve ser ajustado de acordo com a diferença entre a composição original e a nova.
 
-Example:
+Exemplo:
 
 ```text
 Original:
 
 Chocolate × 2
-Juice × 1
+Suco × 1
 
-New:
+Nova:
 
-Biscuit × 2
-Juice × 1
+Biscoito × 2
+Suco × 1
 ```
 
-Inventory adjustment:
+Ajuste de estoque:
 
 ```text
 Chocolate +2
-Biscuit   -2
+Biscoito  -2
 ```
 
-The original inventory movement remains in history.
+A movimentação original de estoque permanece no histórico.
 
-The system must not rewrite the original movement.
+O sistema não deve reescrever a movimentação original.
 
-If the new composition cannot be fulfilled because inventory is insufficient, the system must not create a negative inventory movement.
+Se não for possível atender à nova composição por falta de estoque, o sistema não deve criar uma movimentação de estoque negativo.
 
 ---
 
-# 27. Sale Cancellation
+# 27. Cancelamento da Venda
 
-A confirmed sale may later be cancelled.
+Uma venda confirmada pode ser cancelada posteriormente.
 
-A cancelled sale must not be deleted.
+Uma venda cancelada não deve ser excluída.
 
-Its historical information must remain available.
+Suas informações históricas devem permanecer disponíveis.
 
-Cancellation does not automatically imply that 100% of the previously deducted inventory returns to stock.
+O cancelamento não implica automaticamente que 100% do estoque anteriormente deduzido retorne ao estoque.
 
-The physical situation must determine what actually happened.
+A situação física deve determinar o que realmente aconteceu.
 
-For example:
+Por exemplo:
 
 ```text
-Product returned physically
-    → may be added back to inventory
+Produto devolvido fisicamente
+    → pode ser adicionado novamente ao estoque
 
-Product consumed
-    → remains consumed
+Produto consumido
+    → permanece consumido
 
-Product lost/damaged
-    → may require an adjustment
+Produto perdido/danificado
+    → pode exigir um ajuste
 ```
 
-Detailed loss, return, and expiration behavior is outside the initial Phase 1 scope.
+O tratamento detalhado de perdas, devoluções e vencimentos está fora do escopo inicial da Fase 1.
 
 ---
 
-# 28. Payment
+# 28. Pagamento
 
-The system supports the following payment methods:
+O sistema oferece suporte aos seguintes métodos de pagamento:
 
 * PIX;
-* Card.
+* Cartão.
 
-A sale may have one or more payment records.
+Uma venda pode ter um ou mais registros de pagamento.
 
-Payment information must be tracked separately from the operational sale status.
-
----
-
-# 29. Payment Proof
-
-A payment may have associated proof of payment.
-
-The proof allows Casa Afeto to document the payment received.
-
-The exact storage and file-handling behavior will be defined by the relevant implementation specification.
+As informações de pagamento devem ser acompanhadas separadamente do status operacional da venda.
 
 ---
 
-# 30. Payment and Sale Status Separation
+# 29. Comprovante de Pagamento
 
-Payment status and sale status are separate concepts.
+Um pagamento pode ter um comprovante associado.
 
-For example:
+O comprovante permite que a Casa Afeto documente o pagamento recebido.
+
+O comportamento exato de armazenamento e tratamento de arquivos será definido pela especificação de implementação relevante.
+
+---
+
+# 30. Separação entre Status do Pagamento e da Venda
+
+O status do pagamento e o status da venda são conceitos separados.
+
+Por exemplo:
 
 ```text
-Sale:
+Venda:
 CONFIRMED
 
-Payment:
-50% paid
-50% outstanding
+Pagamento:
+50% pago
+50% pendente
 ```
 
-A sale can therefore be confirmed while still having an outstanding balance.
+Portanto, uma venda pode ser confirmada enquanto ainda houver um saldo pendente.
 
 ---
 
-# 31. Delivery Payment Rule
+# 31. Regra de Pagamento para Entrega
 
-The remaining balance must be fully paid before delivery.
+O saldo restante deve ser integralmente pago antes da entrega.
 
-Therefore:
+Portanto:
 
 ```text
-Confirmed
+Confirmada
     ↓
-Outstanding balance
+Saldo pendente
     ↓
-Remaining payment
+Pagamento restante
     ↓
-100% paid
+100% pago
     ↓
-Delivery
+Entrega
 ```
 
-A sale must not be delivered while an outstanding balance remains.
+Uma venda não deve ser entregue enquanto houver saldo pendente.
 
 ---
 
-# 32. Individual Product Sales
+# 32. Venda de Produtos Individuais
 
-Individual product sales are outside the initial scope.
+Vendas de produtos individuais estão fora do escopo inicial.
 
-The current sales model is centered on baskets.
+O modelo atual de vendas é centrado em cestas.
 
-The system should not implement a separate product-sale workflow unless a concrete business requirement is introduced.
-
----
-
-# 33. Internally Produced Products
-
-Casa Afeto may produce products internally, such as cakes.
-
-The business does not currently have a sufficiently defined production process to formalize this area.
-
-Future production functionality may involve:
-
-* recipes;
-* ingredients;
-* production quantities;
-* production costs;
-* expiration;
-* production inventory movements.
-
-These capabilities are outside the initial scope.
-
-The current architecture should not prematurely implement them.
+O sistema não deve implementar um fluxo separado de venda de produtos, a menos que seja introduzido um requisito de negócio concreto.
 
 ---
 
-# 34. Losses, Breakage, Expiration, and Internal Use
+# 33. Produtos Produzidos Internamente
 
-Products may eventually be:
+A Casa Afeto pode produzir produtos internamente, como bolos.
 
-* lost;
-* damaged;
-* expired;
-* consumed internally;
-* used for reasons other than a sale.
+Atualmente, o negócio não tem um processo de produção suficientemente definido para formalizar essa área.
 
-The business rules for these situations are not yet fully defined.
+Funcionalidades futuras de produção podem envolver:
 
-The inventory model should allow future movement types to represent these situations.
+* receitas;
+* ingredientes;
+* quantidades produzidas;
+* custos de produção;
+* vencimento;
+* movimentações de estoque da produção.
 
-Detailed workflows should be introduced only when the corresponding business requirements are defined.
+Essas capacidades estão fora do escopo inicial.
 
----
-
-# 35. Affective Dates
-
-Casa Afeto intends to eventually maintain relevant dates associated with customers or recipients.
-
-Examples:
-
-* birthday;
-* wedding anniversary;
-* other important dates.
-
-A future feature may use these dates to support proactive customer contact and reminders.
-
-This functionality is outside the initial Phase 1 scope.
+A arquitetura atual não deve implementá-las prematuramente.
 
 ---
 
-# 36. Established Business Rules
+# 34. Perdas, Quebras, Vencimentos e Uso Interno
 
-The following rules have been explicitly established.
+No futuro, produtos podem ser:
 
-### BASKET-001 — Basket Creation
+* perdidos;
+* danificados;
+* vencidos;
+* consumidos internamente;
+* usados por motivos que não sejam uma venda.
 
-A basket may be created from a template or without a template.
+As regras de negócio para essas situações ainda não estão totalmente definidas.
 
-### BASKET-002 — Multiple Product Quantities
+O modelo de estoque deve permitir que tipos futuros de movimentação representem essas situações.
 
-A basket may contain multiple quantities of the same product.
-
-### BASKET-003 — Basket/Template Independence
-
-Changing a Basket Template must not modify existing baskets created from that template.
-
-### BASKET-004 — Basket Customization
-
-A concrete basket may be customized after creation.
-
-### SALE-001 — Sale Basket Requirement
-
-A sale must contain at least one basket.
-
-### SALE-002 — Multiple Baskets per Sale
-
-A sale may contain multiple baskets.
-
-### SALE-003 — Confirmed Sale Modification
-
-A confirmed sale may be modified.
-
-### SALE-004 — Cancelled Sale Preservation
-
-A cancelled sale must be preserved and not deleted.
-
-### SALE-005 — Inventory Delta After Confirmation
-
-Changes to a confirmed sale must adjust inventory according to the composition delta.
-
-### PAY-001 — Supported Payment Methods
-
-The supported payment methods are PIX and Card.
-
-### PAY-002 — Sale Confirmation Threshold
-
-A sale may be confirmed when at least 50% of its total value has been paid.
-
-### PAY-003 — Full Payment Before Delivery
-
-A sale must be fully paid before delivery.
-
-### INV-001 — Movement-Based Inventory
-
-Inventory changes are represented through inventory movements.
-
-### INV-002 — Historical Inventory Preservation
-
-Inventory corrections must preserve the original movement history.
-
-### INV-003 — Insufficient Stock May Be Selected
-
-A product with insufficient inventory may be selected for a basket or sale before confirmation, provided the shortage is clearly indicated.
-
-### INV-004 — Inventory Deduction on Confirmation
-
-A confirmed sale generates the required inventory deductions.
-
-### INV-005 — Inventory Delta for Confirmed Sale Changes
-
-Changes to a confirmed sale generate inventory adjustments based on the composition delta.
-
-### INV-006 — No Negative Physical Inventory
-
-The system must not create an inventory movement that causes the available physical inventory balance of a product to become negative. This invariant is absolute and applies strictly to concurrent inventory operations (`ADR-001`).
-
-### INV-007 — Confirmation Requires Available Inventory
-
-A sale cannot be confirmed while its required inventory cannot be fulfilled.
-
-### INV-008 — Inactive Products Cannot Receive Inventory Operations
-
-An inactive product cannot receive any inventory Entry or Adjustment. The product must be reactivated before modifying inventory. Reactivation does not alter inventory.
-
-### PROD-001 — Controlled Base Units and Mutability
-
-A product's `base_unit` is a controlled value and must be one of: `UN`, `KG`, `G`, `L`, `ML`. The `base_unit` may be edited only while the product has no inventory movements. Once a movement exists, `base_unit` is immutable.
-
-### PROD-002 — Product Name Non-Uniqueness
-
-Product names are not required to be unique in M1. Multiple products may have the same name.
-
-### SEARCH-001 — Product Search Semantics
-
-Product search is case-insensitive and matches substrings within the product name. Advanced search features (fuzzy search, ranking, full-text index) are out of scope.
+Fluxos detalhados devem ser introduzidos somente quando os requisitos de negócio correspondentes estiverem definidos.
 
 ---
 
-# 37. Open Business Decisions
+# 35. Datas Afetivas
 
-The following topics remain intentionally unresolved and should not be converted into assumptions by the implementation.
+A Casa Afeto pretende, futuramente, manter datas relevantes associadas a clientes ou destinatários.
 
-### Inventory Cost/Lot Selection
+Exemplos:
 
-The provisional strategy is to prefer the lot with the nearest expiration when consuming inventory.
+* aniversário;
+* aniversário de casamento;
+* outras datas importantes.
 
-The exact costing implementation will be defined when lot management is introduced.
+Uma funcionalidade futura poderá usar essas datas para apoiar o contato proativo com clientes e o envio de lembretes.
 
-### Purchase Management
-
-Detailed purchase workflows, supplier information, purchase documents, and related fields have not yet been defined.
-
-### Internal Production
-
-The production process for internally made products has not yet been defined.
-
-### Loss and Expiration Handling
-
-Detailed workflows for loss, damage, expiration, and internal consumption have not yet been defined.
+Essa funcionalidade está fora do escopo inicial da Fase 1.
 
 ---
 
-# 38. Future Business Opportunities
+# 36. Regras de Negócio Estabelecidas
 
-The following capabilities may be considered after the core operational system is stable:
+As regras a seguir foram estabelecidas explicitamente.
 
-* purchase management;
-* inventory lots;
-* expiration tracking;
-* FEFO-based inventory consumption;
-* expiration warnings;
-* replenishment management;
-* affective dates;
-* customer reminders;
-* communication integrations;
-* internal production;
-* recipes;
-* advanced pricing;
-* customer relationship management;
-* operational dashboards;
-* advanced reporting.
+### BASKET-001 — Criação de Cesta
 
-These opportunities must not be implemented merely because they appear in this document.
+Uma cesta pode ser criada a partir de um template ou sem um template.
 
-Each future capability requires its own business decision and implementation scope.
+### BASKET-002 — Quantidades Múltiplas de Produtos
+
+Uma cesta pode conter várias unidades do mesmo produto.
+
+### BASKET-003 — Independência entre Cesta e Template
+
+Alterar um Template de Cesta não deve modificar cestas existentes criadas a partir desse template.
+
+### BASKET-004 — Personalização de Cesta
+
+Uma cesta concreta pode ser personalizada após sua criação.
+
+### SALE-001 — Venda Exige Cesta
+
+Uma venda deve conter pelo menos uma cesta.
+
+### SALE-002 — Várias Cestas por Venda
+
+Uma venda pode conter várias cestas.
+
+### SALE-003 — Modificação de Venda Confirmada
+
+Uma venda confirmada pode ser modificada.
+
+### SALE-004 — Preservação de Venda Cancelada
+
+Uma venda cancelada deve ser preservada, não excluída.
+
+### SALE-005 — Diferença de Estoque Após Confirmação
+
+Alterações em uma venda confirmada devem ajustar o estoque de acordo com a diferença de composição.
+
+### PAY-001 — Métodos de Pagamento Suportados
+
+Os métodos de pagamento suportados são PIX e Cartão.
+
+### PAY-002 — Limite para Confirmação da Venda
+
+Uma venda pode ser confirmada quando pelo menos 50% de seu valor total tiver sido pago.
+
+### PAY-003 — Pagamento Integral Antes da Entrega
+
+Uma venda deve estar integralmente paga antes da entrega.
+
+### INV-001 — Estoque Baseado em Movimentações
+
+As alterações de estoque são representadas por meio de movimentações de estoque.
+
+### INV-002 — Preservação do Histórico de Estoque
+
+Correções de estoque devem preservar o histórico original de movimentações.
+
+### INV-003 — Seleção Permitida com Estoque Insuficiente
+
+Um produto com estoque insuficiente pode ser selecionado para uma cesta ou venda antes da confirmação, desde que a falta seja claramente indicada.
+
+### INV-004 — Dedução de Estoque na Confirmação
+
+Uma venda confirmada gera as deduções de estoque necessárias.
+
+### INV-005 — Diferença de Estoque em Alterações de Venda Confirmada
+
+Alterações em uma venda confirmada geram ajustes de estoque com base na diferença de composição.
+
+### INV-006 — Proibição de Estoque Físico Negativo
+
+O sistema não deve criar uma movimentação de estoque que faça o saldo de estoque físico disponível de um produto se tornar negativo. Esse invariante é absoluto e se aplica estritamente a operações de estoque concorrentes (`ADR-001`).
+
+### INV-007 — Confirmação Exige Estoque Disponível
+
+Uma venda não pode ser confirmada enquanto não for possível atender ao estoque necessário.
+
+### INV-008 — Produtos Inativos Não Podem Receber Operações de Estoque
+
+Um produto inativo não pode receber nenhuma Entrada ou Ajuste de estoque. O produto deve ser reativado antes de modificar o estoque. A reativação não altera o estoque.
+
+### PROD-001 — Unidades Base Controladas e Mutabilidade
+
+A `base_unit` de um produto é um valor controlado e deve ser um destes: `UN`, `KG`, `G`, `L`, `ML`. A `base_unit` só pode ser editada enquanto o produto não tiver movimentações de estoque. Depois que houver uma movimentação, a `base_unit` será imutável.
+
+### PROD-002 — Nome do Produto Não Exclusivo
+
+Os nomes dos produtos não precisam ser exclusivos em M1. Vários produtos podem ter o mesmo nome.
+
+### SEARCH-001 — Semântica da Busca de Produtos
+
+A busca de produtos não diferencia maiúsculas de minúsculas e corresponde a substrings do nome do produto. Funcionalidades avançadas de busca (busca aproximada, classificação, índice de texto completo) estão fora do escopo.
 
 ---
 
-# 39. Change Policy
+# 37. Decisões de Negócio em Aberto
 
-This document represents the current business understanding.
+Os tópicos a seguir permanecem intencionalmente sem resolução e não devem ser transformados em suposições pela implementação.
 
-Business rules may change as Casa Afeto uses the system and discovers new requirements.
+### Custo do Estoque/Seleção de Lotes
 
-When a business rule changes:
+A estratégia provisória é preferir o lote com vencimento mais próximo ao consumir estoque.
 
-1. The change must be explicitly identified.
-2. This document must be updated.
-3. Affected milestone specifications must be reviewed.
-4. Existing implementation must be evaluated for impact.
-5. Tests must be updated where necessary.
-6. Historical data must be considered before destructive changes are introduced.
+A implementação exata do cálculo de custos será definida quando a gestão de lotes for introduzida.
 
-The agent must not silently change business behavior based on assumptions.
+### Gestão de Compras
+
+Fluxos detalhados de compra, informações de fornecedores, documentos de compra e campos relacionados ainda não foram definidos.
+
+### Produção Interna
+
+O processo de produção para produtos feitos internamente ainda não foi definido.
+
+### Tratamento de Perdas e Vencimentos
+
+Fluxos detalhados para perdas, danos, vencimentos e consumo interno ainda não foram definidos.
 
 ---
 
-# 40. Guiding Business Principle
+# 38. Oportunidades de Negócio Futuras
 
-The system exists to support the real operation of Casa Afeto.
+As capacidades a seguir poderão ser consideradas após a estabilização do sistema operacional central:
 
-Therefore:
+* gestão de compras;
+* lotes de estoque;
+* acompanhamento de vencimentos;
+* consumo de estoque baseado em FEFO;
+* alertas de vencimento;
+* gestão de reposição;
+* datas afetivas;
+* lembretes para clientes;
+* integrações de comunicação;
+* produção interna;
+* receitas;
+* precificação avançada;
+* gestão do relacionamento com clientes;
+* painéis operacionais;
+* relatórios avançados.
 
-> **Business behavior must be explicit, historical information must be preserved, and the system should remain simple enough to evolve as the business learns.**
+Essas oportunidades não devem ser implementadas apenas por constarem neste documento.
 
-The system should model what Casa Afeto has decided to do today without prematurely implementing everything Casa Afeto may want to do in the future.
+Cada capacidade futura exige sua própria decisão de negócio e escopo de implementação.
+
+---
+
+# 39. Política de Mudanças
+
+Este documento representa o entendimento atual do negócio.
+
+As regras de negócio podem mudar conforme a Casa Afeto usa o sistema e descobre novos requisitos.
+
+Quando uma regra de negócio mudar:
+
+1. A mudança deve ser identificada explicitamente.
+2. Este documento deve ser atualizado.
+3. As especificações dos marcos afetados devem ser revisadas.
+4. A implementação existente deve ser avaliada quanto ao impacto.
+5. Os testes devem ser atualizados quando necessário.
+6. Os dados históricos devem ser considerados antes de introduzir mudanças destrutivas.
+
+O agente não deve alterar silenciosamente o comportamento de negócio com base em suposições.
+
+---
+
+# 40. Princípio Orientador de Negócio
+
+O sistema existe para apoiar a operação real da Casa Afeto.
+
+Portanto:
+
+> **O comportamento de negócio deve ser explícito, as informações históricas devem ser preservadas e o sistema deve permanecer simples o bastante para evoluir conforme o negócio aprende.**
+
+O sistema deve modelar o que a Casa Afeto decidiu fazer hoje sem implementar prematuramente tudo o que a Casa Afeto talvez queira fazer no futuro.

@@ -1,138 +1,138 @@
-# M1 — Products & Inventory Specification
+# M1 — Especificação de Produtos e Estoque
 
-**Document version:** 0.1
-**Status:** Ready for implementation
-**Milestone:** M1 — Products & Inventory
-**Phase:** 1 — Core Operations
-
----
-
-# 1. Purpose
-
-M1 establishes the basic Product and Inventory capabilities required by the Casa Afeto system.
-
-The milestone must allow Casa Afeto to:
-
-* register products;
-* manage product availability;
-* maintain physical inventory;
-* record inventory entries;
-* record inventory adjustments;
-* view current inventory balances;
-* view inventory movement history;
-* identify insufficient inventory.
-
-M1 is the foundation for the Basket, Sale, and Payment milestones.
+**Versão do documento:** 0.1
+**Status:** Pronto para implementação
+**Marco:** M1 — Produtos e Estoque (Products & Inventory)
+**Fase:** 1 — Operações Centrais (Core Operations)
 
 ---
 
-# 2. Scope
+# 1. Finalidade
 
-## 2.1 In Scope
+M1 estabelece as capacidades básicas de Produto e Estoque exigidas pelo sistema da Casa Afeto.
 
-M1 includes:
+O marco deve permitir que a Casa Afeto:
 
-### Product
+* cadastre produtos;
+* gerencie a disponibilidade de produtos;
+* mantenha o estoque físico;
+* registre entradas de estoque;
+* registre ajustes de estoque;
+* visualize saldos atuais de estoque;
+* visualize o histórico de movimentações de estoque;
+* identifique estoque insuficiente.
 
-* create product;
-* edit product;
-* activate product;
-* deactivate product;
-* list products;
-* search products;
-* identify product inventory unit.
-
-### Inventory
-
-* record positive inventory entries;
-* record inventory adjustments;
-* calculate current inventory balance;
-* display inventory availability;
-* display inventory movement history;
-* prevent negative physical inventory.
+M1 é a base para os marcos de Cestas, Vendas e Pagamentos.
 
 ---
 
-# 3. Explicitly Out of Scope
+# 2. Escopo
 
-The following must not be implemented as part of M1:
+## 2.1 Dentro do escopo
 
-* Purchase entity/workflow;
-* PurchaseItem entity/workflow;
-* Supplier management;
+M1 inclui:
+
+### Produto
+
+* criar produto;
+* editar produto;
+* ativar produto;
+* desativar produto;
+* listar produtos;
+* buscar produtos;
+* identificar a unidade de estoque do produto.
+
+### Estoque
+
+* registrar entradas positivas de estoque;
+* registrar ajustes de estoque;
+* calcular o saldo atual de estoque;
+* exibir a disponibilidade de estoque;
+* exibir o histórico de movimentações de estoque;
+* impedir estoque físico negativo.
+
+---
+
+# 3. Explicitamente fora do escopo
+
+O seguinte não deve ser implementado como parte de M1:
+
+* entidade/fluxo de Compra;
+* entidade/fluxo de PurchaseItem;
+* gestão de fornecedores;
 * InventoryLot;
-* expiration dates;
+* datas de vencimento;
 * FEFO;
-* automatic stock consumption;
-* sale-related inventory deduction;
-* basket-related inventory deduction;
-* reserved inventory;
-* replenishment requests;
-* expiration alerts;
-* loss management workflow;
-* production;
-* recipes;
-* internal production;
-* payment management;
-* sales;
-* baskets;
-* customers;
-* notifications;
-* dashboards;
-* advanced inventory analytics.
+* consumo automático de estoque;
+* dedução de estoque relacionada a vendas;
+* dedução de estoque relacionada a cestas;
+* estoque reservado;
+* solicitações de reposição;
+* alertas de vencimento;
+* fluxo de gestão de perdas;
+* produção;
+* receitas;
+* produção interna;
+* gestão de pagamentos;
+* vendas;
+* cestas;
+* clientes;
+* notificações;
+* painéis;
+* análises avançadas de estoque.
 
-If implementation appears to require one of these capabilities, the agent must stop and determine whether the requirement is genuinely necessary for M1.
+Se a implementação parecer exigir uma dessas capacidades, o agente deve parar e determinar se o requisito é genuinamente necessário para M1.
 
-It must not silently expand the scope.
+Não deve expandir o escopo silenciosamente.
 
 ---
 
-# 4. Dependencies
+# 4. Dependências
 
-M1 depends on:
+M1 depende de:
 
 * `docs/product/vision.md`
 * `docs/product/roadmap.md`
 * `docs/domain/business-contract.md`
 * `AGENTS.md`
 
-No other milestone is required.
+Nenhum outro marco é necessário.
 
 ---
 
-# 5. Domain Concepts
+# 5. Conceitos de domínio
 
-M1 introduces two primary concepts:
+M1 introduz dois conceitos principais:
 
 ```text
-Product
-Inventory
+Produto
+Estoque
 ```
 
-Inventory is represented through movements rather than through an operation that simply overwrites a stock quantity.
+O estoque é representado por meio de movimentações em vez de uma operação que apenas sobrescreve uma quantidade em estoque.
 
-Conceptually:
+Conceitualmente:
 
 ```text
-Product
+Produto
    │
-   └── Inventory Movements
+   └── Movimentações de Estoque
              │
-             ├── Entry
-             └── Adjustment
+             ├── Entrada
+             └── Ajuste
 ```
 
-The current balance represents the resulting physical quantity.
+O saldo atual representa a quantidade física resultante.
 
 ---
 
-# 6. Product
+# 6. Produto
 
-## 6.1 Product Definition
+## 6.1 Definição de produto
 
-A Product represents an item that can be used by Casa Afeto in its operational processes.
+Um Produto representa um item que pode ser usado pela Casa Afeto em seus processos operacionais.
 
-Examples:
+Exemplos:
 
 * Chocolate
 * Juice
@@ -143,231 +143,231 @@ Examples:
 * Cake
 * Packaging
 
-M1 does not distinguish between purchased products and internally produced products.
+M1 não distingue entre produtos comprados e produtos produzidos internamente.
 
-That distinction belongs to future functionality.
-
----
-
-# 7. Product Data Requirements
-
-A product must contain, at minimum:
-
-| Field       | Required | Description                                                           |
-| ----------- | -------: | --------------------------------------------------------------------- |
-| `id`        |      Yes | Unique product identifier                                             |
-| `name`      |      Yes | Product name                                                          |
-| `base_unit` |      Yes | Controlled unit used for inventory (`UN`, `KG`, `G`, `L`, `ML`)       |
-| `active`    |      Yes | Whether the product is available for new operations (initially true)  |
-
-The implementation may contain technical metadata such as:
-
-* creation timestamp;
-* update timestamp.
-
-Such fields are implementation details and do not change the business model.
+Essa distinção pertence a funcionalidade futura.
 
 ---
 
-# 8. Product Name
+# 7. Requisitos de dados do produto
 
-Product name is required.
+Um produto deve conter, no mínimo:
 
-The system should reject a product without a meaningful name.
+| Campo       | Obrigatório | Descrição                                                           |
+| ----------- | ----------: | ------------------------------------------------------------------- |
+| `id`        |         Sim | Identificador único do produto                                      |
+| `name`      |         Sim | Nome do produto                                                     |
+| `base_unit` |         Sim | Unidade controlada usada no estoque (`UN`, `KG`, `G`, `L`, `ML`)     |
+| `active`    |         Sim | Se o produto está disponível para novas operações (inicialmente true) |
 
-Product names are **not required to be unique** in M1 (`PROD-002`). Two distinct products may have the same name. No UNIQUE database constraint is placed on product name.
+A implementação pode conter metadados técnicos, como:
 
-The exact validation rules for whitespace, maximum length, and allowed characters should follow the project's existing technical conventions.
+* data de criação;
+* data de atualização.
 
----
-
-# 9. Base Inventory Unit
-
-Every product must have a base inventory unit (`base_unit`).
-
-### 9.1 Controlled Unit Values
-
-`base_unit` is a controlled value (`PROD-001`). M1 supports exactly:
-
-* `UN` — unit
-* `KG` — kilogram
-* `G` — gram
-* `L` — liter
-* `ML` — milliliter
-
-Any other unit value must be rejected. M1 does not implement generic unit conversion or a configurable unit catalog. All inventory quantities in M1 are expressed in the product's `base_unit`.
-
-### 9.2 Base Unit Mutability
-
-A product's `base_unit` may be changed only while the product has **no inventory movements**.
-
-Once the product has at least one inventory movement, its `base_unit` becomes immutable to preserve the semantic meaning of historical inventory movements.
+Esses campos são detalhes de implementação e não alteram o modelo de negócio.
 
 ---
 
-# 10. Product Activation
+# 8. Nome do produto
 
-Products may be active or inactive.
+O nome do produto é obrigatório.
 
-## Active
+O sistema deve rejeitar um produto sem um nome significativo.
 
-An active product is available for operational activities and inventory operations. When created, a product is active by default.
+Nomes de produtos não são obrigatoriamente únicos em M1 (`PROD-002`). Dois produtos distintos podem ter o mesmo nome. Nenhuma restrição UNIQUE do banco de dados é aplicada ao nome do produto.
 
-## Inactive
-
-An inactive product cannot be selected for new operational operations.
-
-Furthermore, an inactive product **cannot receive any inventory Entry or Adjustment** (`INV-008`). If an operator needs to modify inventory for an inactive product, the product must first be reactivated. Reactivation does not modify inventory.
-
-Deactivation must not:
-
-* delete the product;
-* delete inventory;
-* delete inventory movements;
-* alter historical information.
-
-Existing historical references to an inactive product must remain valid.
+As regras exatas de validação para espaços em branco, tamanho máximo e caracteres permitidos devem seguir as convenções técnicas existentes do projeto.
 
 ---
 
-# 11. Product Editing
+# 9. Unidade base do estoque
 
-The user may edit product information.
+Todo produto deve ter uma unidade base de estoque (`base_unit`).
 
-Editing a product must not rewrite historical inventory movements. For example, changing a product's name must not modify historical movement records; they continue to refer to the same product.
+### 9.1 Valores controlados da unidade
 
-### Base Unit Editing Rule
+`base_unit` é um valor controlado (`PROD-001`). M1 suporta exatamente:
 
-The `base_unit` of a product may only be updated while the product has **no inventory movements**. Once any inventory movement has been recorded for the product, editing the `base_unit` must be rejected.
+* `UN` — unidade
+* `KG` — quilograma
+* `G` — grama
+* `L` — litro
+* `ML` — mililitro
 
----
+Qualquer outro valor de unidade deve ser rejeitado. M1 não implementa conversão genérica de unidades nem um catálogo configurável de unidades. Todas as quantidades em M1 são expressas na `base_unit` do produto.
 
-# 12. Product Listing
+### 9.2 Mutabilidade da unidade base
 
-The system must provide a product listing.
+A `base_unit` de um produto só pode ser alterada enquanto o produto não possui movimentações de estoque.
 
-The listing must allow the user to identify at least:
-
-* product name;
-* base inventory unit;
-* active/inactive state;
-* current inventory balance.
-
-The exact UI representation is an implementation concern.
+Uma vez que o produto tenha pelo menos uma movimentação de estoque, sua `base_unit` torna-se imutável para preservar o significado semântico das movimentações históricas.
 
 ---
 
-# 13. Product Search
+# 10. Ativação do produto
 
-The system must allow products to be searched by name (`SEARCH-001`).
+Produtos podem estar ativos ou inativos.
 
-Search behavior:
-* Case-insensitive matching;
-* Substring matching on product name.
+## Ativo
 
-Examples: `choc`, `Choc`, `CHOC`, and `ChoC` all match `Chocolate`.
+Um produto ativo está disponível para atividades operacionais e operações de estoque. Quando criado, um produto fica ativo por padrão.
 
-M1 does not require and must not implement:
-* fuzzy search;
-* full-text search infrastructure;
-* relevance ranking;
-* advanced filters;
-* search indexing infrastructure.
+## Inativo
+
+Um produto inativo não pode ser selecionado para novas operações operacionais.
+
+Além disso, um produto inativo **não pode receber nenhuma Entrada ou Ajuste de Estoque** (`INV-008`). Se um operador precisar modificar o estoque de um produto inativo, o produto deve ser reativado primeiro. A reativação não modifica o estoque.
+
+A desativação não deve:
+
+* excluir o produto;
+* excluir o estoque;
+* excluir movimentações de estoque;
+* alterar informações históricas.
+
+Referências históricas existentes a um produto inativo devem permanecer válidas.
 
 ---
 
-# 14. Inventory Model
+# 11. Edição do produto
 
-Inventory is represented as a sequence of movements.
+O usuário pode editar as informações do produto.
 
-Conceptually:
+A edição de um produto não deve reescrever movimentações históricas de estoque. Por exemplo, alterar o nome de um produto não deve modificar os registros históricos de movimentação; eles continuam referenciando o mesmo produto.
+
+### Regra de edição da unidade base
+
+A `base_unit` de um produto só pode ser atualizada enquanto o produto não possui **movimentações de estoque**. Depois que qualquer movimentação de estoque tiver sido registrada para o produto, a edição da `base_unit` deve ser rejeitada.
+
+---
+
+# 12. Listagem de produtos
+
+O sistema deve fornecer uma listagem de produtos.
+
+A listagem deve permitir ao usuário identificar pelo menos:
+
+* nome do produto;
+* unidade base de estoque;
+* estado ativo/inativo;
+* saldo atual de estoque.
+
+A representação exata na interface é um detalhe de implementação.
+
+---
+
+# 13. Busca de produtos
+
+O sistema deve permitir que os produtos sejam pesquisados por nome (`SEARCH-001`).
+
+Comportamento da busca:
+* correspondência sem diferenciar maiúsculas e minúsculas;
+* correspondência por substring no nome do produto.
+
+Exemplos: `choc`, `Choc`, `CHOC` e `ChoC` correspondem a `Chocolate`.
+
+M1 não exige e não deve implementar:
+* busca difusa;
+* infraestrutura de busca em texto completo;
+* ranqueamento de relevância;
+* filtros avançados;
+* infraestrutura de indexação de busca.
+
+---
+
+# 14. Modelo de estoque
+
+O estoque é representado como uma sequência de movimentações.
+
+Conceitualmente:
 
 ```text
-Initial state
+Estado inicial
     ↓
-Movement +20
+Movimento +20
     ↓
-Balance = 20
+Saldo = 20
     ↓
-Movement -3
+Movimento -3
     ↓
-Balance = 17
+Saldo = 17
 ```
 
-The system must preserve each movement.
+O sistema deve preservar cada movimentação.
 
-The current balance must not require rewriting historical movements.
+O saldo atual não deve exigir reescrita do histórico.
 
 ---
 
-# 15. Inventory Movement
+# 15. Movimentação de estoque
 
-An inventory movement represents a change in physical product quantity.
+Uma movimentação de estoque representa uma mudança na quantidade física do produto.
 
-M1 requires the following movement categories:
+M1 exige as seguintes categorias de movimentação:
 
-### Entry
+### Entrada
 
-Adds physical quantity (`ENTRY`).
+Adiciona quantidade física (`ENTRY`).
 
-Rules (`BD-03`):
-* Quantity MUST be greater than zero (> 0);
-* Quantity MUST NOT be zero or negative;
-* `UN` accepts positive integer quantities only (decimals rejected);
-* `KG`, `G`, `L`, and `ML` accept positive decimal quantities.
+Regras (`BD-03`):
+* A quantidade DEVE ser maior que zero (> 0);
+* A quantidade NÃO DEVE ser zero nem negativa;
+* `UN` aceita apenas quantidades inteiras positivas (decimais rejeitados);
+* `KG`, `G`, `L` e `ML` aceitam quantidades decimais positivas.
 
-Example:
+Exemplo:
 ```text
 +20 Chocolate (UN)
 +0.5 Leite (L)
 ```
 
-### Adjustment
+### Ajuste
 
-Corrects recorded physical quantity (`ADJUSTMENT`).
+Corrige a quantidade física registrada (`ADJUSTMENT`).
 
-An adjustment may be positive or negative.
+Um ajuste pode ser positivo ou negativo.
 
-Rules (`BD-04`):
-* Quantity MUST NOT be zero (0 rejected);
-* Positive values increase inventory, negative values decrease inventory;
-* `UN` accepts integer quantities only (decimals rejected);
-* `KG`, `G`, `L`, and `ML` accept decimal quantities;
-* A negative adjustment must never cause the resulting physical balance to become negative.
+Regras (`BD-04`):
+* A quantidade NÃO DEVE ser zero (0 rejeitado);
+* Valores positivos aumentam o estoque; valores negativos diminuem o estoque;
+* `UN` aceita apenas quantidades inteiras (decimais rejeitados);
+* `KG`, `G`, `L` e `ML` aceitam quantidades decimais;
+* Um ajuste negativo nunca deve fazer com que o saldo físico resultante fique negativo.
 
-Example:
+Exemplo:
 ```text
 +3 Chocolate (UN)
 -2 Chocolate (UN)
 -0.25 Farinha (KG)
 ```
 
-M1 does not implement sale, purchase, expiration, loss, or production movement types.
+M1 não implementa tipos de movimentação para venda, compra, vencimento, perdas ou produção.
 
 ---
 
-# 16. Inventory Movement Data
+# 16. Dados da movimentação de estoque
 
-A movement must contain, at minimum:
+Uma movimentação deve conter, no mínimo:
 
-| Field        | Required | Description                 |
-| ------------ | -------: | --------------------------- |
-| `id`         |      Yes | Unique movement identifier  |
-| `product_id` |      Yes | Product affected            |
-| `quantity`   |      Yes | Quantity change (signed)    |
-| `type`       |      Yes | Movement category (`ENTRY` / `ADJUSTMENT`) |
-| `created_at` |      Yes | Movement creation timestamp |
+| Campo        | Obrigatório | Descrição                            |
+| ------------ | ----------: | ------------------------------------ |
+| `id`         |         Sim | Identificador único da movimentação  |
+| `product_id` |         Sim | Produto afetado                     |
+| `quantity`   |         Sim | Mudança de quantidade (com sinal)   |
+| `type`       |         Sim | Categoria da movimentação (`ENTRY` / `ADJUSTMENT`) |
+| `created_at` |         Sim | Data de criação da movimentação      |
 
-The movement quantity must preserve its sign or otherwise unambiguously represent the direction of the movement.
+A quantidade da movimentação deve preservar seu sinal ou de outra forma representar de forma inequívoca a direção da movimentação.
 
 ```text
 ENTRY       +20
 ADJUSTMENT   -3
 ```
 
-### Explicitly Excluded Fields (Out of Scope for M1)
+### Campos explicitamente excluídos (fora do escopo de M1)
 
-The M1 data model for `InventoryMovement` strictly excludes speculative fields:
+O modelo de dados M1 para `InventoryMovement` exclui estritamente campos especulativos:
 * `reason`
 * `notes`
 * `reference`
@@ -375,50 +375,50 @@ The M1 data model for `InventoryMovement` strictly excludes speculative fields:
 * `sale_id`
 * `lot_id`
 
-These belong to future milestones and must not be added to M1 models.
+Esses pertencem a marcos futuros e não devem ser adicionados aos modelos de M1.
 
 ---
 
-# 17. Movement Immutability
+# 17. Imutabilidade da movimentação
 
-Once an inventory movement has been recorded, it must not be silently rewritten to change inventory history.
+Uma vez que uma movimentação de estoque tenha sido registrada, ela não deve ser reescrita silenciosamente para alterar o histórico de estoque.
 
-Historical inventory is important.
+O histórico de estoque é importante.
 
-If an incorrect movement was recorded, the correction must be represented by another movement.
+Se uma movimentação incorreta foi registrada, a correção deve ser representada por outra movimentação.
 
-Example:
+Exemplo:
 
 ```text
 Original:
 
 +20
 
-Correction:
+Correção:
 
 -3
 
-Current balance:
+Saldo atual:
 
 17
 ```
 
-The original `+20` movement remains part of the history.
+A movimentação original `+20` permanece parte do histórico.
 
 ---
 
-# 18. Inventory Balance
+# 18. Saldo de estoque
 
-The inventory balance for a product is the resulting quantity from its inventory movements.
+O saldo de estoque de um produto é a quantidade resultante de suas movimentações de estoque.
 
-Conceptually:
+Conceitualmente:
 
 ```text
-Balance =
-sum(all applicable inventory movements)
+Saldo =
+somatório(todas as movimentações de estoque aplicáveis)
 ```
 
-Example:
+Exemplo:
 
 ```text
 +20
@@ -426,477 +426,477 @@ Example:
 +5
 -2
 
-Balance = 20
+Saldo = 20
 ```
 
-The implementation may maintain a materialized/current balance for performance if necessary, but such an optimization must not replace the movement history as the source of truth.
+A implementação pode manter um saldo materializado/atual para desempenho, se necessário, mas essa otimização não pode substituir o histórico de movimentações como fonte de verdade.
 
-For M1, the simplest correct implementation should be preferred.
+Para M1, a implementação correta mais simples deve ser preferida.
 
 ---
 
-# 19. Negative Inventory Policy
+# 19. Política de estoque negativo
 
-Physical inventory must never become negative (`INV-006`).
+O estoque físico nunca deve ficar negativo (`INV-006`).
 
-This invariant is absolute. Before creating a negative inventory movement, the system must verify that the resulting balance remains greater than or equal to zero.
+Esse invariante é absoluto. Antes de criar uma movimentação de estoque negativa, o sistema deve verificar que o saldo resultante permaneça maior ou igual a zero.
 
-Furthermore, this invariant **must hold under concurrent operations** (`BD-05`, `ADR-001`). Race conditions where concurrent adjustments or entries evaluate against stale balance state and produce a negative balance must be prevented through database transaction isolation and row-level locking (`SELECT FOR UPDATE` or equivalent).
+Além disso, esse invariante **deve valer sob operações concorrentes** (`BD-05`, `ADR-001`). Condições de corrida em que ajustes ou entradas concorrentes avaliam um saldo antigo e produzem um saldo negativo devem ser evitadas por meio de isolamento de transação no banco e bloqueio por linha (`SELECT FOR UPDATE` ou equivalente).
 
-Example:
-
-```text
-Current balance = 5
-
-Adjustment = -3
-
-Result = 2
-
-Allowed
-```
-
-But:
+Exemplo:
 
 ```text
-Current balance = 2
+Saldo atual = 5
 
-Adjustment = -3
+Ajuste = -3
 
-Result = -1
+Resultado = 2
 
-Rejected
+Permitido
 ```
 
-The rejected operation must not create a movement.
+Mas:
+
+```text
+Saldo atual = 2
+
+Ajuste = -3
+
+Resultado = -1
+
+Rejeitado
+```
+
+A operação rejeitada não deve criar uma movimentação.
 
 ---
 
-# 20. Insufficient Inventory
+# 20. Estoque insuficiente
 
-M1 must expose whether a product has insufficient inventory for a requested quantity.
+M1 deve expor se um produto possui estoque insuficiente para uma quantidade solicitada.
 
-Example:
+Exemplo:
 
 ```text
-Available: 2
-Required:  5
+Disponível: 2
+Solicitado:  5
 
-Shortage: 3
+Falta: 3
 ```
 
-The system must be able to represent this state without modifying inventory.
+O sistema deve ser capaz de representar esse estado sem modificar o estoque.
 
-This is important because future basket and sale functionality may need to register a requirement before inventory is available.
+Isso é importante porque funcionalidade futura de cestas e vendas pode precisar registrar uma demanda antes que o estoque fique disponível.
 
-M1 must therefore not treat "insufficient inventory" as equivalent to "invalid product."
+M1, portanto, não deve tratar "estoque insuficiente" como equivalente a "produto inválido".
 
 ---
 
-# 21. Inventory Entry
+# 21. Entrada de estoque
 
-M1 must provide a way to manually add physical inventory.
+M1 deve fornecer uma forma de adicionar estoque físico manualmente.
 
-Example:
-
-```text
-Product: Chocolate
-Quantity: 20
-```
-
-Result:
+Exemplo:
 
 ```text
-Inventory balance: 20
+Produto: Chocolate
+Quantidade: 20
 ```
 
-The operation creates an inventory movement.
+Resultado:
 
-The system must not simply overwrite the previous balance.
+```text
+Saldo de estoque: 20
+```
+
+A operação cria uma movimentação de estoque.
+
+O sistema não deve apenas sobrescrever o saldo anterior.
 
 ---
 
-# 22. Inventory Adjustment
+# 22. Ajuste de estoque
 
-M1 must provide a way to correct physical inventory.
+M1 deve fornecer uma forma de corrigir o estoque físico.
 
-Example:
+Exemplo:
 
 ```text
-Recorded:
+Registrado:
 20
 
-Physical:
+Físico:
 17
 
-Adjustment:
+Ajuste:
 -3
 
-New balance:
+Novo saldo:
 17
 ```
 
-Positive adjustments are also allowed:
+Ajustes positivos também são permitidos:
 
 ```text
-Recorded:
+Registrado:
 17
 
-Physical:
+Físico:
 19
 
-Adjustment:
+Ajuste:
 +2
 
-New balance:
+Novo saldo:
 19
 ```
 
-Adjustments must preserve movement history.
+Os ajustes devem preservar o histórico de movimentações.
 
 ---
 
-# 23. Inventory Movement History
+# 23. Histórico de movimentações de estoque
 
-The system must provide a way to inspect movements associated with a product.
+O sistema deve fornecer uma forma de inspecionar as movimentações associadas a um produto.
 
-At minimum, the history should allow the user to identify:
+No mínimo, o histórico deve permitir ao usuário identificar:
 
-* date/time;
-* movement type (`ENTRY` or `ADJUSTMENT`);
-* quantity change;
-* product.
+* data/hora;
+* tipo de movimentação (`ENTRY` ou `ADJUSTMENT`);
+* mudança de quantidade;
+* produto.
 
-Each movement preserves its historical quantity, type, and timestamp. A running or resulting balance per movement row is **not required** and not stored. The current balance is obtained through the inventory balance capability.
+Cada movimentação preserva sua quantidade histórica, tipo e timestamp. Um saldo em execução ou resultante por linha de movimentação **não é obrigatório** e não é armazenado. O saldo atual é obtido por meio da capacidade de saldo de estoque.
 
-The system should present movements in a clear chronological order.
+O sistema deve apresentar as movimentações em uma ordem cronológica clara.
 
-The exact presentation is an implementation decision.
+A apresentação exata é uma decisão de implementação.
 
 ---
 
-# 24. Inventory Transaction Integrity & Concurrency
+# 24. Integridade transacional e concorrência do estoque
 
-Inventory changes must be atomic from the business perspective.
+As mudanças de estoque devem ser atômicas do ponto de vista do negócio.
 
-For an inventory operation:
+Para uma operação de estoque:
 
 ```text
-Validate input
+Validar entrada
     ↓
-Lock product inventory state (SELECT FOR UPDATE)
+Bloquear o estado de estoque do produto (SELECT FOR UPDATE)
     ↓
-Calculate balance & validate resulting balance >= 0
+Calcular saldo e validar que o saldo resultante >= 0
     ↓
-Create immutable movement
+Criar movimentação imutável
     ↓
-Commit transaction
+Confirmar transação
 ```
 
-The system must not leave a partially completed inventory operation.
+O sistema não deve deixar uma operação de estoque parcialmente concluída.
 
-Concurrent inventory modifications targeting the same product must be serialized at the database transaction level (`ADR-001`) to guarantee that `INV-006` cannot be violated by race conditions.
+Modificações concorrentes de estoque para o mesmo produto devem ser serializadas no nível da transação do banco (`ADR-001`) para garantir que `INV-006` não possa ser violado por condições de corrida.
 
 ---
 
-# 25. Product Deactivation and Inventory
+# 25. Desativação do produto e estoque
 
-Deactivating a product does not remove or alter its inventory.
+Desativar um produto não remove nem altera seu estoque.
 
-Example:
+Exemplo:
 
 ```text
 Chocolate
-Inventory: 15
+Estoque: 15
 
-Deactivate product
+Desativar produto
 
 Chocolate
-Active: false
-Inventory: 15
+Ativo: false
+Estoque: 15
 ```
 
-The inventory history remains intact.
+O histórico de estoque permanece intacto.
 
-An inactive product **cannot receive any inventory Entry or Adjustment** (`INV-008`). If an operator needs to adjust or add inventory for an inactive product, the product must first be reactivated. Reactivation does not alter inventory.
+Um produto inativo **não pode receber nenhuma Entrada ou Ajuste de Estoque** (`INV-008`). Se um operador precisar ajustar ou adicionar estoque para um produto inativo, o produto deve ser reativado primeiro. A reativação não altera o estoque.
 
-M1 enforces that inactive products cannot be selected for new operations requiring active products.
-
----
-
-# 26. Business Rules Used by M1
-
-M1 must implement the following rules from the Business Contract:
-
-### INV-001 — Movement-Based Inventory
-
-Inventory changes are represented through inventory movements.
-
-### INV-002 — Historical Inventory Preservation
-
-Inventory corrections preserve the original movement history.
-
-### INV-006 — No Negative Physical Inventory
-
-The system must not create an inventory movement that causes the available physical inventory balance of a product to become negative. This invariant is absolute and applies strictly to concurrent operations (`ADR-001`).
-
-### INV-003 — Insufficient Stock May Be Selected
-
-A product with insufficient inventory may be selected for future basket/sale operations, provided the shortage is clearly indicated. M1 provides the inventory state and information required for later milestones to implement this behavior.
-
-### INV-008 — Inactive Products Cannot Receive Inventory Operations
-
-An inactive product cannot receive any inventory Entry or Adjustment.
-
-### PROD-001 — Controlled Base Units and Mutability
-
-A product's `base_unit` must be one of: `UN`, `KG`, `G`, `L`, `ML`. It is editable only while the product has no inventory movements; once a movement exists, `base_unit` is immutable.
-
-### PROD-002 — Product Name Non-Uniqueness
-
-Product names are not required to be unique in M1.
-
-### SEARCH-001 — Product Search Semantics
-
-Product search is case-insensitive and matches substrings within the product name.
+M1 exige que produtos inativos não possam ser selecionados para novas operações que exijam produtos ativos.
 
 ---
 
-# 27. Use Case Summary
+# 26. Regras de negócio usadas por M1
 
-M1 must support these primary use cases:
+M1 deve implementar as seguintes regras do Contrato de Negócio:
+
+### INV-001 — Estoque baseado em movimentações
+
+As mudanças de estoque são representadas por movimentações de estoque.
+
+### INV-002 — Preservação do histórico de estoque
+
+As correções de estoque preservam o histórico original das movimentações.
+
+### INV-006 — Sem estoque físico negativo
+
+O sistema não deve criar uma movimentação de estoque que faça com que o saldo físico disponível de um produto fique negativo. Esse invariante é absoluto e se aplica estritamente a operações concorrentes (`ADR-001`).
+
+### INV-003 — Estoque insuficiente pode ser selecionado
+
+Um produto com estoque insuficiente pode ser selecionado para operações futuras de cesta/venda, desde que a falta seja claramente indicada. M1 fornece o estado e as informações de estoque necessárias para que marcos posteriores implementem esse comportamento.
+
+### INV-008 — Produtos inativos não podem receber operações de estoque
+
+Um produto inativo não pode receber nenhuma Entrada ou Ajuste de Estoque.
+
+### PROD-001 — Unidades base controladas e mutabilidade
+
+A `base_unit` de um produto deve ser uma de: `UN`, `KG`, `G`, `L`, `ML`. Ela só pode ser editada enquanto o produto não possui movimentações de estoque; quando uma movimentação existe, `base_unit` se torna imutável.
+
+### PROD-002 — Não unicidade do nome do produto
+
+Nomes de produtos não são obrigatórios como únicos em M1.
+
+### SEARCH-001 — Semântica da busca de produtos
+
+A busca de produtos é sem distinção de maiúsculas e minúsculas e corresponde a substrings dentro do nome do produto.
+
+---
+
+# 27. Resumo de casos de uso
+
+M1 deve suportar estes casos de uso principais:
 
 ```text
-UC-M1-01 Create Product
-UC-M1-02 Edit Product
-UC-M1-03 Activate Product
-UC-M1-04 Deactivate Product
-UC-M1-05 List Products
-UC-M1-06 Search Products
-UC-M1-07 Add Inventory
-UC-M1-08 Adjust Inventory
-UC-M1-09 View Inventory Balance
-UC-M1-10 View Inventory History
-UC-M1-11 Check Inventory Availability
+UC-M1-01 Criar Produto
+UC-M1-02 Editar Produto
+UC-M1-03 Ativar Produto
+UC-M1-04 Desativar Produto
+UC-M1-05 Listar Produtos
+UC-M1-06 Buscar Produtos
+UC-M1-07 Adicionar Estoque
+UC-M1-08 Ajustar Estoque
+UC-M1-09 Visualizar Saldo de Estoque
+UC-M1-10 Visualizar Histórico de Estoque
+UC-M1-11 Verificar Disponibilidade de Estoque
 ```
 
-Detailed user flows belong in `use-cases.md`.
+Fluxos detalhados do usuário ficam em `use-cases.md`.
 
 ---
 
-# 28. Error Handling
+# 28. Tratamento de erros
 
-The system must provide clear feedback for invalid operations.
+O sistema deve fornecer retorno claro para operações inválidas.
 
-At minimum:
+No mínimo:
 
-### Product
+### Produto
 
-* missing required product name;
-* invalid base unit (not one of `UN`, `KG`, `G`, `L`, `ML`);
-* attempt to modify `base_unit` after inventory movements exist;
-* attempt to use an inactive product where an active product is required.
+* nome do produto ausente;
+* unidade base inválida (não está entre `UN`, `KG`, `G`, `L`, `ML`);
+* tentativa de modificar `base_unit` após a existência de movimentações de estoque;
+* tentativa de usar um produto inativo quando um produto ativo é exigido.
 
-### Inventory
+### Estoque
 
-* invalid Entry quantity (zero, negative, or non-integer for `UN`);
-* invalid Adjustment quantity (zero, or non-integer for `UN`);
-* inventory adjustment that would produce a negative balance (< 0);
-* inventory Entry or Adjustment attempted on an inactive product;
-* unknown product identifier;
-* invalid movement type.
+* quantidade de Entrada inválida (zero, negativa ou não inteira para `UN`);
+* quantidade de Ajuste inválida (zero ou não inteira para `UN`);
+* ajuste de estoque que resultaria em saldo negativo (< 0);
+* Entrada ou Ajuste de Estoque em produto inativo;
+* identificador de produto desconhecido;
+* tipo de movimentação inválido.
 
-Error messages should explain what prevented the operation.
+Mensagens de erro devem explicar o que impediu a operação.
 
-The implementation should not expose unnecessary technical details to the user.
-
----
-
-# 29. Data Integrity
-
-The implementation must preserve the following invariants:
-
-### Product invariant
-
-Every inventory movement references an existing product.
-
-### Quantity invariant
-
-Inventory quantities must use a consistent unit representation conforming to the product's `base_unit`.
-
-### Negative inventory invariant
-
-The resulting physical inventory balance must never be negative, including under concurrent operations.
-
-### Historical invariant
-
-Existing inventory movements must not be silently rewritten or deleted as part of an adjustment or correction.
-
-### Activation invariant
-
-Product deactivation does not remove historical information.
+A implementação não deve expor detalhes técnicos desnecessários ao usuário.
 
 ---
 
-# 30. Testing Requirements
+# 29. Integridade de dados
 
-M1 must include automated tests for the established business behavior.
+A implementação deve preservar os seguintes invariantes:
 
-At minimum, tests must cover:
+### Invariante do produto
 
-## Product
+Cada movimentação de estoque referencia um produto existente.
 
-* create product;
-* edit product;
-* activate product;
-* deactivate product;
-* list products;
-* search products.
+### Invariante de quantidade
 
-## Inventory
+As quantidades de estoque devem usar uma representação consistente de unidade, compatível com a `base_unit` do produto.
 
-* add inventory;
-* calculate balance;
-* create positive adjustment;
-* create negative adjustment;
-* preserve movement history;
-* reject negative resulting balance;
-* identify insufficient inventory;
-* maintain inventory after product deactivation.
+### Invariante de estoque negativo
 
-## Data integrity
+O saldo físico de estoque resultante nunca deve ser negativo, incluindo em operações concorrentes.
 
-* movement references a valid product;
-* invalid inventory operation does not create a movement;
-* rejected negative adjustment does not alter the balance.
+### Invariante histórica
 
-Tests should focus on business behavior rather than implementation details.
+Movimentações existentes de estoque não devem ser reescritas ou excluídas silenciosamente como parte de um ajuste ou correção.
+
+### Invariante de ativação
+
+A desativação do produto não remove informações históricas.
 
 ---
 
-# 31. Acceptance Boundary
+# 30. Requisitos de teste
 
-M1 is complete when the following scenario works:
+M1 deve incluir testes automatizados para o comportamento de negócio estabelecido.
+
+No mínimo, os testes devem cobrir:
+
+## Produto
+
+* criar produto;
+* editar produto;
+* ativar produto;
+* desativar produto;
+* listar produtos;
+* buscar produtos.
+
+## Estoque
+
+* adicionar estoque;
+* calcular saldo;
+* criar ajuste positivo;
+* criar ajuste negativo;
+* preservar histórico de movimentações;
+* rejeitar saldo resultante negativo;
+* identificar estoque insuficiente;
+* manter estoque após desativação do produto.
+
+## Integridade de dados
+
+* movimentação referencia um produto válido;
+* operação inválida de estoque não cria movimentação;
+* ajuste negativo rejeitado não altera o saldo.
+
+Os testes devem focar no comportamento de negócio em vez de detalhes de implementação.
+
+---
+
+# 31. Limite de aceitação
+
+M1 está concluído quando o seguinte cenário funcionar:
 
 ```text
-1. Create Chocolate
-2. Set base unit = UN
-3. Verify product is active
-4. Add 20 Chocolate units
-5. Verify balance = 20
-6. Add adjustment -3
-7. Verify balance = 17
-8. Verify both movements remain in history
-9. Attempt adjustment -18
-10. Operation is rejected
-11. Verify balance remains 17
-12. Verify no invalid movement was created
-13. Check availability for 20 units
-14. System reports insufficient inventory
-15. Deactivate Chocolate
-16. Verify historical inventory remains available
-17. Verify inactive Chocolate cannot be selected for new operations
+1. Criar Chocolate
+2. Definir base unit = UN
+3. Verificar que o produto está ativo
+4. Adicionar 20 unidades de Chocolate
+5. Verificar saldo = 20
+6. Adicionar ajuste -3
+7. Verificar saldo = 17
+8. Verificar que as duas movimentações permanecem no histórico
+9. Tentar ajuste -18
+10. Operação rejeitada
+11. Verificar que o saldo permanece 17
+12. Verificar que nenhuma movimentação inválida foi criada
+13. Verificar disponibilidade para 20 unidades
+14. Sistema informa estoque insuficiente
+15. Desativar Chocolate
+16. Verificar que o histórico de estoque continua disponível
+17. Verificar que Chocolate inativo não pode ser selecionado para novas operações
 ```
 
 ---
 
-# 32. Implementation Constraints
+# 32. Restrições de implementação
 
-The implementation must follow the project-level rules in `AGENTS.md`.
+A implementação deve seguir as regras de nível de projeto em `AGENTS.md`.
 
-In particular:
+Em particular:
 
-* do not introduce speculative architecture;
-* do not implement future milestones;
-* do not create generic abstractions without a current need;
-* do not introduce a repository/service/event architecture merely because it may be useful later;
-* do not implement Purchase or InventoryLot;
-* do not implement sale inventory deduction;
-* do not implement negative inventory;
-* do not invent additional business rules.
+* não introduzir arquitetura especulativa;
+* não implementar marcos futuros;
+* não criar abstrações genéricas sem necessidade atual;
+* não introduzir arquitetura de repositório/serviço/evento apenas porque pode ser útil depois;
+* não implementar Purchase ou InventoryLot;
+* não implementar dedução de estoque de venda;
+* não implementar estoque negativo;
+* não inventar regras de negócio adicionais.
 
-The simplest implementation that satisfies this specification is preferred.
+A implementação mais simples que satisfaça esta especificação é preferida.
 
 ---
 
-# 33. Architecture Decisions
+# 33. Decisões de Arquitetura
 
-M1 does not prescribe:
+M1 não prescreve:
 
-* programming language/framework structure;
-* exact database schema;
+* linguagem de programação/estrutura de framework;
+* esquema exato do banco de dados;
 * ORM;
-* API architecture;
-* frontend component structure;
-* repository pattern;
-* service layer;
-* dependency injection;
-* caching;
-* event systems.
+* arquitetura de API;
+* estrutura de componentes do frontend;
+* padrão de repositório;
+* camada de serviço;
+* injeção de dependências;
+* cache;
+* sistemas de eventos.
 
-These are implementation decisions.
+Essas são decisões de implementação.
 
-The agent should use the project's existing technical conventions where they exist.
+O agente deve usar as convenções técnicas existentes no projeto, quando houver.
 
-If a significant architectural decision becomes necessary, it must be presented explicitly and documented as an ADR when appropriate.
+Se uma decisão arquitetural significativa se tornar necessária, ela deve ser apresentada explicitamente e documentada como ADR quando apropriado.
 
 ---
 
-# 34. Implementation Sequence
+# 34. Sequência de Implementação
 
-The recommended implementation order is:
+A ordem de implementação recomendada é:
 
 ```text
-1. Product model
+1. Modelo do Produto
        ↓
-2. Product persistence
+2. Persistência do Produto
        ↓
-3. Product operations
+3. Operações de Produto
        ↓
-4. Product activation/deactivation
+4. Ativação/desativação do Produto
        ↓
-5. Inventory movement model
+5. Modelo de Movimentação de Estoque
        ↓
-6. Inventory balance
+6. Saldo de Estoque
        ↓
-7. Inventory entry
+7. Entrada de Estoque
        ↓
-8. Inventory adjustment
+8. Ajuste de Estoque
        ↓
-9. Negative inventory protection
+9. Proteção contra Estoque Negativo
        ↓
-10. Inventory history
+10. Histórico de Estoque
        ↓
-11. Availability check
+11. Verificação de Disponibilidade
        ↓
-12. Automated tests
+12. Testes Automatizados
        ↓
-13. Manual validation
+13. Validação Manual
 ```
 
-The agent may adjust this sequence if the existing project architecture makes another order simpler, but it must not expand the business scope.
+O agente pode ajustar essa sequência se a arquitetura existente do projeto tornar outra ordem mais simples, mas não deve ampliar o escopo de negócio.
 
 ---
 
-# 35. Completion Criteria
+# 35. Critérios de Conclusão
 
-M1 can be considered complete only when:
+M1 só pode ser considerado concluído quando:
 
-* all in-scope functionality is implemented;
-* all established M1 business rules are covered;
-* automated tests pass;
-* negative inventory is prevented;
-* historical inventory movements are preserved;
-* product activation/deactivation works;
-* inventory availability can be identified;
-* no M2+ functionality has been introduced;
-* manual validation has been completed;
-* the user has explicitly approved the milestone.
+* todas as funcionalidades dentro do escopo estiverem implementadas;
+* todas as regras de negócio estabelecidas para M1 estiverem cobertas;
+* os testes automatizados passarem;
+* estoque negativo for impedido;
+* movimentações históricas de estoque forem preservadas;
+* a ativação/desativação de produtos funcionar;
+* a disponibilidade do estoque puder ser identificada;
+* nenhuma funcionalidade de M2 ou posterior tiver sido introduzida;
+* a validação manual tiver sido concluída;
+* o usuário tiver aprovado explicitamente o marco.
 
 ---
 
-# 36. Next Documents
+# 36. Próximos Documentos
 
-Before implementation begins, M1 should have the following supporting documents:
+Antes do início da implementação, M1 deve ter os seguintes documentos de apoio:
 
 ```text
 docs/milestones/m1-products-inventory/
@@ -907,19 +907,19 @@ docs/milestones/m1-products-inventory/
 └── validation.md
 ```
 
-This document defines **what M1 must do**.
+Este documento define **o que M1 deve fazer**.
 
-The other documents define:
+Os outros documentos definem:
 
-* `use-cases.md` → how the user performs the operations;
-* `acceptance-criteria.md` → objective conditions that determine whether each behavior is correct;
-* `validation.md` → manual verification performed after implementation.
+* `use-cases.md` → como o usuário realiza as operações;
+* `acceptance-criteria.md` → condições objetivas que determinam se cada comportamento está correto;
+* `validation.md` → verificação manual realizada após a implementação.
 
 ---
 
-# 37. Traceability
+# 37. Rastreabilidade
 
-M1 follows the project documentation chain:
+M1 segue a cadeia de documentação do projeto:
 
 ```text
 business-contract.md
@@ -937,22 +937,22 @@ automated tests
 validation.md
 ```
 
-The implementation must not introduce business behavior that cannot be traced to an established requirement or an explicitly approved technical decision.
+A implementação não deve introduzir comportamento de negócio que não possa ser rastreado até um requisito estabelecido ou uma decisão técnica explicitamente aprovada.
 
 ---
 
-# 38. M1 Guiding Principle
+# 38. Princípio Orientador de M1
 
-M1 should provide a reliable and simple foundation for the rest of the system.
+M1 deve fornecer uma base confiável e simples para o restante do sistema.
 
-It should answer three basic questions:
+Ele deve responder a três perguntas básicas:
 
 ```text
-What products do we have?
+Quais produtos temos?
         ↓
-How much physical inventory do we have?
+Quanto estoque físico temos?
         ↓
-What happened to that inventory?
+O que aconteceu com esse estoque?
 ```
 
-Nothing beyond what is necessary to answer those questions belongs in M1.
+Nada além do necessário para responder a essas perguntas pertence a M1.

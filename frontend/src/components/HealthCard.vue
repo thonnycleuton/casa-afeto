@@ -17,46 +17,46 @@ const emit = defineEmits<{
   <div class="health-card">
     <div class="health-card-header">
       <div class="header-info">
-        <h3>Backend API Connection</h3>
-        <p class="subtitle">FastAPI REST service communication</p>
+        <h3>Conexão com a API do servidor</h3>
+        <p class="subtitle">Comunicação com o serviço REST do FastAPI</p>
       </div>
       <StatusBadge
         :status="loading ? 'loading' : error ? 'offline' : health ? 'online' : 'idle'"
-        :label="loading ? 'Checking...' : error ? 'Disconnected' : health ? 'Connected' : 'Unknown'"
+        :label="loading ? 'Verificando...' : error ? 'Desconectado' : health ? 'Conectado' : 'Desconhecido'"
       />
     </div>
 
     <div v-if="loading" class="card-state">
       <div class="spinner"></div>
-      <span>Verifying API communication...</span>
+      <span>Verificando a comunicação com a API...</span>
     </div>
 
     <div v-else-if="error" class="card-state error-state">
       <div class="error-icon">!</div>
       <div>
-        <p class="error-title">Cannot reach backend API</p>
+        <p class="error-title">Não foi possível acessar a API do servidor</p>
         <p class="error-detail">{{ error }}</p>
       </div>
     </div>
 
     <div v-else-if="health" class="health-details">
       <div class="detail-row">
-        <span class="detail-label">Status</span>
+        <span class="detail-label">Situação</span>
         <span class="detail-value status-ok">{{ health.status.toUpperCase() }}</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Project</span>
+        <span class="detail-label">Projeto</span>
         <span class="detail-value">{{ health.project_name }}</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Environment</span>
+        <span class="detail-label">Ambiente</span>
         <span class="detail-value badge-env">{{ health.environment }}</span>
       </div>
     </div>
 
     <div class="card-actions">
       <button class="btn-refresh" :disabled="loading" @click="emit('refresh')">
-        {{ loading ? 'Checking...' : 'Check Connection' }}
+        {{ loading ? 'Verificando...' : 'Verificar conexão' }}
       </button>
     </div>
   </div>

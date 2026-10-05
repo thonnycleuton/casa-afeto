@@ -1,274 +1,274 @@
-# M1 — Products & Inventory Acceptance Criteria
+# Critérios de Aceitação do Marco M1 — Produtos e Estoque
 
-**Document version:** 0.1
-**Status:** Ready for implementation
-**Milestone:** M1 — Products & Inventory
-
----
-
-# 1. Purpose
-
-This document defines the objective acceptance criteria for M1 — Products & Inventory.
-
-The criteria translate the M1 specification and use cases into observable, testable conditions.
-
-A criterion is considered satisfied only when the expected behavior can be demonstrated through automated tests and/or manual validation.
-
-The implementation must satisfy these criteria without introducing behavior outside the approved M1 scope.
+**Versão do documento:** 0.1
+**Status:** Pronto para implementação
+**Marco:** M1 — Produtos e Estoque (Products & Inventory)
 
 ---
 
-# 2. Acceptance Rules
+# 1. Finalidade
 
-## AC-01 — Product Creation
+Este documento define os critérios objetivos de aceitação para M1 — Produtos e Estoque (Products & Inventory).
 
-**Given** no product exists with the submitted identity
-**When** the operator creates a product with a valid name and base inventory unit
-**Then** the system creates the product
-**And** the product is active
-**And** its inventory balance is zero
-**And** no inventory movement is created.
+Os critérios traduzem a especificação e os casos de uso de M1 em condições observáveis e testáveis.
 
----
+Um critério é considerado atendido somente quando o comportamento esperado puder ser demonstrado por testes automatizados e/ou validação manual.
 
-## AC-02 — Product Name Is Required
-
-**Given** the operator is creating a product
-**When** the operator submits the product without a valid name
-**Then** the system rejects the operation
-**And** no product is created.
+A implementação deve satisfazer estes critérios sem introduzir comportamento fora do escopo aprovado de M1.
 
 ---
 
-## AC-03 — Product Base Unit Is Required
+# 2. Regras de aceitação
 
-**Given** the operator is creating a product
-**When** the operator submits the product without a valid base inventory unit
-**Then** the system rejects the operation
-**And** no product is created.
+## AC-01 — Criação do produto
 
----
-
-## AC-04 — Product Editing
-
-**Given** an existing product
-**When** the operator changes valid editable product information
-**Then** the product is updated
-**And** its identity remains unchanged
-**And** existing inventory movements remain associated with the same product.
+**Dado** que não existe um produto com a identidade informada
+**Quando** o operador cria um produto com nome válido e unidade base de estoque válida
+**Então** o sistema cria o produto
+**E** o produto fica ativo
+**E** seu saldo de estoque é zero
+**E** nenhuma movimentação de estoque é criada.
 
 ---
 
-## AC-05 — Product Activation
+## AC-02 — Nome do produto é obrigatório
 
-**Given** an inactive product
-**When** the operator activates the product
-**Then** the product becomes active
-**And** its inventory balance remains unchanged
-**And** its inventory history remains unchanged.
-
----
-
-## AC-06 — Product Deactivation
-
-**Given** an active product
-**When** the operator deactivates the product
-**Then** the product becomes inactive
-**And** its inventory balance remains unchanged
-**And** its inventory history remains unchanged
-**And** the product is not available for new operations requiring an active product.
+**Dado** que o operador está criando um produto
+**Quando** o operador envia o produto sem um nome válido
+**Então** o sistema rejeita a operação
+**E** nenhum produto é criado.
 
 ---
 
-## AC-07 — Deactivation Does Not Delete Historical Data
+## AC-03 — Unidade base do produto é obrigatória
 
-**Given** a product with inventory history
-**When** the product is deactivated
-**Then** the product remains accessible in administrative/history contexts
-**And** its inventory movements remain available
-**And** its inventory balance remains unchanged.
-
----
-
-# 3. Product Listing and Search
-
-## AC-08 — Product Listing
-
-**Given** multiple products exist
-**When** the operator opens the product list
-**Then** the system displays the products
-**And** each product exposes at least its name, base unit, active state, and current inventory balance.
+**Dado** que o operador está criando um produto
+**Quando** o operador envia o produto sem uma unidade base de estoque válida
+**Então** o sistema rejeita a operação
+**E** nenhum produto é criado.
 
 ---
 
-## AC-09 — Inactive Products Remain Visible
+## AC-04 — Edição do produto
 
-**Given** an inactive product exists
-**When** the operator views the product management list
-**Then** the inactive product remains visible
-**And** its inactive state is identifiable.
-
----
-
-## AC-10 — Product Search
-
-**Given** products exist
-**When** the operator searches using part or all of a product name
-**Then** the system returns matching products according to the defined search behavior.
+**Dado** que existe um produto
+**Quando** o operador altera informações editáveis válidas do produto
+**Então** o produto é atualizado
+**E** sua identidade permanece inalterada
+**E** movimentações existentes de estoque continuam associadas ao mesmo produto.
 
 ---
 
-## AC-11 — Search With No Results
+## AC-05 — Ativação do produto
 
-**Given** no product matches the submitted search
-**When** the operator performs the search
-**Then** the system returns an empty result
-**And** the system does not report this as an application error.
+**Dado** que um produto está inativo
+**Quando** o operador ativa o produto
+**Então** o produto torna-se ativo
+**E** seu saldo de estoque permanece inalterado
+**E** seu histórico de estoque permanece inalterado.
 
 ---
 
-# 4. Inventory Entry
+## AC-06 — Desativação do produto
 
-## AC-12 — Add Inventory
+**Dado** que um produto está ativo
+**Quando** o operador desativa o produto
+**Então** o produto torna-se inativo
+**E** seu saldo de estoque permanece inalterado
+**E** seu histórico de estoque permanece inalterado
+**E** o produto não está disponível para novas operações que exijam um produto ativo.
 
-**Given** an active product exists with a current balance
-**When** the operator adds a valid positive quantity
-**Then** an inventory entry movement is created
-**And** the product balance increases by that quantity.
+---
 
-Example:
+## AC-07 — A desativação não exclui dados históricos
+
+**Dado** que um produto possui histórico de estoque
+**Quando** o produto é desativado
+**Então** o produto permanece acessível em contextos administrativos/históricos
+**E** suas movimentações de estoque continuam disponíveis
+**E** seu saldo de estoque permanece inalterado.
+
+---
+
+# 3. Listagem e busca de produtos
+
+## AC-08 — Listagem de produtos
+
+**Dado** que existem vários produtos
+**Quando** o operador abre a lista de produtos
+**Então** o sistema exibe os produtos
+**E** cada produto expõe pelo menos o nome, a unidade base, o estado ativo e o saldo atual de estoque.
+
+---
+
+## AC-09 — Produtos inativos permanecem visíveis
+
+**Dado** que existe um produto inativo
+**Quando** o operador visualiza a lista de gestão de produtos
+**Então** o produto inativo continua visível
+**E** seu estado inativo é identificável.
+
+---
+
+## AC-10 — Busca de produto
+
+**Dado** que existem produtos
+**Quando** o operador busca usando parte ou totalidade do nome do produto
+**Então** o sistema retorna produtos correspondentes de acordo com a busca definida.
+
+---
+
+## AC-11 — Busca sem resultados
+
+**Dado** que nenhum produto corresponde à busca informada
+**Quando** o operador executa a busca
+**Então** o sistema retorna um resultado vazio
+**E** o sistema não reporta isso como erro da aplicação.
+
+---
+
+# 4. Entrada de estoque
+
+## AC-12 — Adicionar estoque
+
+**Dado** que existe um produto ativo com saldo atual
+**Quando** o operador adiciona uma quantidade válida positiva
+**Então** uma movimentação de entrada de estoque é criada
+**E** o saldo do produto aumenta nessa quantidade.
+
+Exemplo:
 
 ```text
-Before: 5
-Entry: +20
-After: 25
+Antes: 5
+Entrada: +20
+Depois: 25
 ```
 
 ---
 
-## AC-13 — Add Inventory to Product With Zero Balance
+## AC-13 — Adicionar estoque a produto com saldo zero
 
-**Given** an active product exists with no inventory
-**When** the operator adds 20 units
-**Then** the balance becomes 20
-**And** exactly one corresponding inventory movement exists.
-
----
-
-## AC-14 — Invalid Inventory Entry
-
-**Given** an operator is adding inventory
-**When** the submitted quantity is invalid
-**Then** the operation is rejected
-**And** no inventory movement is created
-**And** the previous balance remains unchanged.
+**Dado** que existe um produto ativo sem estoque
+**Quando** o operador adiciona 20 unidades
+**Então** o saldo torna-se 20
+**E** existe exatamente uma movimentação correspondente de estoque.
 
 ---
 
-## AC-15 — Inventory Entry Requires an Existing Product
+## AC-14 — Entrada de estoque inválida
 
-**Given** no product exists for the requested product reference
-**When** the operator attempts to add inventory
-**Then** the operation is rejected
-**And** no inventory movement is created.
-
----
-
-## AC-16 — Inactive Product Cannot Receive Normal Inventory Entry
-
-**Given** a product is inactive
-**When** the operator attempts to perform a normal inventory entry
-**Then** the operation is rejected
-**And** no inventory movement is created
-**And** the existing inventory balance remains unchanged.
+**Dado** que um operador está adicionando estoque
+**Quando** a quantidade informada é inválida
+**Então** a operação é rejeitada
+**E** nenhuma movimentação de estoque é criada
+**E** o saldo anterior permanece inalterado.
 
 ---
 
-# 5. Inventory Adjustment
+## AC-15 — A entrada de estoque exige um produto existente
 
-## AC-17 — Positive Inventory Adjustment
-
-**Given** an active product has a current balance of 17
-**When** the operator applies an adjustment of +2
-**Then** an adjustment movement is created
-**And** the resulting balance is 19.
+**Dado** que não existe produto para a referência solicitada
+**Quando** o operador tenta adicionar estoque
+**Então** a operação é rejeitada
+**E** nenhuma movimentação de estoque é criada.
 
 ---
 
-## AC-18 — Negative Inventory Adjustment
+## AC-16 — Produto inativo não pode receber entrada normal de estoque
 
-**Given** an active product has a current balance of 20
-**When** the operator applies an adjustment of -3
-**Then** an adjustment movement is created
-**And** the resulting balance is 17.
-
----
-
-## AC-19 — Adjustment Cannot Create Negative Inventory
-
-**Given** an active product has a current balance of 2
-**When** the operator attempts an adjustment of -3
-**Then** the operation is rejected
-**And** no adjustment movement is created
-**And** the balance remains 2.
+**Dado** que um produto está inativo
+**Quando** o operador tenta realizar uma entrada normal de estoque
+**Então** a operação é rejeitada
+**E** nenhuma movimentação de estoque é criada
+**E** o saldo atual de estoque permanece inalterado.
 
 ---
 
-## AC-20 — Adjustment Equal to Current Balance
+# 5. Ajuste de estoque
 
-**Given** an active product has a current balance of 5
-**When** the operator applies an adjustment of -5
-**Then** the operation is accepted
-**And** an adjustment movement of -5 is created
-**And** the resulting balance is 0.
+## AC-17 — Ajuste positivo de estoque
 
-Zero inventory is valid.
-
----
-
-## AC-21 — Invalid Adjustment
-
-**Given** an operator is performing an inventory adjustment
-**When** the submitted adjustment is invalid
-**Then** the operation is rejected
-**And** no movement is created
-**And** the existing balance remains unchanged.
+**Dado** que um produto ativo tem saldo atual de 17
+**Quando** o operador aplica um ajuste de +2
+**Então** uma movimentação de ajuste é criada
+**E** o saldo resultante é 19.
 
 ---
 
-## AC-22 — Adjustment Requires an Existing Product
+## AC-18 — Ajuste negativo de estoque
 
-**Given** no product exists for the requested product reference
-**When** the operator attempts an inventory adjustment
-**Then** the operation is rejected
-**And** no inventory movement is created.
-
----
-
-## AC-23 — Inactive Product Cannot Receive Normal Adjustment
-
-**Given** a product is inactive
-**When** the operator attempts a normal inventory adjustment
-**Then** the operation is rejected
-**And** no inventory movement is created
-**And** the existing balance remains unchanged.
+**Dado** que um produto ativo tem saldo atual de 20
+**Quando** o operador aplica um ajuste de -3
+**Então** uma movimentação de ajuste é criada
+**E** o saldo resultante é 17.
 
 ---
 
-# 6. Inventory History
+## AC-19 — Ajuste não pode criar estoque negativo
 
-## AC-24 — Inventory Movement Is Preserved
-
-**Given** a product has an inventory entry
-**When** the operator views its inventory history
-**Then** the entry is present
-**And** its quantity and movement type are preserved.
+**Dado** que um produto ativo tem saldo atual de 2
+**Quando** o operador tenta um ajuste de -3
+**Então** a operação é rejeitada
+**E** nenhuma movimentação de ajuste é criada
+**E** o saldo permanece 2.
 
 ---
 
-## AC-25 — Multiple Movements Are Preserved
+## AC-20 — Ajuste igual ao saldo atual
 
-**Given** a product has the following movements:
+**Dado** que um produto ativo tem saldo atual de 5
+**Quando** o operador aplica um ajuste de -5
+**Então** a operação é aceita
+**E** uma movimentação de ajuste de -5 é criada
+**E** o saldo resultante é 0.
+
+Zero em estoque é válido.
+
+---
+
+## AC-21 — Ajuste inválido
+
+**Dado** que um operador está realizando um ajuste de estoque
+**Quando** o ajuste informado é inválido
+**Então** a operação é rejeitada
+**E** nenhuma movimentação é criada
+**E** o saldo existente permanece inalterado.
+
+---
+
+## AC-22 — Ajuste exige um produto existente
+
+**Dado** que não existe produto para a referência solicitada
+**Quando** o operador tenta um ajuste de estoque
+**Então** a operação é rejeitada
+**E** nenhuma movimentação de estoque é criada.
+
+---
+
+## AC-23 — Produto inativo não pode receber ajuste normal
+
+**Dado** que um produto está inativo
+**Quando** o operador tenta um ajuste normal de estoque
+**Então** a operação é rejeitada
+**E** nenhuma movimentação de estoque é criada
+**E** o saldo existente permanece inalterado.
+
+---
+
+# 6. Histórico de estoque
+
+## AC-24 — A movimentação de estoque é preservada
+
+**Dado** que um produto possui uma entrada de estoque
+**Quando** o operador visualiza seu histórico de estoque
+**Então** a entrada está presente
+**E** sua quantidade e tipo de movimentação são preservados.
+
+---
+
+## AC-25 — Múltiplas movimentações são preservadas
+
+**Dado** que um produto tem as seguintes movimentações:
 
 ```text
 +20
@@ -276,25 +276,25 @@ Zero inventory is valid.
 +5
 ```
 
-**When** the operator views the inventory history
-**Then** all three movements are present
-**And** their quantities are unchanged
-**And** their movement types are preserved.
+**Quando** o operador visualiza o histórico de estoque
+**Então** as três movimentações estão presentes
+**E** suas quantidades permanecem inalteradas
+**E** seus tipos de movimentação são preservados.
 
 ---
 
-## AC-26 — Corrections Create New Movements
+## AC-26 — Correções criam novas movimentações
 
-**Given** a product has an existing inventory history
-**When** the operator performs an inventory correction
-**Then** a new adjustment movement is created
-**And** previous movements remain unchanged.
+**Dado** que um produto possui um histórico de estoque existente
+**Quando** o operador realiza uma correção de estoque
+**Então** uma nova movimentação de ajuste é criada
+**E** movimentações anteriores permanecem inalteradas.
 
 ---
 
-## AC-27 — Inventory Balance Reflects Movement History
+## AC-27 — O saldo de estoque reflete o histórico de movimentações
 
-**Given** a product has movements:
+**Dado** que um produto tem movimentações:
 
 ```text
 +20
@@ -303,236 +303,236 @@ Zero inventory is valid.
 -2
 ```
 
-**When** the current inventory balance is calculated
-**Then** the balance is 20.
+**Quando** o saldo atual de estoque é calculado
+**Então** o saldo é 20.
 
 ---
 
-# 7. Inventory Availability
+# 7. Disponibilidade de estoque
 
-## AC-28 — Product Is Available When Quantity Is Sufficient
+## AC-28 — Produto está disponível quando a quantidade é suficiente
 
-**Given** a product has 10 units available
-**When** availability is checked for 4 units
-**Then** the system reports that the requested quantity is available
-**And** the shortage is zero
-**And** inventory is not modified.
-
----
-
-## AC-29 — Product Is Insufficient When Quantity Is Not Sufficient
-
-**Given** a product has 2 units available
-**When** availability is checked for 5 units
-**Then** the system reports insufficient inventory
-**And** the shortage is 3 units
-**And** inventory is not modified.
+**Dado** que um produto tem 10 unidades disponíveis
+**Quando** a disponibilidade é verificada para 4 unidades
+**Então** o sistema informa que a quantidade solicitada está disponível
+**E** a falta é zero
+**E** o estoque não é modificado.
 
 ---
 
-## AC-30 — Insufficient Inventory Does Not Create Negative Stock
+## AC-29 — Produto está insuficiente quando a quantidade não é suficiente
 
-**Given** a product has 2 units available
-**When** availability is checked for 5 units
-**Then** the system must not create a -3 inventory movement
-**And** the inventory balance remains 2.
-
----
-
-## AC-31 — Insufficient Inventory Does Not Invalidate the Product
-
-**Given** an active product has zero inventory
-**When** availability is checked for a positive quantity
-**Then** the product remains valid
-**And** the system reports insufficient inventory rather than treating the product as invalid.
+**Dado** que um produto tem 2 unidades disponíveis
+**Quando** a disponibilidade é verificada para 5 unidades
+**Então** o sistema informa estoque insuficiente
+**E** a falta é de 3 unidades
+**E** o estoque não é modificado.
 
 ---
 
-# 8. Inventory Integrity
+## AC-30 — Estoque insuficiente não cria saldo negativo
 
-## AC-32 — Rejected Inventory Operation Has No Side Effects
-
-**Given** an inventory operation is invalid
-**When** the operation is rejected
-**Then** no inventory movement is created
-**And** the product balance remains unchanged
-**And** existing inventory history remains unchanged.
+**Dado** que um produto tem 2 unidades disponíveis
+**Quando** a disponibilidade é verificada para 5 unidades
+**Então** o sistema não deve criar uma movimentação de estoque -3
+**E** o saldo de estoque permanece 2.
 
 ---
 
-## AC-33 — Inventory Balance Cannot Become Negative
+## AC-31 — Estoque insuficiente não invalida o produto
 
-**Given** any current inventory balance greater than or equal to zero
-**When** an inventory operation would result in a negative balance
-**Then** the operation is rejected
-**And** the resulting balance remains non-negative.
-
----
-
-## AC-34 — Zero Inventory Is Valid
-
-**Given** a product has inventory
-**When** the inventory is reduced exactly to zero
-**Then** the operation is accepted
-**And** the resulting balance is zero
-**And** the product remains a valid active product.
+**Dado** que um produto ativo tem saldo zero
+**Quando** a disponibilidade é verificada para uma quantidade positiva
+**Então** o produto permanece válido
+**E** o sistema informa estoque insuficiente em vez de tratar o produto como inválido.
 
 ---
 
-## AC-35 — Historical Inventory Is Not Rewritten
+# 8. Integridade do estoque
 
-**Given** a product has previous inventory movements
-**When** a subsequent adjustment is performed
-**Then** previous movements retain their original values
-**And** the adjustment is represented by a new movement.
+## AC-32 — Operação rejeitada de estoque não tem efeitos colaterais
 
----
-
-# 9. Product and Inventory Relationship
-
-## AC-36 — Every Inventory Movement Belongs to a Product
-
-**Given** an inventory movement is successfully created
-**Then** it references an existing product
-**And** the movement cannot exist without a valid product reference.
+**Dado** que uma operação de estoque é inválida
+**Quando** a operação é rejeitada
+**Então** nenhuma movimentação de estoque é criada
+**E** o saldo do produto permanece inalterado
+**E** o histórico existente de estoque permanece inalterado.
 
 ---
 
-## AC-37 — Product Deactivation Does Not Change Inventory
+## AC-33 — O saldo de estoque não pode ficar negativo
 
-**Given** an active product has a balance of 15
-**When** the product is deactivated
-**Then** the balance remains 15
-**And** no inventory movement is created.
-
----
-
-## AC-38 — Product Reactivation Does Not Change Inventory
-
-**Given** an inactive product has a balance of 15
-**When** the product is reactivated
-**Then** the balance remains 15
-**And** no inventory movement is created.
+**Dado** que qualquer saldo atual de estoque seja maior ou igual a zero
+**Quando** uma operação de estoque resultaria em saldo negativo
+**Então** a operação é rejeitada
+**E** o saldo resultante permanece não negativo.
 
 ---
 
-# 10. End-to-End Acceptance Scenario
+## AC-34 — Estoque zero é válido
 
-## AC-39 — Complete M1 Operational Flow
+**Dado** que um produto tem estoque
+**Quando** o estoque é reduzido exatamente a zero
+**Então** a operação é aceita
+**E** o saldo resultante é zero
+**E** o produto continua sendo um produto ativo válido.
 
-**Given** the system has no Chocolate product
+---
 
-**When** the operator:
+## AC-35 — Histórico de estoque não é reescrito
 
-1. creates Chocolate with base unit `UN`;
-2. adds 20 units;
-3. applies an adjustment of -3;
-4. checks the inventory balance;
-5. checks availability for 20 units;
-6. attempts an adjustment of -18;
-7. views the movement history;
-8. deactivates Chocolate;
+**Dado** que um produto tem movimentações de estoque anteriores
+**Quando** um ajuste posterior é realizado
+**Então** as movimentações anteriores retêm seus valores originais
+**E** o ajuste é representado por uma nova movimentação.
 
-**Then**:
+---
+
+# 9. Relação entre produto e estoque
+
+## AC-36 — Cada movimentação de estoque pertence a um produto
+
+**Dado** que uma movimentação de estoque é criada com sucesso
+**Então** ela referencia um produto existente
+**E** a movimentação não pode existir sem uma referência válida ao produto.
+
+---
+
+## AC-37 — A desativação do produto não altera o estoque
+
+**Dado** que um produto ativo tem saldo de 15
+**Quando** o produto é desativado
+**Então** o saldo permanece 15
+**E** nenhuma movimentação de estoque é criada.
+
+---
+
+## AC-38 — A reativação do produto não altera o estoque
+
+**Dado** que um produto inativo tem saldo de 15
+**Quando** o produto é reativado
+**Então** o saldo permanece 15
+**E** nenhuma movimentação de estoque é criada.
+
+---
+
+# 10. Cenário de aceitação de ponta a ponta
+
+## AC-39 — Fluxo operacional completo de M1
+
+**Dado** que o sistema não possui o produto Chocolate
+
+**Quando** o operador:
+
+1. cria Chocolate com unidade base `UN`;
+2. adiciona 20 unidades;
+3. aplica um ajuste de -3;
+4. verifica o saldo do estoque;
+5. verifica a disponibilidade para 20 unidades;
+6. tenta um ajuste de -18;
+7. visualiza o histórico de movimentações;
+8. desativa Chocolate;
+
+**Então**:
 
 ```text
-Product:
+Produto:
 Chocolate
-Active:
-No
+Ativo:
+Não
 
-Inventory balance:
+Saldo de estoque:
 17 UN
 ```
 
-**And** the history contains:
+**E** o histórico contém:
 
 ```text
 ENTRY       +20
 ADJUSTMENT   -3
 ```
 
-**And** the rejected `-18` adjustment does not appear in history.
+**E** o ajuste rejeitado `-18` não aparece no histórico.
 
-**And** the availability check for 20 units reports:
+**E** a verificação de disponibilidade para 20 unidades informa:
 
 ```text
-Available: 17
-Required: 20
-Shortage: 3
+Disponível: 17
+Solicitado: 20
+Falta: 3
 ```
 
-**And** the product remains present in product management.
+**E** o produto permanece presente na gestão de produtos.
 
-**And** the inventory remains 17.
+**E** o estoque permanece 17.
 
 ---
 
-# 11. Scope Acceptance
+# 11. Aceitação do escopo
 
-## AC-40 — No Future Inventory Features Are Required
+## AC-40 — Nenhum recurso futuro de estoque é requerido
 
-M1 must not be considered incomplete because the system does not implement:
+M1 não deve ser considerado incompleto porque o sistema não implementa:
 
-* purchases;
-* purchase items;
-* suppliers;
-* inventory lots;
-* expiration;
+* compras;
+* itens de compra;
+* fornecedores;
+* lotes de estoque;
+* vencimento;
 * FEFO;
-* replenishment;
-* loss management;
-* production;
-* reserved inventory;
-* sales;
-* payment;
-* basket-related inventory deduction.
+* reposição;
+* gestão de perdas;
+* produção;
+* estoque reservado;
+* vendas;
+* pagamento;
+* dedução de estoque relacionada a cestas.
 
-These features are explicitly outside the M1 scope.
-
----
-
-# 12. Automated Test Expectations
-
-Each acceptance criterion involving deterministic business behavior should be covered by automated tests where technically appropriate.
-
-At minimum, automated tests must cover:
-
-* product creation;
-* product editing;
-* activation/deactivation;
-* inventory entry;
-* positive adjustment;
-* negative adjustment;
-* zero balance;
-* rejection of negative resulting inventory;
-* movement history;
-* balance calculation;
-* availability checks;
-* invalid operations having no side effects.
-
-Tests should verify observable behavior rather than internal implementation structure.
+Esses recursos são explicitamente fora do escopo de M1.
 
 ---
 
-# 13. Manual Validation Expectations
+# 12. Expectativas de testes automatizados
 
-After automated tests pass, the operator must manually validate the main operational flow.
+Cada critério de aceitação envolvendo comportamento de negócio determinístico deve ser coberto por testes automatizados quando tecnicamente apropriado.
 
-The manual validation must confirm:
+No mínimo, os testes automatizados devem cobrir:
 
-* product creation;
-* product visibility;
-* inventory entry;
-* inventory adjustment;
-* inventory balance;
-* movement history;
-* insufficient inventory warning/state;
-* negative inventory rejection;
-* product deactivation;
-* preservation of inventory after deactivation.
+* criação de produto;
+* edição de produto;
+* ativação/desativação;
+* entrada de estoque;
+* ajuste positivo;
+* ajuste negativo;
+* saldo zero;
+* rejeição de saldo resultante negativo;
+* histórico de movimentações;
+* cálculo do saldo;
+* verificações de disponibilidade;
+* operações inválidas sem efeitos colaterais.
 
-The detailed checklist belongs in:
+Os testes devem verificar o comportamento observável em vez da estrutura interna de implementação.
+
+---
+
+# 13. Expectativas de validação manual
+
+Depois que os testes automatizados passarem, o operador deve validar manualmente o fluxo operacional principal.
+
+A validação manual deve confirmar:
+
+* criação de produtos;
+* visibilidade dos produtos;
+* entrada de estoque;
+* ajuste de estoque;
+* saldo de estoque;
+* histórico de movimentações;
+* aviso/estado de estoque insuficiente;
+* rejeição de estoque negativo;
+* desativação de produtos;
+* preservação do estoque após a desativação.
+
+A lista detalhada de verificação pertence a:
 
 ```text
 docs/milestones/m1-products-inventory/validation.md
@@ -540,54 +540,54 @@ docs/milestones/m1-products-inventory/validation.md
 
 ---
 
-# 14. Acceptance Decision
+# 14. Decisão de Aceitação
 
-M1 is accepted only when:
+M1 só é aceito quando:
 
-1. All applicable acceptance criteria pass.
-2. Automated tests pass.
-3. No known regression is introduced.
-4. Manual validation passes.
-5. No unapproved business behavior has been introduced.
-6. The implementation remains within M1 scope.
-7. The user explicitly approves the milestone.
+1. Todos os critérios de aceitação aplicáveis forem aprovados.
+2. Os testes automatizados passarem.
+3. Nenhuma regressão conhecida for introduzida.
+4. A validação manual passar.
+5. Nenhum comportamento de negócio não aprovado tiver sido introduzido.
+6. A implementação permanecer dentro do escopo de M1.
+7. O usuário aprovar explicitamente o marco.
 
-An implementation that merely compiles or passes its unit tests is not sufficient by itself.
+Uma implementação que apenas compila ou passa nos testes unitários não é suficiente por si só.
 
-The business behavior must also satisfy the acceptance criteria.
+O comportamento de negócio também deve satisfazer os critérios de aceitação.
 
 ---
 
-# 15. Traceability
+# 15. Rastreabilidade
 
-The M1 documentation chain is:
+A cadeia de documentação de M1 é:
 
 ```text
-Business Contract
+Contrato de Negócio
         ↓
-M1 Specification
+Especificação de M1
         ↓
-M1 Use Cases
+Casos de Uso de M1
         ↓
-M1 Acceptance Criteria
+Critérios de Aceitação de M1
         ↓
-Implementation
+Implementação
         ↓
-Automated Tests
+Testes Automatizados
         ↓
-Manual Validation
+Validação Manual
 ```
 
-Every M1 business behavior should be traceable through this chain.
+Todo comportamento de negócio de M1 deve ser rastreável por meio dessa cadeia.
 
-If implementation reveals a requirement that cannot be traced to an existing specification or approved decision, the agent must stop and clarify the requirement before expanding the scope.
+Se a implementação revelar um requisito que não possa ser rastreado até uma especificação existente ou decisão aprovada, o agente deve parar e esclarecer o requisito antes de ampliar o escopo.
 
 ---
 
-# 16. Final Acceptance Principle
+# 16. Princípio Final de Aceitação
 
-The implementation is correct when the documented business behavior is observable and verifiable.
+A implementação está correta quando o comportamento de negócio documentado é observável e verificável.
 
-> **If the acceptance criteria say it must happen, it must happen.**
+> **Se os critérios de aceitação dizem que algo deve acontecer, isso deve acontecer.**
 >
-> **If the acceptance criteria do not require it, M1 does not need to implement it.**
+> **Se os critérios de aceitação não exigem algo, M1 não precisa implementá-lo.**

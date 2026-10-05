@@ -1,22 +1,22 @@
-# Casa Afeto — M1 Manual Validation
+# Casa Afeto — Validação Manual de M1
 
-**Milestone:** M1 — Products & Inventory
-**Document:** Manual Validation
-**Version:** 0.1
-**Status:** Draft
-**Depends on:** `specification.md`, `use-cases.md`, `acceptance-criteria.md`
+**Marco:** M1 — Produtos e Estoque (Products & Inventory)
+**Documento:** Validação manual
+**Versão:** 0.1
+**Status:** Rascunho
+**Depende de:** `specification.md`, `use-cases.md`, `acceptance-criteria.md`
 
 ---
 
-## 1. Purpose
+## 1. Finalidade
 
-This document defines the manual validation procedure for M1 — Products & Inventory.
+Este documento define o procedimento de validação manual para M1 — Produtos e Estoque (Products & Inventory).
 
-The purpose is to verify that the implemented system behaves correctly from the perspective of a Casa Afeto operator.
+O objetivo é verificar que o sistema implementado se comporta corretamente do ponto de vista de um operador da Casa Afeto.
 
-This document is intentionally operational.
+Este documento é intencionalmente operacional.
 
-It does not define new business rules. It provides a repeatable procedure for validating the rules already defined by:
+Ele não define novas regras de negócio. Fornece um procedimento repetível para validar as regras já definidas em:
 
 * `docs/domain/business-contract.md`
 * `docs/milestones/m1-products-inventory/specification.md`
@@ -25,809 +25,809 @@ It does not define new business rules. It provides a repeatable procedure for va
 
 ---
 
-## 2. Validation Principles
+## 2. Princípios de validação
 
-Manual validation must verify:
+A validação manual deve verificar:
 
-1. The expected business behavior works.
-2. Invalid operations are rejected safely.
-3. Inventory cannot become negative.
-4. Historical inventory movements are preserved.
-5. Product activation/deactivation behaves as specified.
-6. No unrelated functionality is required to complete M1.
-7. Rejected operations do not create unintended side effects.
+1. O comportamento esperado de negócio funciona.
+2. Operações inválidas são rejeitadas com segurança.
+3. O estoque não pode ficar negativo.
+4. As movimentações históricas de estoque são preservadas.
+5. A ativação/desativação do produto se comporta conforme especificado.
+6. Nenhuma funcionalidade não relacionada é necessária para completar M1.
+7. Operações rejeitadas não criam efeitos colaterais não intencionais.
 
-The validator should test the system through its normal user interface whenever possible.
+O validador deve testar o sistema por meio de sua interface normal de usuário sempre que possível.
 
-Database inspection may be used when necessary to investigate a failure, but database manipulation should not be used to make a validation scenario pass.
+Inspeção do banco de dados pode ser usada quando necessário para investigar uma falha, mas manipulação do banco não deve ser usada para fazer um cenário de validação passar.
 
 ---
 
-# 3. Preconditions
+# 3. Pré-condições
 
-Before starting validation:
+Antes de iniciar a validação:
 
-* The application is running.
-* The database is available.
-* The application can create and persist products.
-* The application can create and persist inventory movements.
-* No previous test data interferes with the validation.
+* A aplicação está em execução.
+* O banco de dados está disponível.
+* A aplicação pode criar e persistir produtos.
+* A aplicação pode criar e persistir movimentações de estoque.
+* Dados de teste anteriores não interferem na validação.
 
-If the environment contains existing data, use clearly identifiable test products.
+Se o ambiente contiver dados existentes, use produtos de teste claramente identificáveis.
 
-Recommended test product:
+Produto recomendado para teste:
 
 > **Chocolate Test**
 
-Base unit:
+Unidade base:
 
 > **UN**
 
-Optional second product:
+Segundo produto opcional:
 
 > **Suco Test**
 
-Base unit:
+Unidade base:
 
 > **UN**
 
 ---
 
-# 4. Validation Result Convention
+# 4. Convenção de resultado da validação
 
-Each scenario should be marked as:
+Cada cenário deve ser marcado como:
 
-* **PASS** — behavior matches the expected result.
-* **FAIL** — behavior differs from the expected result.
-* **BLOCKED** — validation cannot be performed because of an unrelated environment or implementation problem.
+* **PASS** — o comportamento corresponde ao resultado esperado.
+* **FAIL** — o comportamento difere do resultado esperado.
+* **BLOCKED** — a validação não pode ser realizada por causa de um problema não relacionado do ambiente ou da implementação.
 
-Record relevant observations when a scenario fails.
+Registre observações relevantes quando um cenário falhar.
 
-Do not change the expected result simply because the implementation behaves differently.
+Não altere o resultado esperado apenas porque a implementação se comporta de forma diferente.
 
-If the expected behavior itself appears incorrect or incomplete, stop and review the specification before changing the implementation.
+Se o comportamento esperado em si parecer incorreto ou incompleto, pare e revise a especificação antes de alterar a implementação.
 
 ---
 
-# 5. Product Management
+# 5. Gestão de produtos
 
-## VAL-M1-01 — Create Product
+## VAL-M1-01 — Criar produto
 
-### Steps
+### Etapas
 
-1. Open the product management area.
-2. Create a product named `Chocolate Test`.
-3. Set the base unit to `UN`.
-4. Save the product.
+1. Abra a área de gestão de produtos.
+2. Crie um produto chamado `Chocolate Test`.
+3. Defina a unidade base como `UN`.
+4. Salve o produto.
 
-### Expected Result
+### Resultado esperado
 
-* The product is created successfully.
-* The product appears in the product list.
-* The product is active by default, according to the current specification.
-* The product has no inventory unless inventory is explicitly added.
+* O produto é criado com sucesso.
+* O produto aparece na lista de produtos.
+* O produto fica ativo por padrão, conforme a especificação atual.
+* O produto não possui estoque, a menos que o estoque seja adicionado explicitamente.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-02 — Required Product Data
+## VAL-M1-02 — Dados obrigatórios do produto
 
-### Steps
+### Etapas
 
-Attempt to create a product without:
+Tente criar um produto sem:
 
-1. Name.
-2. Base unit.
+1. Nome.
+2. Unidade base.
 
-### Expected Result
+### Resultado esperado
 
-The system rejects the invalid operation and clearly indicates the missing required information.
+O sistema rejeita a operação inválida e indica claramente a informação obrigatória ausente.
 
-No incomplete product is created.
+Nenhum produto incompleto é criado.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-03 — Edit Product
+## VAL-M1-03 — Editar produto
 
-### Steps
+### Etapas
 
-1. Open `Chocolate Test`.
-2. Change its name to `Chocolate Test Updated`.
-3. Save.
-4. Reopen the product.
+1. Abra `Chocolate Test`.
+2. Altere o nome para `Chocolate Test Updated`.
+3. Salve.
+4. Reabra o produto.
 
-### Expected Result
+### Resultado esperado
 
-* The new name is persisted.
-* The product remains the same product.
-* Existing inventory is not changed by the name change.
+* O novo nome é persistido.
+* O produto continua sendo o mesmo produto.
+* O estoque existente não é alterado pela mudança de nome.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-04 — Deactivate Product
+## VAL-M1-04 — Desativar produto
 
-### Steps
+### Etapas
 
-1. Deactivate `Chocolate Test Updated`.
-2. Return to the product list.
+1. Desative `Chocolate Test Updated`.
+2. Retorne à lista de produtos.
 
-### Expected Result
+### Resultado esperado
 
-* The product becomes inactive.
-* The product is not deleted.
-* The product remains visible where historical/inactive products are expected to be visible.
+* O produto fica inativo.
+* O produto não é excluído.
+* O produto permanece visível onde produtos históricos/inativos devem ser visíveis.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-05 — Reactivate Product
+## VAL-M1-05 — Reativar produto
 
-### Steps
+### Etapas
 
-1. Reactivate the previously deactivated product.
-2. Return to the product list.
+1. Reative o produto previamente desativado.
+2. Retorne à lista de produtos.
 
-### Expected Result
+### Resultado esperado
 
-* The product becomes active again.
-* Existing inventory is unchanged.
+* O produto volta a ficar ativo.
+* O estoque existente permanece inalterado.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 6. Inventory Entry
+# 6. Entrada de estoque
 
-## VAL-M1-06 — Add Initial Inventory
+## VAL-M1-06 — Adicionar estoque inicial
 
-### Steps
+### Etapas
 
-1. Ensure `Chocolate Test Updated` is active.
-2. Add `20 UN` to inventory.
-3. Save the operation.
-4. Open the inventory balance.
+1. Verifique que `Chocolate Test Updated` esteja ativo.
+2. Adicione `20 UN` ao estoque.
+3. Salve a operação.
+4. Abra o saldo de estoque.
 
-### Expected Result
+### Resultado esperado
 
-The product balance is:
+O saldo do produto é:
 
 > **20 UN**
 
-A corresponding inventory movement exists.
+Existe uma movimentação correspondente de estoque.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-07 — Add Additional Inventory
+## VAL-M1-07 — Adicionar estoque adicional
 
-### Steps
+### Etapas
 
-1. Add another `10 UN`.
-2. Save.
-3. Check the balance.
+1. Adicione mais `10 UN`.
+2. Salve.
+3. Verifique o saldo.
 
-### Expected Result
+### Resultado esperado
 
-The balance becomes:
+O saldo fica:
 
 > **30 UN**
 
-The previous movement remains preserved.
+A movimentação anterior permanece preservada.
 
-There should now be at least two inventory movements associated with the product.
+Agora deve haver pelo menos duas movimentações de estoque associadas ao produto.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 7. Inventory Adjustments
+# 7. Ajustes de estoque
 
-## VAL-M1-08 — Positive Adjustment
+## VAL-M1-08 — Ajuste positivo
 
-### Steps
+### Etapas
 
-1. Perform a positive inventory adjustment of `5 UN`.
-2. Save.
-3. Check the balance.
+1. Realize um ajuste positivo de estoque de `5 UN`.
+2. Salve.
+3. Verifique o saldo.
 
-### Expected Result
+### Resultado esperado
 
-The balance becomes:
+O saldo fica:
 
 > **35 UN**
 
-A new adjustment movement is created.
+Uma nova movimentação de ajuste é criada.
 
-Previous movements remain unchanged.
+Movimentações anteriores permanecem inalteradas.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-09 — Negative Adjustment
+## VAL-M1-09 — Ajuste negativo
 
-### Steps
+### Etapas
 
-1. Perform a negative adjustment of `3 UN`.
-2. Save.
-3. Check the balance.
+1. Realize um ajuste negativo de `3 UN`.
+2. Salve.
+3. Verifique o saldo.
 
-### Expected Result
+### Resultado esperado
 
-The balance becomes:
+O saldo fica:
 
 > **32 UN**
 
-A new adjustment movement is created.
+Uma nova movimentação de ajuste é criada.
 
-Previous movements remain unchanged.
+Movimentações anteriores permanecem inalteradas.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-10 — Adjustment Equal to Current Balance
+## VAL-M1-10 — Ajuste igual ao saldo atual
 
-### Steps
+### Etapas
 
-1. Record a negative adjustment equal to the current balance.
-2. Save.
-3. Check the balance.
+1. Registre um ajuste negativo igual ao saldo atual.
+2. Salve.
+3. Verifique o saldo.
 
-### Expected Result
+### Resultado esperado
 
-The operation is accepted.
+A operação é aceita.
 
-The resulting balance is:
+O saldo resultante é:
 
 > **0 UN**
 
-Zero inventory is valid.
+Zero em estoque é válido.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-11 — Attempt to Create Negative Inventory
+## VAL-M1-11 — Tentativa de criar estoque negativo
 
-### Steps
+### Etapas
 
-Assuming the current balance is `0 UN`:
+Supondo que o saldo atual seja `0 UN`:
 
-1. Attempt a negative adjustment of `1 UN`.
-2. Submit the operation.
+1. Tente um ajuste negativo de `1 UN`.
+2. Envie a operação.
 
-### Expected Result
+### Resultado esperado
 
-The operation is rejected.
+A operação é rejeitada.
 
-The inventory remains:
+O estoque permanece:
 
 > **0 UN**
 
-No movement representing the rejected operation is created.
+Nenhuma movimentação representando a operação rejeitada é criada.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 8. Inventory History
+# 8. Histórico de estoque
 
-## VAL-M1-12 — Verify Movement History
+## VAL-M1-12 — Verificar histórico de movimentações
 
-### Steps
+### Etapas
 
-Open the inventory history for `Chocolate Test Updated`.
+Abra o histórico de estoque para `Chocolate Test Updated`.
 
-Review all movements created during the previous scenarios.
+Revise todas as movimentações criadas nos cenários anteriores.
 
-### Expected Result
+### Resultado esperado
 
-The history shows the individual movements rather than only the current balance.
+O histórico mostra as movimentações individuais em vez de apenas o saldo atual.
 
-The sequence should reflect the operations performed.
+A sequência deve refletir as operações realizadas.
 
-For example:
+Por exemplo:
 
-| Operation           | Quantity |
-| ------------------- | -------: |
-| Initial entry       |      +20 |
-| Additional entry    |      +10 |
-| Positive adjustment |       +5 |
-| Negative adjustment |       -3 |
-| Balance adjustment  |      -32 |
+| Operação            | Quantidade |
+| ------------------- | ---------: |
+| Entrada inicial     |       +20 |
+| Entrada adicional  |       +10 |
+| Ajuste positivo    |        +5 |
+| Ajuste negativo    |        -3 |
+| Ajuste de saldo    |       -32 |
 
-The resulting balance should be:
+O saldo resultante deve ser:
 
 > **0 UN**
 
-The rejected negative operation must not appear as a valid inventory movement.
+A operação negativa rejeitada não deve aparecer como uma movimentação válida de estoque.
 
-### Result
-
-* [ ] PASS
-* [ ] FAIL
-* [ ] BLOCKED
-
-Notes:
-
----
-
-## VAL-M1-13 — Historical Data Is Preserved
-
-### Steps
-
-1. Change the product name again.
-2. Review inventory history.
-3. Review the product's current balance.
-
-### Expected Result
-
-Changing product information does not delete or rewrite historical inventory movements.
-
-The history remains available.
-
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 9. Inventory Availability
+## VAL-M1-13 — Dados históricos são preservados
 
-## VAL-M1-14 — Sufficient Inventory
+### Etapas
 
-### Steps
+1. Altere o nome do produto novamente.
+2. Revise o histórico de estoque.
+3. Revise o saldo atual do produto.
 
-1. Add `10 UN` to `Chocolate Test`.
-2. Check availability for `5 UN`.
+### Resultado esperado
 
-### Expected Result
+Alterar as informações do produto não exclui nem reescreve movimentações históricas de estoque.
 
-The system reports that sufficient inventory is available.
+O histórico permanece disponível.
 
-Inventory remains:
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+# 9. Disponibilidade de estoque
+
+## VAL-M1-14 — Estoque suficiente
+
+### Etapas
+
+1. Adicione `10 UN` a `Chocolate Test`.
+2. Verifique a disponibilidade para `5 UN`.
+
+### Resultado esperado
+
+O sistema informa que há estoque suficiente disponível.
+
+O estoque permanece:
 
 > **10 UN**
 
-Checking availability does not modify inventory.
+Verificar disponibilidade não modifica o estoque.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-15 — Insufficient Inventory
+## VAL-M1-15 — Estoque insuficiente
 
-### Steps
+### Etapas
 
-With `10 UN` available:
+Com `10 UN` disponíveis:
 
-1. Check availability for `15 UN`.
+1. Verifique a disponibilidade para `15 UN`.
 
-### Expected Result
+### Resultado esperado
 
-The system reports insufficient inventory.
+O sistema informa estoque insuficiente.
 
-The product remains valid.
+O produto permanece válido.
 
-Inventory remains:
+O estoque permanece:
 
 > **10 UN**
 
-No negative inventory is created.
+Nenhum estoque negativo é criado.
 
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 10. Product Deactivation and Inventory
+# 10. Desativação do produto e estoque
 
-## VAL-M1-16 — Deactivation Does Not Change Inventory
+## VAL-M1-16 — A desativação não altera o estoque
 
-### Steps
+### Etapas
 
-1. Ensure `Chocolate Test` has `10 UN`.
-2. Deactivate the product.
-3. Check its inventory balance.
+1. Verifique que `Chocolate Test` tenha `10 UN`.
+2. Desative o produto.
+3. Verifique seu saldo de estoque.
 
-### Expected Result
+### Resultado esperado
 
-The product becomes inactive, but its inventory remains:
+O produto fica inativo, mas seu estoque permanece:
 
 > **10 UN**
 
-Deactivation does not delete or modify inventory.
+A desativação não exclui nem modifica o estoque.
 
-### Result
-
-* [ ] PASS
-* [ ] FAIL
-* [ ] BLOCKED
-
-Notes:
-
----
-
-## VAL-M1-17 — Inactive Product Behavior
-
-### Steps
-
-With the product inactive:
-
-1. Attempt normal inventory entry.
-2. Attempt normal inventory adjustment.
-
-### Expected Result
-
-The system follows the behavior defined by the current M1 specification for inactive products.
-
-If the operation is rejected, no inventory movement is created.
-
-If the implementation reveals that the business behavior for inactive products has not been sufficiently defined, stop the validation and flag the behavior for specification review rather than inventing a rule during validation.
-
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 11. Rejected Operations and Side Effects
+## VAL-M1-17 — Comportamento do produto inativo
 
-## VAL-M1-18 — Rejected Inventory Operation Has No Side Effects
+### Etapas
 
-### Steps
+Com o produto inativo:
 
-1. Record the current balance.
-2. Attempt an invalid inventory operation.
-3. Submit it.
-4. Reload the inventory.
-5. Review the movement history.
+1. Tente uma entrada normal de estoque.
+2. Tente um ajuste normal de estoque.
 
-### Expected Result
+### Resultado esperado
 
-* The operation is rejected.
-* The balance is unchanged.
-* No invalid movement is created.
-* Existing historical movements remain unchanged.
+O sistema segue o comportamento definido pela especificação atual de M1 para produtos inativos.
 
-### Result
+Se a operação for rejeitada, nenhuma movimentação de estoque é criada.
+
+Se a implementação revelar que o comportamento de negócio para produtos inativos ainda não foi suficientemente definido, pare a validação e sinalize o comportamento para revisão da especificação, em vez de inventar uma regra durante a validação.
+
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 12. Complete M1 Operational Flow
+# 11. Operações rejeitadas e efeitos colaterais
 
-## VAL-M1-19 — Product to Inventory Complete Flow
+## VAL-M1-18 — Operação rejeitada de estoque não tem efeitos colaterais
 
-This scenario validates the main M1 flow as a single operational sequence.
+### Etapas
 
-### Steps
+1. Registre o saldo atual.
+2. Tente uma operação inválida de estoque.
+3. Envie-a.
+4. Recarregue o estoque.
+5. Revise o histórico de movimentações.
 
-1. Create a new product:
+### Resultado esperado
 
-   * Name: `Suco Test`
-   * Base unit: `UN`
-2. Add `20 UN`.
-3. Verify balance = `20 UN`.
-4. Add `10 UN`.
-5. Verify balance = `30 UN`.
-6. Perform adjustment `-5 UN`.
-7. Verify balance = `25 UN`.
-8. Check availability for `20 UN`.
-9. Verify sufficient inventory.
-10. Check availability for `30 UN`.
-11. Verify insufficient inventory.
-12. Review movement history.
+* A operação é rejeitada.
+* O saldo permanece inalterado.
+* Nenhuma movimentação inválida é criada.
+* Movimentações históricas existentes permanecem inalteradas.
 
-### Expected Result
+### Resultado
 
-The system correctly maintains the inventory state throughout the complete flow.
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
 
-Final balance:
+Observações:
+
+---
+
+# 12. Fluxo operacional completo de M1
+
+## VAL-M1-19 — Fluxo completo de produto para estoque
+
+Este cenário valida o fluxo principal de M1 como uma sequência operacional única.
+
+### Etapas
+
+1. Crie um novo produto:
+
+   * Nome: `Suco Test`
+   * Unidade base: `UN`
+2. Adicione `20 UN`.
+3. Verifique saldo = `20 UN`.
+4. Adicione `10 UN`.
+5. Verifique saldo = `30 UN`.
+6. Realize ajuste `-5 UN`.
+7. Verifique saldo = `25 UN`.
+8. Verifique disponibilidade para `20 UN`.
+9. Verifique estoque suficiente.
+10. Verifique disponibilidade para `30 UN`.
+11. Verifique estoque insuficiente.
+12. Revise o histórico de movimentações.
+
+### Resultado esperado
+
+O sistema mantém corretamente o estado do estoque ao longo do fluxo completo.
+
+Saldo final:
 
 > **25 UN**
 
-The history contains all accepted movements.
+O histórico contém todas as movimentações aceitas.
 
-Availability checks do not modify inventory.
+Verificações de disponibilidade não modificam o estoque.
 
-No operation creates negative inventory.
+Nenhuma operação cria estoque negativo.
 
-### Result
-
-* [ ] PASS
-* [ ] FAIL
-* [ ] BLOCKED
-
-Notes:
-
----
-
-# 13. Regression Checks
-
-After completing the validation scenarios, perform a basic regression check.
-
-## VAL-M1-20 — Data Persistence
-
-### Steps
-
-1. Close or reload the application.
-2. Return to the product list.
-3. Open the test product.
-4. Check inventory balance.
-5. Check inventory history.
-
-### Expected Result
-
-All previously accepted data remains persisted.
-
-### Result
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-## VAL-M1-21 — No Unintended Data Changes
+# 13. Verificações de Regressão
 
-### Steps
+Após concluir os cenários de validação, faça uma verificação básica de regressão.
 
-Review the test products and their inventory after all scenarios.
+## VAL-M1-20 — Persistência de Dados
 
-### Expected Result
+### Etapas
 
-Only operations intentionally performed during validation affected the test data.
+1. Feche ou recarregue a aplicação.
+2. Volte à lista de produtos.
+3. Abra o produto de teste.
+4. Verifique o saldo de estoque.
+5. Verifique o histórico de estoque.
 
-There are no unexpected inventory movements or product changes.
+### Resultado Esperado
 
-### Result
+Todos os dados aceitos anteriormente permanecem persistidos.
+
+### Resultado
 
 * [ ] PASS
 * [ ] FAIL
 * [ ] BLOCKED
 
-Notes:
+Observações:
 
 ---
 
-# 14. Scope Verification
+## VAL-M1-21 — Nenhuma Alteração de Dados Não Intencional
 
-The following functionality must **not** be required to complete M1:
+### Etapas
 
-* Purchase management
-* Purchase items
-* Suppliers
-* Inventory lots
-* Expiration dates
-* FEFO selection
-* Sales
-* Baskets
-* Basket templates
-* Customers
-* Payments
-* Payment confirmation
-* Inventory deduction from sales
-* Reserved inventory
-* Replenishment workflow
-* Loss management
-* Production/recipes
-* Notifications
-* Advanced dashboards
-* Advanced analytics
+Revise os produtos de teste e seus estoques após todos os cenários.
 
-If validation requires any of the above functionality, stop and determine whether:
+### Resultado Esperado
 
-1. M1 has been incorrectly implemented with a dependency on future functionality; or
-2. The specification genuinely needs to change.
+Somente as operações realizadas intencionalmente durante a validação afetaram os dados de teste.
 
-Do not solve the issue by silently expanding M1 scope.
+Não há movimentações de estoque nem alterações de produto inesperadas.
 
----
+### Resultado
 
-# 15. Final Validation Checklist
-
-Before accepting M1, confirm:
-
-* [ ] Products can be created.
-* [ ] Required product information is validated.
-* [ ] Products can be edited.
-* [ ] Products can be activated/deactivated.
-* [ ] Deactivation does not delete historical information.
-* [ ] Inventory can be added.
-* [ ] Inventory can be positively adjusted.
-* [ ] Inventory can be negatively adjusted when sufficient stock exists.
-* [ ] Zero inventory is valid.
-* [ ] Negative physical inventory cannot be created.
-* [ ] Inventory movements are preserved.
-* [ ] Inventory balance reflects the movement history.
-* [ ] Availability can be checked without changing inventory.
-* [ ] Insufficient inventory is reported without creating negative stock.
-* [ ] Rejected operations do not create unintended side effects.
-* [ ] Data persists after reload/restart.
-* [ ] M1 can be operated without requiring future milestones.
-
----
-
-# 16. Validation Summary
-
-**Validation date:** __________________
-
-**Environment:** __________________
-
-**Application version / commit:** __________________
-
-**Validator:** __________________
-
-**Result:**
-
-* [ ] ACCEPTED
-* [ ] ACCEPTED WITH ISSUES
-* [ ] REJECTED
+* [ ] PASS
+* [ ] FAIL
 * [ ] BLOCKED
 
-### Issues found
+Observações:
 
-| ID | Scenario | Description | Severity | Status |
-| -- | -------- | ----------- | -------- | ------ |
+---
+
+# 14. Verificação de Escopo
+
+As funcionalidades a seguir **não** devem ser necessárias para concluir M1:
+
+* gestão de compras;
+* itens de compra;
+* fornecedores;
+* lotes de estoque;
+* datas de vencimento;
+* seleção FEFO;
+* vendas;
+* cestas;
+* templates de cesta;
+* clientes;
+* pagamentos;
+* confirmação de pagamento;
+* dedução de estoque por vendas;
+* estoque reservado;
+* fluxo de reposição;
+* gestão de perdas;
+* produção/receitas;
+* notificações;
+* painéis avançados;
+* análises avançadas.
+
+Se a validação exigir qualquer uma das funcionalidades acima, pare e determine se:
+
+1. M1 foi implementado incorretamente com uma dependência de funcionalidade futura; ou
+2. a especificação realmente precisa ser alterada.
+
+Não resolva o problema ampliando silenciosamente o escopo de M1.
+
+---
+
+# 15. Lista de Verificação Final da Validação
+
+Antes de aceitar M1, confirme:
+
+* [ ] Produtos podem ser criados.
+* [ ] As informações obrigatórias do produto são validadas.
+* [ ] Produtos podem ser editados.
+* [ ] Produtos podem ser ativados/desativados.
+* [ ] A desativação não exclui informações históricas.
+* [ ] É possível adicionar estoque.
+* [ ] É possível realizar ajustes positivos de estoque.
+* [ ] É possível realizar ajustes negativos quando há estoque suficiente.
+* [ ] Estoque zero é válido.
+* [ ] Não é possível criar estoque físico negativo.
+* [ ] As movimentações de estoque são preservadas.
+* [ ] O saldo de estoque reflete o histórico de movimentações.
+* [ ] É possível verificar a disponibilidade sem alterar o estoque.
+* [ ] Estoque insuficiente é informado sem criar estoque negativo.
+* [ ] Operações rejeitadas não criam efeitos colaterais não intencionais.
+* [ ] Os dados persistem após recarregar/reiniciar a aplicação.
+* [ ] M1 pode ser operado sem exigir marcos futuros.
+
+---
+
+# 16. Resumo da Validação
+
+**Data da validação:** __________________
+
+**Ambiente:** __________________
+
+**Versão da aplicação / commit:** __________________
+
+**Validador:** __________________
+
+**Resultado:**
+
+* [ ] ACEITO
+* [ ] ACEITO COM PROBLEMAS
+* [ ] REJEITADO
+* [ ] BLOCKED
+
+### Problemas Encontrados
+
+| ID | Cenário | Descrição | Gravidade | Status |
+| -- | ------- | --------- | --------- | ------ |
 |    |          |             |          |        |
 |    |          |             |          |        |
 |    |          |             |          |        |
 
 ---
 
-# 17. Acceptance Decision
+# 17. Decisão de Aceitação
 
-M1 should be considered complete only when:
+M1 só deve ser considerado concluído quando:
 
-1. The implementation satisfies the M1 acceptance criteria.
-2. The manual validation scenarios pass or have explicitly reviewed exceptions.
-3. No critical data-integrity issue remains.
-4. Physical inventory cannot become negative.
-5. Historical inventory movements remain preserved.
-6. No unapproved scope expansion was introduced.
-7. The operator can perform the complete M1 flow successfully.
+1. A implementação satisfizer os critérios de aceitação de M1.
+2. Os cenários de validação manual passarem ou houver exceções explicitamente revisadas.
+3. Não restar nenhum problema crítico de integridade de dados.
+4. O estoque físico não puder se tornar negativo.
+5. As movimentações históricas de estoque permanecerem preservadas.
+6. Nenhuma ampliação de escopo não aprovada tiver sido introduzida.
+7. O operador puder executar com sucesso o fluxo completo de M1.
 
-The final acceptance decision belongs to the human product owner.
+A decisão final de aceitação cabe ao proprietário humano do produto.
 
 ---
 
-# 18. Traceability
+# 18. Rastreabilidade
 
-The validation flow follows:
+O fluxo de validação segue:
 
 ```text
-Business Contract
+Contrato de Negócio
         ↓
-M1 Specification
+Especificação de M1
         ↓
-M1 Use Cases
+Casos de Uso de M1
         ↓
-M1 Acceptance Criteria
+Critérios de Aceitação de M1
         ↓
-Implementation
+Implementação
         ↓
-Automated Tests
+Testes Automatizados
         ↓
-Manual Validation
+Validação Manual
         ↓
-Human Acceptance
+Aprovação Humana
 ```
 
-Manual validation does not replace automated tests.
+A validação manual não substitui os testes automatizados.
 
-Automated tests verify implementation behavior consistently.
+Os testes automatizados verificam o comportamento da implementação de forma consistente.
 
-Manual validation verifies that the implemented behavior works correctly from the operator's perspective.
+A validação manual verifica se o comportamento implementado funciona corretamente do ponto de vista do operador.
 
 ---
 
-# 19. Guiding Principle
+# 19. Princípio Orientador
 
-> Validate the business behavior, not the implementation.
+> Valide o comportamento de negócio, não a implementação.
 
-The purpose of this document is not to prove that the code works internally.
+O propósito deste documento não é provar que o código funciona internamente.
 
-The purpose is to verify that Casa Afeto can safely perform the operations defined for M1 — Products & Inventory.
+O propósito é verificar se a Casa Afeto pode realizar com segurança as operações definidas para M1 — Produtos e Estoque (Products & Inventory).
 
-If the system behaves differently from the specification, investigate the discrepancy before changing either the code or the specification.
+Se o sistema se comportar de forma diferente da especificação, investigue a divergência antes de alterar o código ou a especificação.

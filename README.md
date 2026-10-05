@@ -1,84 +1,94 @@
 # Casa Afeto
 
-Sales and operations management system for Casa Afeto.
+Sistema de gestão de vendas e operações para Casa Afeto.
 
-Casa Afeto is a business focused on breakfast baskets and affectionate gift baskets. This system centralizes the core information required to manage products, inventory, baskets, customers, sales, and payments.
+Casa Afeto é um negócio focado em cestas de café da manhã e cestas de presente afetivas. Este sistema centraliza as informações essenciais para gerenciar produtos, estoque, cestas, clientes, vendas e pagamentos.
 
 ---
 
-## Product Vision
+## Visão do Produto
 
-The system exists to make the Casa Afeto operation easier to manage without forcing the business to adapt its processes to unnecessary software complexity.
+O sistema existe para tornar a operação da Casa Afeto mais fácil de gerenciar, sem forçar o negócio a adaptar seus processos a uma complexidade desnecessária de software.
 
-The core principle is:
+O princípio central é:
 
-> **Build little, validate, learn, then build the next thing.**
+> **Construa pouco, valide, aprenda e depois construa a próxima coisa.**
 
-The system should grow from real business requirements rather than speculative functionality.
+O sistema deve crescer a partir de requisitos reais do negócio, em vez de funcionalidade especulativa.
 
-For the complete product vision, see:
+Para a visão completa do produto, consulte:
 
 `docs/product/vision.md`
 
 ---
 
-## Current Status
+## Status Atual
 
-The M0 technical foundation is established; M1 — Products & Inventory is implemented and awaiting human validation and acceptance.
-
-The first development phase is:
-
-**Phase 1 — Core Operations**
+A base técnica M0 foi estabelecida. M1 — Produtos e Estoque está em andamento e aguarda aceitação humana.
 
 ```text
-Products
-    ↓
-Inventory
-    ↓
-Baskets
-    ↓
-Customers
-    ↓
-Sales
-    ↓
-Payments
+Implementação:       Concluída
+Refinamento visual:  Concluído
+Validação:           Concluída
+Aceitação humana:    Pendente
+Status geral:        Em andamento
 ```
 
-The current milestone is:
+Implementação, refinamento visual e validação estão concluídos. A aceitação humana ainda está pendente; portanto, M1 não está concluído.
 
-**M1 — Products & Inventory**
+A primeira fase de desenvolvimento é:
 
-No later milestone should be implemented before its scope is explicitly authorized.
+**Fase 1 — Operações Centrais**
 
-See:
+```text
+Produtos
+    ↓
+Estoque
+    ↓
+Cestas
+    ↓
+Clientes
+    ↓
+Vendas
+    ↓
+Pagamentos
+```
+
+O marco atual é:
+
+**M1 — Produtos e Estoque**
+
+Nenhum marco posterior deve ser implementado antes de seu escopo ser explicitamente autorizado.
+
+Consulte:
 
 `docs/product/roadmap.md`
 
 ---
 
-## Phase 1
+## Fase 1
 
-Phase 1 is divided into five milestones:
+A Fase 1 é dividida em cinco marcos:
 
-| Milestone | Scope                      | Status  |
-| --------- | -------------------------- | ------- |
-| M1        | Products & Inventory       | Current |
-| M2        | Baskets & Basket Templates | Planned |
-| M3        | Customers                  | Planned |
-| M4        | Sales                      | Planned |
-| M5        | Payments                   | Planned |
+| Marco | Escopo                               | Status  |
+| ----- | ------------------------------------ | ------- |
+| M1    | Produtos e Estoque                  | Em andamento |
+| M2    | Cestas e Templates de Cesta          | Planejado |
+| M3    | Clientes                             | Planejado |
+| M4    | Vendas                               | Planejado |
+| M5    | Pagamentos                           | Planejado |
 
-Each milestone must be specified, implemented, tested, and manually validated before moving to the next one.
+Cada marco deve ser especificado, implementado, testado e validado manualmente antes de avançar para o próximo.
 
-Detailed Phase 1 information:
+Informações detalhadas da Fase 1:
 
 `docs/milestones/phase-1.md`
 
 ---
 
-## Documentation
+## Documentação
 
-The project documentation is organized by responsibility.
+A documentação do projeto é organizada por responsabilidade.
 
 ```text
 docs/
@@ -105,193 +115,191 @@ docs/
     └── m5-payments/
 ```
 
-Not all documents or directories need to exist from the beginning.
+Nem todos os documentos ou diretórios precisam existir desde o início.
 
-They should be created when their content becomes necessary.
+Eles devem ser criados quando o conteúdo se tornar necessário.
 
-### Documentation responsibilities
+### Responsabilidades da documentação
 
 **`AGENTS.md`**
 
-Defines how AI agents must work on the project, including scope control, ambiguity handling, testing, architectural decisions, and anti-overengineering rules.
+Define como os agentes de IA devem trabalhar no projeto, incluindo controle de escopo, tratamento de ambiguidades, testes, decisões de arquitetura e regras anti-sobreengenharia.
 
 **`docs/product/vision.md`**
 
-Defines why the product exists, its purpose, principles, and long-term direction.
+Define por que o produto existe, seu propósito, princípios e direção de longo prazo.
 
 **`docs/product/roadmap.md`**
 
-Defines the planned evolution of the product and the boundaries between current and future functionality.
+Define a evolução planejada do produto e os limites entre funcionalidade atual e futura.
 
 **`docs/domain/business-contract.md`**
 
-Describes how the Casa Afeto business operates and the domain assumptions currently established.
+Descreve como o negócio da Casa Afeto opera e as premissas de domínio já estabelecidas.
 
 **`docs/domain/domain-model.md`**
 
-Describes domain entities and their relationships once the model is sufficiently defined.
+Descreve entidades de domínio e suas relações quando o modelo estiver suficientemente definido.
 
 **`docs/domain/business-rules.md`**
 
-Contains formalized business rules once they are stable enough to be given explicit identifiers and maintained independently.
+Contém regras formais de negócio quando elas estiverem estáveis o suficiente para receber identificadores explícitos e serem mantidas independentemente.
 
 **`docs/milestones/`**
 
-Contains the specifications and validation material for individual development milestones.
+Contém as especificações e materiais de validação para marcos individuais de desenvolvimento.
 
 **`docs/architecture/decisions/`**
 
-Contains Architecture Decision Records for significant architectural decisions.
+Contém Registros de Decisão de Arquitetura (ADRs) para decisões arquiteturais significativas.
 
 ---
 
-## Development Philosophy
+## Filosofia de Desenvolvimento
 
-Development follows:
+O desenvolvimento segue:
 
 ```text
-Business Requirement
+Requisito de negócio
         ↓
-Specification
+Especificação
         ↓
-Implementation
+Implementação
         ↓
-Automated Tests
+Testes Automatizados
         ↓
-Human Validation
+Validação Humana
         ↓
-Approval
+Aprovação
         ↓
-Next Increment
+Próximo Incremento
 ```
 
-The agent should not invent business rules when requirements are ambiguous.
+O agente não deve inventar regras de negócio quando os requisitos são ambíguos.
 
-When a decision changes how the business operates, the decision belongs to the project owner.
+Quando uma decisão muda a forma como o negócio opera, a decisão pertence ao proprietário do projeto.
 
-When several technical solutions satisfy the same requirement, the simplest appropriate solution should normally be preferred.
-
----
-
-## Scope Control
-
-Future ideas are not automatically current requirements.
-
-New ideas should be classified as:
-
-* **Current milestone requirement**
-* **Future milestone requirement**
-* **Future backlog idea**
-* **Unnecessary complexity**
-
-The project should avoid implementing functionality merely because it may become useful in the future.
-
-Examples of capabilities intentionally outside the initial scope include:
-
-* affective-date reminders;
-* WhatsApp integration;
-* automated marketing;
-* supplier management;
-* expiration management;
-* automated replenishment;
-* production management;
-* recipe management;
-* advanced CRM;
-* advanced analytics.
-
-These may be considered later when real business requirements justify them.
+Quando várias soluções técnicas atendem ao mesmo requisito, a solução mais simples e apropriada deve normalmente ser preferida.
 
 ---
 
-## Development Rules
+## Controle de Escopo
 
-Before implementing a feature, the agent should:
+Ideias futuras não se tornam automaticamente requisitos atuais.
 
-1. Read `AGENTS.md`.
-2. Identify the current milestone.
-3. Read the relevant product and domain documentation.
-4. Read the milestone specification.
-5. Identify business rules and acceptance criteria.
-6. Implement the smallest appropriate solution.
-7. Add or update relevant tests.
-8. Validate the implementation.
-9. Report any unresolved ambiguity instead of inventing a rule.
+Novas ideias devem ser classificadas como:
+
+* **Requisito do marco atual**
+* **Requisito de marco futuro**
+* **Ideia futura no backlog**
+* **Complexidade desnecessária**
+
+O projeto deve evitar implementar funcionalidade apenas porque ela pode se tornar útil no futuro.
+
+Exemplos de capacidades intencionalmente fora do escopo inicial incluem:
+
+* lembretes de data afetiva;
+* integração com WhatsApp;
+* marketing automatizado;
+* gestão de fornecedores;
+* gestão de vencimentos;
+* reposição automatizada;
+* gestão de produção;
+* gestão de receitas;
+* CRM avançado;
+* análises avançadas.
+
+Essas podem ser consideradas mais tarde quando requisitos reais do negócio justificarem.
 
 ---
 
-## Current Development Sequence
+## Regras de Desenvolvimento
+
+Antes de implementar uma funcionalidade, o agente deve:
+
+1. Ler `AGENTS.md`.
+2. Identificar o marco atual.
+3. Ler a documentação relevante de produto e domínio.
+4. Ler a especificação do marco.
+5. Identificar regras de negócio e critérios de aceitação.
+6. Implementar a menor solução apropriada.
+7. Adicionar ou atualizar testes relevantes.
+8. Validar a implementação.
+9. Reportar qualquer ambiguidade não resolvida em vez de inventar uma regra.
+
+---
+
+## Sequência Atual de Desenvolvimento
 
 ```text
-M1 — Products & Inventory
+M1 — Produtos e Estoque (Products & Inventory)
         ↓
-M2 — Baskets & Basket Templates
+M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
         ↓
-M3 — Customers
+M3 — Clientes (Customers)
         ↓
-M4 — Sales
+M4 — Vendas (Sales)
         ↓
-M5 — Payments
+M5 — Pagamentos (Payments)
 ```
 
-The sequence may change if real business requirements justify it.
+A sequência pode mudar se requisitos reais do negócio justificarem.
 
-Any significant change to the roadmap should be deliberate and documented.
-
----
-
-## Current Next Step
-
-The foundational business decisions for **M1 — Products & Inventory** are finalized:
-
-* **Negative inventory policy: RESOLVED**
-  * **Policy:** Physical inventory must never become negative.
-  * Operations that would produce a negative balance are rejected.
-  * This invariant is absolute and also applies to concurrent inventory operations.
-  * Technical concurrency decision documented in `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
-
-The M1 implementation is available for automated verification and owner-led manual validation. M1 remains subject to human acceptance before work proceeds to M2.
+Qualquer mudança significativa no roadmap deve ser deliberada e documentada.
 
 ---
 
+## Próximo Passo
+
+As decisões de negócio fundamentais para **M1 — Produtos e Estoque** foram finalizadas:
+
+* **Política de estoque negativo: RESOLVIDA**
+  * **Política:** O estoque físico nunca pode ficar negativo.
+  * Operações que produziriam um saldo negativo são rejeitadas.
+  * Este invariante é absoluto e também se aplica a operações concorrentes de estoque.
+  * Decisão técnica de concorrência documentada em `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
+
+A validação técnica formal de M1 foi concluída. A aceitação humana está pendente; M1 permanece em andamento e M2 ainda não foi autorizado a começar.
+
 ---
 
-## Technical Foundation (M0)
+## Fundação Técnica (M0)
 
-The M0 technical foundation establishes the initial stack and development infrastructure:
-- **Backend:** Python 3.12 + FastAPI (REST / JSON)
-- **Database:** PostgreSQL 16 + SQLAlchemy 2.x
-- **Migrations:** Alembic
-- **Validation:** Pydantic
-- **Frontend:** Vue 3 + TypeScript + Vite
-- **Testing:** pytest (backend) + Vitest (frontend)
-- **Containerization:** Docker & Docker Compose
+A fundação técnica M0 estabelece a pilha inicial e a infraestrutura de desenvolvimento:
+- **Servidor:** Python 3.12 + FastAPI (REST / JSON)
+- **Banco de dados:** PostgreSQL 16 + SQLAlchemy 2.x
+- **Migrações:** Alembic
+- **Validação:** Pydantic
+- **Interface web:** Vue 3 + TypeScript + Vite
+- **Testes:** pytest (backend) + Vitest (frontend)
+- **Conteinerização:** Docker e Docker Compose
 
-### Prerequisites
+### Pré-requisitos
 - Docker & Docker Compose (v2+)
-- Python 3.12+ (for local host development)
-- Node.js 18+ & npm (for local host development)
+- Python 3.12+ (para desenvolvimento local do host)
+- Node.js 18+ & npm (para desenvolvimento local do host)
 
-### Getting Started
+### Primeiros Passos
 
-#### 1. Environment Configuration
-Copy `.env.example` to `.env`:
+#### 1. Configuração do Ambiente
+Copie `.env.example` para `.env`:
 ```bash
 cp .env.example .env
 ```
 
-#### 2. Running with Docker Compose (Recommended)
-Start all services (PostgreSQL, FastAPI Backend, Vue Frontend):
+#### 2. Execução com Docker Compose (recomendado)
+Inicie todos os serviços (PostgreSQL, servidor FastAPI e interface Vue):
 ```bash
 docker compose up -d
 ```
 - Frontend: [http://localhost:5173](http://localhost:5173)
-- Backend Health: [http://localhost:8000/health](http://localhost:8000/health)
-- API Docs (OpenAPI / Swagger): [http://localhost:8000/docs](http://localhost:8000/docs)
+- Saúde do servidor: [http://localhost:8000/health](http://localhost:8000/health)
+- Documentação da API (OpenAPI / Swagger): [http://localhost:8000/docs](http://localhost:8000/docs)
 
-#### 3. Running Locally (Host)
+#### 3. Execução local (máquina de desenvolvimento)
 
-##### Database
-Start PostgreSQL using Docker:
+##### Banco de Dados
+Inicie o PostgreSQL usando Docker:
 ```bash
 docker compose up -d db
 ```
@@ -313,40 +321,40 @@ npm install
 npm run dev
 ```
 
-### Running Tests
+### Executando Testes
 
-#### Backend Tests (pytest)
+#### Testes do Backend (pytest)
 ```bash
 cd backend
 source .venv/bin/activate
 pytest
 ```
 
-#### Frontend Tests (Vitest)
+#### Testes do Frontend (Vitest)
 ```bash
 cd frontend
 npm run test
 ```
 
-### Database Migrations (Alembic)
-Apply migrations:
+### Migrações do Banco de Dados (Alembic)
+Aplicar migrações:
 ```bash
 cd backend
 source .venv/bin/activate
 alembic upgrade head
 ```
 
-Generate a new migration:
+Gerar uma nova migração:
 ```bash
 alembic revision -m "description_of_change"
 ```
 
 ---
 
-## Project Principle
+## Princípio do Projeto
 
-> **Do not build what has not been decided.**
+> **Não construa o que não foi decidido.**
 >
-> **When something has been decided, implement it faithfully and simply.**
+> **Quando algo foi decidido, implemente-o fielmente e de forma simples.**
 >
-> **When the business has not decided, ask instead of guessing.**
+> **Quando o negócio ainda não decidiu, pergunte em vez de adivinhar.**

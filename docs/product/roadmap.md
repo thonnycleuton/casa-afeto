@@ -1,305 +1,437 @@
-# Casa Afeto — Product Roadmap
+# Casa Afeto — Roadmap do Produto
 
-**Document version:** 0.1
-**Status:** Draft
-**Last updated:** 2026-10-02
-
----
-
-## 1. Purpose
-
-This document defines the planned evolution of the Casa Afeto management system.
-
-Its purpose is to establish:
-
-* the initial delivery sequence;
-* the capabilities planned for each phase;
-* future areas of evolution;
-* boundaries between current scope and future scope.
-
-This roadmap is intentionally high-level.
-
-Detailed behavior belongs in milestone specifications and business rules.
-
-The roadmap is not a commitment to implement every future capability listed here.
-
-Future capabilities must be validated against real business needs before entering active development.
+**Versão do documento:** 0.3
+**Status:** Ativo
+**Última atualização:** 2026-10-05
 
 ---
 
-# 2. Product Evolution Strategy
+## 1. Finalidade
 
-The system will be developed incrementally.
+Este documento define a evolução planejada do sistema de gestão da Casa Afeto e reflete o estado atual dessa evolução.
 
-The project follows the principle:
+Sua finalidade é estabelecer:
 
-> **Build little, validate, learn, then build the next thing.**
+* a sequência inicial de entrega;
+* as capacidades planejadas para cada fase;
+* o estado atual de cada marco;
+* dependências entre marcos;
+* gates de governança que controlam quando um marco pode começar e quando está completo;
+* áreas futuras de evolução;
+* limites entre escopo atual e escopo futuro.
 
-The initial product will focus on the operational core:
+O roadmap responde a duas perguntas:
+
+> "Para onde o projeto está indo?"
+
+> "Onde o projeto está agora?"
+
+Este roadmap é deliberadamente de alto nível.
+
+Comportamentos detalhados pertencem às especificações de marcos e regras de negócio.
+
+O roadmap não é um compromisso de implementar todas as capacidades futuras listadas aqui.
+
+Capacidades futuras devem ser validadas contra necessidades reais do negócio antes de entrarem em desenvolvimento ativo.
+
+---
+
+# 2. Estratégia de Evolução do Produto
+
+O sistema será desenvolvido de forma incremental.
+
+O projeto segue o princípio:
+
+> **Construa pouco, valide, aprenda e depois construa a próxima coisa.**
+
+O produto inicial focará no núcleo operacional:
 
 ```text
-Products
+Produtos
     ↓
-Inventory
+Estoque
     ↓
-Baskets
+Cestas
     ↓
-Customers
+Clientes
     ↓
-Sales
+Vendas
     ↓
-Payments
+Pagamentos
 ```
 
-Only after this core flow is operational should additional capabilities be considered.
+Somente após esse fluxo central ficar operacional é que capacidades adicionais devem ser consideradas.
 
-The roadmap therefore distinguishes between:
+O roadmap, portanto, distingue entre:
 
-1. **Phase 1 — Core Operations**
-2. **Phase 2 — Inventory & Customer Evolution**
-3. **Phase 3 — Operational Automation**
-4. **Future Opportunities**
+1. **Fase 1 — Operações Centrais (Core Operations)**
+2. **Fase 2 — Evolução do Estoque e dos Clientes (Inventory & Customer Evolution)**
+3. **Fase 3 — Automação Operacional (Operational Automation)**
+4. **Oportunidades Futuras**
 
-The phase boundaries are intentionally flexible.
+As fronteiras das fases são intencionalmente flexíveis.
 
-Actual priorities may change based on business feedback.
+Prioridades reais podem mudar com base no feedback do negócio.
 
 ---
 
-# 3. Phase 1 — Core Operations
+# 3. Fundamentos Transversais
 
-## Objective
-
-Create the first reliable version of the Casa Afeto operational system.
-
-The system should allow Casa Afeto to manage the basic relationship between:
-
-* products;
-* inventory;
-* baskets;
-* customers;
-* sales;
-* payments.
-
-At the end of Phase 1, the system should support the core business flow:
+Determinadas capacidades não são marcos de negócio — são fundações técnicas e de design que apoiam todos os marcos.
 
 ```text
-Product
-    ↓
-Inventory
-    ↓
-Basket
-    ↓
-Customer
-    ↓
-Sale
-    ↓
-Payment
-    ↓
-Inventory deduction
+Fundamentos Transversais
+├── Fundação Técnica       (infraestrutura, stack, padrões de arquitetura)
+└── Sistema de Design      (linguagem visual, biblioteca de componentes, princípios de UX)
+
+Marcos de Negócio
+├── M1 — Produtos e Estoque (Products & Inventory)
+├── M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
+├── M3 — Clientes (Customers)
+├── M4 — Vendas (Sales)
+└── M5 — Pagamentos (Payments)
 ```
 
----
+O **Sistema de Design** não é um marco. É uma fundação usada pelos marcos conforme necessário.
 
-# 4. Phase 1 Milestones
+Sua evolução é guiada pelos requisitos visuais de cada marco, e não por uma trilha de entrega separada.
 
-Phase 1 is divided into five milestones.
+A **Fundação Técnica** estabelece infraestrutura, stack e restrições arquiteturais. Ela está documentada em:
 
 ```text
-M1 — Products & Inventory
-        ↓
-M2 — Baskets & Basket Templates
-        ↓
-M3 — Customers
-        ↓
-M4 — Sales
-        ↓
-M5 — Payments
+docs/architecture/technical-foundation.md
 ```
 
-Each milestone should be:
-
-* specified;
-* implemented;
-* tested;
-* manually validated;
-* reviewed against the business requirements
-
-before the project moves to the next milestone.
-
 ---
 
-# 5. M1 — Products & Inventory
+# 4. Fase 1 — Operações Centrais (Core Operations)
 
-## Objective
+## Objetivo
 
-Establish the foundation for managing the products used by Casa Afeto and their current inventory.
+Criar a primeira versão confiável do sistema operacional da Casa Afeto.
 
-## Planned capabilities
+O sistema deve permitir que a Casa Afeto gerencie a relação básica entre:
 
-### Products
+* produtos;
+* estoque;
+* cestas;
+* clientes;
+* vendas;
+* pagamentos.
 
-* create products;
-* edit product information;
-* activate products;
-* deactivate products;
-* search/list products;
-* define the product's base inventory unit.
-
-### Inventory
-
-* add inventory;
-* remove inventory through supported adjustments;
-* view current balance;
-* view inventory movement history;
-* perform inventory corrections while preserving movement history.
-
-## Important business concepts
-
-M1 establishes inventory as a movement-based concept.
-
-The system should not rely solely on manually changing a single stock number without preserving how that number was produced.
-
-## Explicitly outside M1
-
-The following are not part of this milestone:
-
-* purchases;
-* suppliers;
-* purchase invoices;
-* purchase items;
-* inventory lots;
-* expiration dates;
-* FEFO selection;
-* expiration warnings;
-* automated replenishment;
-* production;
-* recipes;
-* reserved stock;
-* sales-related inventory deduction.
-
-Those concepts may be introduced in later milestones.
-
----
-
-# 6. M2 — Baskets & Basket Templates
-
-## Objective
-
-Allow Casa Afeto to define standard baskets and create customized baskets for individual sales.
-
-## Planned capabilities
-
-### Basket templates
-
-* create templates;
-* edit templates;
-* activate/deactivate templates;
-* define template composition;
-* define product quantities.
-
-### Baskets
-
-* create a basket from a template;
-* create a basket without a template;
-* add products;
-* remove products;
-* substitute products;
-* define multiple quantities of the same product;
-* preserve the concrete basket composition.
-
-A basket may contain a product more than once conceptually, but the preferred representation is a product item with an explicit quantity.
-
-For example:
+Ao final da Fase 1, o sistema deve suportar o fluxo principal de negócio:
 
 ```text
-Chocolate — quantity: 2
-Cereal Bar — quantity: 3
-Juice — quantity: 1
+Produto
+    ↓
+Estoque
+    ↓
+Cesta
+    ↓
+Cliente
+    ↓
+Venda
+    ↓
+Pagamento
+    ↓
+Dedução de estoque
 ```
 
-## Stock behavior
+---
 
-A product may be selected for a basket even when there is currently insufficient stock.
+# 5. Marcos da Fase 1
 
-The system should make the stock situation visible to the user.
+A Fase 1 é dividida em cinco marcos.
 
-The business may replenish the product before the basket is assembled or delivered.
+```text
+M1 — Produtos e Estoque (Products & Inventory)
+        ↓
+M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
+        ↓
+M3 — Clientes (Customers)
+        ↓
+M4 — Vendas (Sales)
+        ↓
+M5 — Pagamentos (Payments)
+```
 
-## Template independence
+Cada marco deve ser:
 
-Once a concrete basket is created, its composition must be independent of future changes to the template.
+* especificado;
+* implementado;
+* testado;
+* validado manualmente;
+* revisado contra os requisitos de negócio
 
-Changing a template must not modify existing baskets.
-
-## Pricing
-
-M2 may calculate basket cost and suggested price based on its composition.
-
-The final selling price remains under business control.
+antes que o projeto avance para o próximo marco.
 
 ---
 
-# 7. M3 — Customers
+# 6. M1 — Produtos e Estoque (Products & Inventory)
 
-## Objective
+## Objetivo
 
-Establish the basic customer record required to associate sales with customers.
+Estabelecer a base para gerenciar os produtos usados pela Casa Afeto e seu estoque atual.
 
-## Planned capabilities
+## Capacidades planejadas
 
-* create customers;
-* edit customer information;
-* search customers;
-* activate/deactivate customers;
-* associate sales with customers.
+### Produtos
 
-## Scope philosophy
+* criar produtos;
+* editar informações do produto;
+* ativar produtos;
+* desativar produtos;
+* buscar/listar produtos;
+* definir a unidade base de estoque do produto.
 
-M3 should remain intentionally simple.
+### Estoque
 
-It is not intended to become a full CRM.
+* adicionar estoque;
+* remover estoque por ajustes suportados;
+* visualizar saldo atual;
+* visualizar histórico de movimentações de estoque;
+* realizar correções de estoque preservando o histórico de movimentações.
 
-## Explicitly outside M3
+## Conceitos-chave de negócio
 
-* customer segmentation;
-* marketing campaigns;
-* automated reminders;
-* loyalty programs;
-* customer scoring;
-* advanced customer analytics;
-* affective dates;
-* automated WhatsApp communication.
+M1 estabelece o estoque como um conceito baseado em movimentações.
 
-These may be evaluated later.
+O sistema não deve depender apenas de alterar manualmente um único número de estoque sem preservar como esse número foi produzido.
+
+## Decisões-chave de negócio resolvidas
+
+* **Política de estoque negativo: RESOLVIDA**
+  * **Política:** O estoque físico deve nunca ficar negativo (`INV-006`).
+  * Operações que produziriam um saldo negativo são rejeitadas.
+  * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
+
+## Explicitamente fora de M1
+
+O seguinte não faz parte deste marco:
+
+* compras;
+* fornecedores;
+* notas fiscais de compra;
+* itens de compra;
+* lotes de estoque;
+* datas de vencimento;
+* seleção FEFO;
+* alertas de vencimento;
+* reposição automatizada;
+* produção;
+* receitas;
+* estoque reservado;
+* dedução de estoque relacionada a vendas.
+
+Esses conceitos podem ser introduzidos em marcos posteriores.
+
+## Status atual
+
+```text
+Implementação:       Concluída
+Refinamento visual:  Concluído
+Validação:           Concluída
+Aceitação humana:    Pendente
+Status geral:        Em andamento
+```
+
+M1 passou pela validação técnica formal e aguarda a aceitação humana do proprietário do produto.
 
 ---
 
-# 8. M4 — Sales
+# 7. M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
 
-## Objective
+## Objetivo
 
-Create and manage the commercial transaction connecting customers and baskets.
+Permitir que a Casa Afeto defina cestas padrão e crie cestas personalizadas para vendas individuais.
 
-## Planned capabilities
+## Capacidades planejadas
 
-A sale should allow the user to:
+### Templates de cesta
 
-* select a customer;
-* add one or more baskets;
-* view basket compositions;
-* modify basket composition;
-* define recipient information;
-* define delivery address;
-* define delivery date;
-* add relevant notes;
-* calculate sale totals;
-* save the sale as a draft;
-* modify a draft sale.
+* criar templates;
+* editar templates;
+* ativar/desativar templates;
+* definir composição do template;
+* definir quantidades de produtos.
 
-## Sale lifecycle
+### Cestas
 
-The initial operational lifecycle is expected to follow:
+* criar uma cesta a partir de um template;
+* criar uma cesta sem template;
+* personalizar a cesta;
+* adicionar produtos;
+* remover produtos;
+* substituir produtos;
+* definir múltiplas quantidades do mesmo produto;
+* preservar a composição da cesta concreta;
+* calcular custo da cesta;
+* calcular preço sugerido;
+* definir preço final manualmente.
+
+## Fluxo de trabalho esperado
+
+O usuário deve ser capaz de:
+
+1. Criar um template de cesta.
+2. Adicionar produtos e quantidades ao template.
+3. Criar uma cesta concreta a partir do template.
+4. Criar uma cesta sem template.
+5. Modificar a cesta concreta.
+6. Adicionar ou remover produtos.
+7. Substituir produtos.
+8. Usar múltiplas unidades do mesmo produto.
+9. Ver o custo da cesta.
+10. Ver um preço sugerido de venda.
+11. Definir o preço final manualmente.
+
+## Comportamento importante de negócio
+
+Uma cesta concreta deve ser independente de futuras alterações no seu template.
+
+Por exemplo:
+
+```text
+Template A
+    Chocolate × 2
+    Suco × 1
+
+        ↓ criar cesta
+
+Cesta X
+    Chocolate × 2
+    Suco × 1
+
+        ↓ alteração posterior do template
+
+Template A
+    Chocolate × 1
+    Suco × 2
+```
+
+A cesta X deve continuar contendo:
+
+```text
+Chocolate × 2
+Suco × 1
+```
+
+A alteração do template não deve modificar a cesta existente.
+
+Uma cesta também pode ser personalizada após sua criação.
+
+Um produto com estoque insuficiente ainda pode ser adicionado à cesta, mas o usuário deve receber um aviso claro sobre a falta de estoque.
+
+## Comportamento de precificação
+
+O sistema deve calcular:
+
+```text
+Custo da Cesta
+    ↓
+Preço Sugerido
+    ↓
+Preço Final
+```
+
+A prática atual de negócio de aproximadamente 2× custo é tratada como sugestão de precificação, não como regra imposta.
+
+O preço final de venda permanece sob controle do usuário.
+
+## Explicitamente fora de escopo
+
+M2 não implementa:
+
+* vendas;
+* clientes;
+* pagamentos;
+* dedução de estoque;
+* gestão de compras;
+* seleção de lote;
+* gestão de vencimento;
+* gerenciamento de destinatário como entidade separada;
+* descontos ou promoções.
+
+## Dependência
+
+M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
+
+## Status atual
+
+```text
+Status: Planejado
+```
+
+M2 não entrará em implementação até que M1 passe pelo Gate de Conclusão do Marco.
+
+---
+
+# 8. M3 — Clientes (Customers)
+
+## Objetivo
+
+Estabelecer o registro básico de cliente necessário para associar vendas a clientes.
+
+## Capacidades planejadas
+
+* criar clientes;
+* editar informações do cliente;
+* buscar clientes;
+* ativar/desativar clientes;
+* associar vendas a clientes.
+
+## Filosofia de escopo
+
+M3 deve permanecer intencionalmente simples.
+
+Não se destina a se tornar um CRM completo.
+
+## Explicitamente fora de M3
+
+* segmentação de clientes;
+* campanhas de marketing;
+* lembretes automatizados;
+* programas de fidelidade;
+* pontuação de clientes;
+* análises avançadas de clientes;
+* datas afetivas;
+* comunicação automatizada por WhatsApp.
+
+Essas podem ser avaliadas mais tarde.
+
+## Status atual
+
+```text
+Status: Planejado
+```
+
+---
+
+# 9. M4 — Vendas (Sales)
+
+## Objetivo
+
+Criar e gerenciar a transação comercial conectando clientes e cestas.
+
+## Capacidades planejadas
+
+Uma venda deve permitir ao usuário:
+
+* selecionar um cliente;
+* adicionar uma ou mais cestas;
+* visualizar composições da cesta;
+* modificar composição da cesta;
+* definir informações do destinatário;
+* definir endereço de entrega;
+* definir data de entrega;
+* adicionar observações relevantes;
+* calcular totais da venda;
+* salvar a venda como rascunho;
+* modificar uma venda em rascunho.
+
+## Ciclo de vida da venda
+
+O ciclo operacional inicial esperado segue:
 
 ```text
 DRAFT
@@ -313,7 +445,7 @@ READY
 DELIVERED
 ```
 
-A cancelled state is also expected:
+Também é esperada uma situação de cancelamento:
 
 ```text
 DRAFT / CONFIRMED / PREPARING / READY
@@ -321,537 +453,580 @@ DRAFT / CONFIRMED / PREPARING / READY
               CANCELLED
 ```
 
-The exact transition rules will be defined in the milestone specification.
+As regras exatas de transição serão definidas na especificação do marco.
 
-## Important scope boundary
+## Importante fronteira de escopo
 
-M4 creates the sales structure but does not introduce the complete payment-confirmation workflow.
+M4 cria a estrutura de vendas, mas não introduz o fluxo completo de confirmação de pagamento.
 
-Payment behavior belongs to M5.
+O comportamento de pagamento pertence a M5.
+
+## Status atual
+
+```text
+Status: Planejado
+```
 
 ---
 
-# 9. M5 — Payments
+# 10. M5 — Pagamentos (Payments)
 
-## Objective
+## Objetivo
 
-Connect payment information to the sales lifecycle and establish the rules for sale confirmation and inventory deduction.
+Conectar informações de pagamento ao ciclo de vida de vendas e estabelecer as regras para confirmação da venda e dedução de estoque.
 
-## Planned capabilities
+## Capacidades planejadas
 
-* record payments;
-* support PIX;
-* support card payments;
-* record payment proof;
-* track total amount paid;
-* calculate remaining balance;
-* determine whether the confirmation threshold has been reached.
+* registrar pagamentos;
+* suportar PIX;
+* suportar pagamentos com cartão;
+* registrar comprovante de pagamento;
+* acompanhar o total pago;
+* calcular saldo restante;
+* determinar se o limite de confirmação foi alcançado.
 
-## Confirmation rule
+## Regra de confirmação
 
-The current business rule is:
+A regra atual de negócio é:
 
-> A sale is confirmed when at least 50% of its total value has been paid.
+> Uma venda é confirmada quando pelo menos 50% do seu valor total foi pago.
 
-Once confirmed, the sale generates the corresponding inventory deduction.
+Uma vez confirmada, a venda gera a dedução correspondente de estoque.
 
 ```text
-Payment >= 50%
+Pagamento >= 50%
        ↓
-Sale confirmed
+Venda confirmada
        ↓
-Inventory deducted
+Estoque deduzido
 ```
 
-## Remaining payment
+## Pagamento restante
 
-The remaining balance must be paid before delivery.
+O saldo restante deve ser pago antes da entrega.
 
-The current business rule is:
+A regra atual de negócio é:
 
-> 100% of the sale must be paid before delivery.
+> 100% da venda deve ser pago antes da entrega.
 
-## Post-confirmation changes
+## Alterações após confirmação
 
-A confirmed sale may be modified.
+Uma venda confirmada pode ser modificada.
 
-When its basket composition changes, inventory should be adjusted according to the difference between the previous and new compositions.
+Quando a composição da cesta muda, o estoque deve ser ajustado de acordo com a diferença entre as composições anterior e nova.
 
-Example:
+Exemplo:
 
 ```text
 Original:
 2 × Chocolate
-1 × Juice
+1 × Suco
 
-New:
-2 × Biscuit
-1 × Juice
+Novo:
+2 × Biscoito
+1 × Suco
 
-Inventory adjustment:
+Ajuste de estoque:
 +2 Chocolate
--2 Biscuit
+-2 Biscoito
 ```
 
-The original inventory movement remains part of the historical record.
+A movimentação original de estoque permanece parte do registro histórico.
 
----
-
-# 10. Phase 1 Definition of Done
-
-Phase 1 should be considered complete when Casa Afeto can execute the following flow through the system:
+## Status atual
 
 ```text
-Create Product
-      ↓
-Manage Inventory
-      ↓
-Create Basket Template
-      ↓
-Create Customized Basket
-      ↓
-Create Customer
-      ↓
-Create Sale
-      ↓
-Record Payment
-      ↓
-Reach Confirmation Threshold
-      ↓
-Confirm Sale
-      ↓
-Deduct Inventory
-      ↓
-Complete Delivery Flow
+Status: Planejado
 ```
 
-The exact acceptance criteria belong to the individual milestone documents.
-
 ---
 
-# 11. Phase 2 — Inventory & Customer Evolution
+# 11. Visão Geral do Status dos Marcos
 
-Phase 2 represents capabilities that become valuable once the core operational flow is working.
-
-These capabilities should only be promoted into active development after the Phase 1 experience provides sufficient evidence that they are needed.
-
----
-
-## 11.1 Purchase Management
-
-Potential capabilities:
-
-* register purchases;
-* register purchase items;
-* record acquisition quantities;
-* record purchase prices;
-* convert commercial purchase units into inventory units;
-* associate purchases with inventory.
-
-Example:
+Retrato atual dos estados dos marcos da Fase 1.
 
 ```text
-1 box
+M1 — Produtos e Estoque
+     Implementação       Concluída
+     Refinamento visual  Concluído
+     Validação           Concluída
+     Aceitação humana    Pendente
+     Status geral        Em andamento
+
+M2 — Cestas e Templates de Cesta  Planejado
+M3 — Clientes                     Planejado
+M4 — Vendas                       Planejado
+M5 — Pagamentos                   Planejado
+```
+
+Esta seção deve ser atualizada sempre que um marco mudar de estado.
+
+---
+
+# 12. Dependências dos Marcos
+
+As dependências conhecidas são:
+
+```text
+M1 — Produtos e Estoque (Products & Inventory)
+├── pré-requisito para M2 (cestas referenciam produtos e estoque)
+└── pré-requisito para M4 (vendas referenciam estoque para dedução)
+
+M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
+└── pré-requisito para M4 (vendas contêm cestas)
+
+M3 — Clientes (Customers)
+└── pré-requisito para M4 (vendas pertencem a clientes)
+
+M4 — Vendas (Sales)
+└── pré-requisito para M5 (pagamentos confirmam vendas e acionam dedução de estoque)
+```
+
+---
+
+# 13. Definição de Pronto da Fase 1
+
+A Fase 1 deve ser considerada concluída quando a Casa Afeto puder executar o seguinte fluxo pelo sistema:
+
+```text
+Cadastrar Produto
+      ↓
+Gerenciar Estoque
+      ↓
+Criar Template de Cesta
+      ↓
+Criar Cesta Personalizada
+      ↓
+Cadastrar Cliente
+      ↓
+Criar Venda
+      ↓
+Registrar Pagamento
+      ↓
+Atingir Limite de Confirmação
+      ↓
+Confirmar Venda
+      ↓
+Deduzir Estoque
+      ↓
+Concluir Fluxo de Entrega
+```
+
+Os critérios de aceitação exatos pertencem aos documentos de cada marco.
+
+---
+
+# 14. Fase 2 — Evolução do Estoque e dos Clientes
+
+A Fase 2 representa capacidades que se tornam valiosas quando o fluxo operacional central estiver funcionando.
+
+Essas capacidades só devem ser promovidas para desenvolvimento ativo depois que a experiência da Fase 1 fornecer evidências suficientes de que são necessárias.
+
+## 14.1 Gestão de Compras
+
+Capacidades potenciais:
+
+* registrar compras;
+* registrar itens de compra;
+* registrar quantidades adquiridas;
+* registrar preços de compra;
+* converter unidades comerciais de compra em unidades de estoque;
+* associar compras ao estoque.
+
+Exemplo:
+
+```text
+1 caixa
 ×
-24 units per box
+24 unidades por caixa
 =
-24 inventory units
+24 unidades de estoque
 ```
 
-The system should preserve the actual acquisition price rather than replacing previous historical costs.
+O sistema deve preservar o preço real de aquisição, em vez de substituir custos históricos anteriores.
 
----
+## 14.2 Lotes de Estoque
 
-## 11.2 Inventory Lots
+Capacidade potencial:
 
-Potential capability:
+Representar como lotes separados os estoques adquiridos em momentos e preços diferentes.
 
-Represent stock acquired at different times and prices as separate inventory lots.
-
-Example:
+Exemplo:
 
 ```text
 Chocolate
 
-Lot A
-Cost: R$2.50
-Quantity: 20
+Lote A
+Custo: R$ 2,50
+Quantidade: 20
 
-Lot B
-Cost: R$1.80
-Quantity: 15
-Expiration: earlier
+Lote B
+Custo: R$ 1,80
+Quantidade: 15
+Vencimento: mais próximo
 ```
 
-This allows the system to distinguish between different acquisition contexts.
+Isso permite que o sistema diferencie contextos distintos de aquisição.
 
-The exact lot-selection strategy must be defined as a business rule when this functionality enters active development.
+A estratégia exata de seleção de lote deve ser definida como uma regra de negócio quando essa funcionalidade entrar em desenvolvimento ativo.
 
----
+## 14.3 Gestão de Vencimentos
 
-## 11.3 Expiration Management
+Capacidades potenciais:
 
-Potential capabilities:
+* datas de vencimento;
+* alertas de vencimento;
+* produtos próximos do vencimento;
+* uso preferencial de produtos com vencimento mais próximo;
+* visibilidade do estoque vencido.
 
-* expiration dates;
-* expiration warnings;
-* products approaching expiration;
-* preferential use of products with nearer expiration;
-* visibility of expired inventory.
+Uma estratégia que prioriza o vencimento mais próximo é atualmente uma possível política de negócio.
 
-A nearest-expiration-first strategy is currently a possible business policy.
+Ela deve permanecer uma regra de negócio substituível, em vez de se tornar uma suposição arquitetural.
 
-It should remain a replaceable business rule rather than becoming an architectural assumption.
+## 14.4 Reposição de Estoque
 
----
+Capacidades potenciais:
 
-## 11.4 Inventory Replenishment
+* identificar produtos necessários para cestas futuras;
+* identificar estoque insuficiente;
+* destacar produtos que precisam ser repostos;
+* distinguir necessidades normais de estoque das necessidades urgentes criadas por vendas confirmadas.
 
-Potential capabilities:
+O sistema deve primeiro oferecer visibilidade antes de tentar automatizar as compras.
 
-* identify products needed by upcoming baskets;
-* identify insufficient inventory;
-* highlight products requiring replenishment;
-* distinguish normal stock needs from urgent needs created by confirmed sales.
+## 14.5 Datas Afetivas
 
-The system should first provide visibility before attempting to automate purchasing.
-
----
-
-## 11.5 Affective Dates
-
-Potential customer-related functionality may include:
+Funcionalidades potenciais relacionadas a clientes podem incluir:
 
 ```text
-Customer
+Cliente
    ↓
-Person / Recipient
+Pessoa / Destinatário
    ↓
-Occasion
+Ocasião
    ↓
-Date
+Data
 ```
 
-Examples:
+Exemplos:
 
-* birthday;
-* wedding anniversary;
-* other relevant occasions.
+* aniversário;
+* aniversário de casamento;
+* outras ocasiões relevantes.
 
-Potential future capabilities:
+Capacidades futuras potenciais:
 
-* record important dates;
-* list upcoming dates;
-* notify the business;
-* support proactive customer contact.
+* registrar datas importantes;
+* listar datas próximas;
+* notificar o negócio;
+* apoiar o contato proativo com clientes.
 
-This functionality is explicitly outside Phase 1.
+Essa funcionalidade está explicitamente fora da Fase 1.
 
 ---
 
-# 12. Phase 3 — Operational Automation
+# 15. Fase 3 — Automação Operacional
 
-After the core operation and inventory/customer evolution are stable, the system may evolve toward reducing repetitive work.
+Depois que a operação central e a evolução de estoque/clientes estiverem estáveis, o sistema poderá evoluir para reduzir o trabalho repetitivo.
 
-Potential areas include:
+Áreas potenciais incluem:
 
-## Communication
+## Comunicação
 
-Possible integrations with:
+Possíveis integrações com:
 
 * WhatsApp;
-* customer communication workflows;
-* order status communication;
-* payment reminders.
+* fluxos de comunicação com clientes;
+* comunicação de status do pedido;
+* lembretes de pagamento.
 
-These integrations should only be implemented when their business process is clearly defined.
+Essas integrações só devem ser implementadas quando seus processos de negócio estiverem claramente definidos.
 
----
+## Notificações Automatizadas
 
-## Automated Notifications
+Notificações potenciais podem incluir:
 
-Potential notifications may include:
+* entrega próxima;
+* pagamento pendente;
+* vencimento próximo;
+* data afetiva próxima;
+* necessidade de reposição.
 
-* upcoming delivery;
-* outstanding payment;
-* approaching expiration;
-* upcoming affective date;
-* replenishment needs.
+Cada notificação deve ter um propósito de negócio explícito antes da implementação.
 
-Each notification should have an explicit business purpose before implementation.
+## Painéis Operacionais
 
----
+Painéis potenciais podem apresentar:
 
-## Operational Dashboards
+* entregas próximas;
+* vendas por período;
+* pagamentos pendentes;
+* situação do estoque;
+* produtos que exigem atenção;
+* datas afetivas próximas.
 
-Potential dashboards may provide:
-
-* upcoming deliveries;
-* sales by period;
-* outstanding payments;
-* inventory situation;
-* products requiring attention;
-* upcoming affective dates.
-
-Reporting should be introduced according to actual business needs rather than creating a large reporting subsystem in advance.
+Relatórios devem ser introduzidos conforme as necessidades reais do negócio, em vez de criar antecipadamente um subsistema amplo de relatórios.
 
 ---
 
-# 13. Future Opportunities
+# 16. Oportunidades Futuras
 
-The following capabilities may become relevant as Casa Afeto grows.
+As capacidades a seguir poderão se tornar relevantes conforme a Casa Afeto crescer.
 
-They are recorded here as possibilities, not commitments.
+Elas estão registradas aqui como possibilidades, não como compromissos.
 
----
+## 16.1 Produção Interna
 
-## 13.1 Internal Production
+Alguns produtos podem ser produzidos internamente.
 
-Some products may be produced internally.
+Capacidades potenciais:
 
-Potential capabilities:
+* receitas;
+* ingredientes;
+* lotes de produção;
+* quantidades produzidas;
+* custos de produção;
+* datas de vencimento.
 
-* recipes;
-* ingredients;
-* production batches;
-* production quantities;
-* production costs;
-* expiration dates.
-
-Example:
+Exemplo:
 
 ```text
-Recipe
+Receita
    ↓
-Ingredients
+Ingredientes
    ↓
-Production
+Produção
    ↓
-Finished Product
+Produto Acabado
    ↓
-Inventory
+Estoque
 ```
 
-This should only be introduced once the business defines an actual production process.
+Isso só deve ser introduzido quando o negócio definir um processo real de produção.
+
+## 16.2 Precificação Avançada
+
+Funcionalidades futuras de precificação podem incluir:
+
+* regras de precificação;
+* análise de margem;
+* preços históricos;
+* precificação sazonal;
+* promoções;
+* descontos.
+
+O sistema atual não deve implementar esses conceitos de forma especulativa.
+
+## 16.3 Gestão Avançada de Clientes
+
+Possíveis capacidades futuras:
+
+* histórico de clientes;
+* padrões de compra;
+* preferências de clientes;
+* segmentação;
+* análise de compras recorrentes;
+* ofertas personalizadas.
+
+Elas só devem ser introduzidas se oferecerem valor operacional ou comercial mensurável.
+
+## 16.4 Análises de Negócio
+
+Relatórios futuros potenciais podem incluir:
+
+* receita;
+* custo;
+* margens;
+* vendas por cesta;
+* consumo de produtos;
+* giro de estoque;
+* comportamento de pagamento;
+* recorrência de clientes.
+
+As análises devem evoluir a partir de dados reais e de perguntas do negócio.
 
 ---
 
-## 13.2 Advanced Pricing
+# 17. Classificação do Backlog
 
-Future pricing functionality could include:
+Ideias identificadas durante o desenvolvimento devem ser classificadas, em vez de implementadas automaticamente.
 
-* pricing rules;
-* margin analysis;
-* historical prices;
-* seasonal pricing;
-* promotions;
-* discounts.
+Cada nova ideia deve pertencer a uma das categorias a seguir:
 
-The current system should not implement these concepts speculatively.
+### A — Requisito do Marco Atual
 
----
+A funcionalidade é necessária para concluir o marco que está sendo implementado.
 
-## 13.3 Advanced Customer Management
+Ela pode entrar na especificação atual.
 
-Possible future capabilities:
+### B — Requisito de Marco Futuro
 
-* customer history;
-* purchase patterns;
-* customer preferences;
-* segmentation;
-* repeat-purchase analysis;
-* personalized offers.
+A funcionalidade é importante, mas não pertence ao marco atual.
 
-These should only be introduced if they provide measurable operational or commercial value.
+Ela deve ser documentada e adiada.
 
----
+### C — Ideia para o Backlog Futuro
 
-## 13.4 Business Analytics
+A ideia pode ser útil, mas exige validação adicional.
 
-Potential future reporting may include:
+Ela deve ser registrada sem afetar a arquitetura atual.
 
-* revenue;
-* cost;
-* margins;
-* sales by basket;
-* product consumption;
-* inventory turnover;
-* payment behavior;
-* customer recurrence.
+### D — Complexidade Desnecessária
 
-Analytics should evolve from actual data and business questions.
+A ideia não resolve atualmente um problema de negócio significativo ou introduz complexidade desproporcional.
+
+Ela não deve ser implementada.
 
 ---
 
-# 14. Backlog Classification
+# 18. Política de Mudanças do Roadmap
 
-Ideas discovered during development should be classified rather than automatically implemented.
+O roadmap não é imutável.
 
-Each new idea should belong to one of the following categories:
+O aprendizado do negócio pode justificar alterações na sequência.
 
-### A — Current milestone requirement
+No entanto, as mudanças devem ser deliberadas.
 
-The functionality is necessary to complete the milestone currently being implemented.
+Uma proposta de mudança deve identificar:
 
-It may enter the current specification.
+1. O que mudou?
+2. Que problema de negócio isso resolve?
+3. Por que isso é necessário agora?
+4. Qual marco isso afeta?
+5. Qual escopo existente seria substituído ou atrasado?
+6. Isso introduz novos conceitos de domínio?
+7. Isso exige uma decisão de arquitetura?
 
-### B — Required future milestone
-
-The functionality is important but does not belong to the current milestone.
-
-It should be documented and deferred.
-
-### C — Future backlog idea
-
-The idea may be useful but requires further validation.
-
-It should be recorded without affecting the current architecture.
-
-### D — Unnecessary complexity
-
-The idea does not currently solve a meaningful business problem or introduces disproportionate complexity.
-
-It should not be implemented.
+O projeto deve evitar ampliar um marco apenas porque um agente identificou uma capacidade futura potencialmente útil.
 
 ---
 
-# 15. Roadmap Change Policy
+# 19. Relação entre Roadmap e Especificações
 
-The roadmap is not immutable.
+O roadmap define **o que está planejado e aproximadamente quando**.
 
-Business learning may justify changing the sequence.
+Ele não define o comportamento detalhado.
 
-However, changes should be deliberate.
-
-A proposed change should identify:
-
-1. What changed?
-2. What business problem does it address?
-3. Why is it needed now?
-4. Which milestone does it affect?
-5. What existing scope would be displaced or delayed?
-6. Does it introduce new domain concepts?
-7. Does it require an architectural decision?
-
-The project should avoid expanding a milestone simply because an agent identifies a potentially useful future capability.
-
----
-
-# 16. Relationship Between Roadmap and Specifications
-
-The roadmap defines **what is planned and approximately when**.
-
-It does not define detailed behavior.
-
-The relationship is:
+A relação é:
 
 ```text
-Vision
+Visão
    ↓
 Roadmap
    ↓
-Milestone
+Marco
    ↓
-Specification
+Especificação
    ↓
-Use Cases
+Casos de Uso
    ↓
-Acceptance Criteria
+Critérios de Aceitação
    ↓
-Implementation
+Implementação
 ```
 
-For example:
+Por exemplo:
 
 ```text
 Roadmap:
-M1 — Products & Inventory
+M1 — Produtos e Estoque
 
         ↓
 
-M1 Specification:
-Create and manage products
+Especificação de M1:
+Criar e gerenciar produtos
 
         ↓
 
-Use Case:
-Create Product
+Caso de Uso:
+Criar Produto
 
         ↓
 
-Acceptance Criteria:
-Given valid product information
-When the user saves the product
-Then the product is persisted and available for selection
+Critérios de Aceitação:
+Dadas informações válidas do produto
+Quando o usuário salvar o produto
+Então o produto é persistido e fica disponível para seleção
 ```
 
-The detailed rules belong in the milestone documentation.
+As regras detalhadas pertencem à documentação do marco.
 
 ---
 
-# 17. Current Development Priority
+# 20. Próximo Marco de Governança
 
-The immediate development priority is:
+O próximo passo de M1 é a aceitação humana:
 
-> **M1 — Products & Inventory**
+> **M1 — Produtos e Estoque**
 
-No functionality from later milestones should be implemented merely because it may eventually be useful.
+Nenhuma funcionalidade de marcos posteriores deve ser implementada apenas porque poderá ser útil no futuro.
 
-The M1 specification is finalized with all core business decisions resolved:
-
-* **Negative inventory policy: RESOLVED**
-  * **Policy:** Physical inventory must never become negative (`INV-006`).
-  * Operations that would produce a negative balance are rejected.
-  * This invariant is absolute and also applies to concurrent inventory operations (`ADR-001`).
-
-With these decisions established, M1 is ready for implementation with a stable business contract.
-
----
-
-# 18. Roadmap Summary
+M1 continua em andamento e aguarda a aceitação humana do proprietário do produto. O status é:
 
 ```text
-PHASE 1 — CORE OPERATIONS
-─────────────────────────────────────
-
-M1  Products & Inventory
- ↓
-M2  Baskets & Basket Templates
- ↓
-M3  Customers
- ↓
-M4  Sales
- ↓
-M5  Payments
-
-
-PHASE 2 — EVOLUTION
-─────────────────────────────────────
-
-Purchases
-Inventory Lots
-Expiration
-Replenishment
-Affective Dates
-
-
-PHASE 3 — AUTOMATION
-─────────────────────────────────────
-
-Communication
-Notifications
-Operational Dashboards
-
-
-FUTURE OPPORTUNITIES
-─────────────────────────────────────
-
-Internal Production
-Advanced Pricing
-Advanced Customer Management
-Business Analytics
+Implementação:       Concluída
+Refinamento visual:  Concluído
+Validação:           Concluída
+Aceitação humana:    Pendente
+Status geral:        Em andamento
 ```
 
-The roadmap exists to provide direction without becoming a constraint on learning.
+As decisões fundamentais de negócio da especificação M1 foram resolvidas:
 
-The system should evolve according to real Casa Afeto needs, with each capability entering development only when its business value and behavior are sufficiently understood.
+* **Política de estoque negativo: RESOLVIDA**
+  * **Política:** o estoque físico nunca deve ficar negativo (`INV-006`).
+  * Operações que produziriam um saldo negativo são rejeitadas.
+  * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
+
+M2 e os marcos posteriores permanecem planejados. Nenhum marco posterior está autorizado a começar.
+
+---
+
+# 21. Resumo do Roadmap
+
+```text
+FASE 1 — OPERAÇÕES CENTRAIS
+─────────────────────────────────────
+
+M1  Produtos e Estoque
+ ↓
+M2  Cestas e Templates de Cesta
+ ↓
+M3  Clientes
+ ↓
+M4  Vendas
+ ↓
+M5  Pagamentos
+
+
+FASE 2 — EVOLUÇÃO
+─────────────────────────────────────
+
+Compras
+Lotes de Estoque
+Vencimentos
+Reposição
+Datas Afetivas
+
+
+FASE 3 — AUTOMAÇÃO
+─────────────────────────────────────
+
+Comunicação
+Notificações
+Painéis Operacionais
+
+
+OPORTUNIDADES FUTURAS
+─────────────────────────────────────
+
+Produção Interna
+Precificação Avançada
+Gestão Avançada de Clientes
+Análises de Negócio
+```
+
+O roadmap existe para fornecer direção sem se tornar uma restrição ao aprendizado.
+
+O sistema deve evoluir conforme as necessidades reais da Casa Afeto, com cada capacidade entrando em desenvolvimento somente quando seu valor e comportamento de negócio forem suficientemente compreendidos.

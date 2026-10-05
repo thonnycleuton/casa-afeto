@@ -21,7 +21,7 @@ def _product_or_raise(
         statement = statement.with_for_update()
     product = db.scalar(statement)
     if product is None:
-        raise ResourceNotFoundError("Product not found.")
+        raise ResourceNotFoundError("Produto não encontrado.")
     return product
 
 
@@ -36,7 +36,7 @@ def _balance(db: Session, product_id: int) -> Decimal:
 
 def _validate_quantity(unit: str, quantity: Decimal) -> None:
     if unit == BaseUnit.UN and quantity != quantity.to_integral_value():
-        raise BusinessRuleError("Inventory quantities for UN must be whole numbers.")
+        raise BusinessRuleError("As quantidades para UN devem ser números inteiros.")
 
 
 def product_balance(db: Session, product_id: int) -> BalanceRead:
@@ -67,22 +67,22 @@ def create_movement(
     db: Session, product_id: int, quantity: Decimal, movement_type: MovementType
 ) -> InventoryMovement:
     if movement_type is MovementType.ENTRY and quantity <= 0:
-        raise BusinessRuleError("Entry quantity must be greater than zero.")
+        raise BusinessRuleError("A quantidade da entrada deve ser maior que zero.")
     if movement_type is MovementType.ADJUSTMENT and quantity == 0:
-        raise BusinessRuleError("Adjustment quantity cannot be zero.")
+        raise BusinessRuleError("A quantidade do ajuste não pode ser zero.")
     with db.begin():
         product = _product_or_raise(db, product_id, lock=True)
         if not product.active:
             raise BusinessRuleError(
-                "Inactive products must be reactivated before inventory can be changed."
+                "Produtos inativos devem ser reativados antes de alterar o estoque."
             )
         _validate_quantity(product.base_unit, quantity)
         current_balance = _balance(db, product_id)
         resulting_balance = current_balance + quantity
         if resulting_balance < 0:
             raise BusinessRuleError(
-                f"Insufficient inventory. Available: {current_balance} "
-                f"{product.base_unit}. Required: {abs(quantity)} {product.base_unit}."
+                f"Estoque insuficiente. Disponível: {current_balance} "
+                f"{product.base_unit}. Necessário: {abs(quantity)} {product.base_unit}."
             )
         movement = InventoryMovement(
             product_id=product_id,

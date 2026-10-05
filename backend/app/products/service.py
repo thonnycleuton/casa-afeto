@@ -14,7 +14,7 @@ def _product_or_raise(db: Session, product_id: int, *, lock: bool = False) -> Pr
         statement = statement.with_for_update()
     product = db.scalar(statement)
     if product is None:
-        raise ResourceNotFoundError("Product not found.")
+        raise ResourceNotFoundError("Produto não encontrado.")
     return product
 
 
@@ -44,7 +44,7 @@ def update_product(
             )
             if movement_exists is not None:
                 raise BusinessRuleError(
-                    "Base unit cannot be changed after inventory movements exist."
+                    "A unidade base não pode ser alterada após o registro de movimentações de estoque."
                 )
             product.base_unit = payload.base_unit.value
         db.flush()

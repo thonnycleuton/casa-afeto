@@ -24,7 +24,7 @@ class ProductCreate(BaseModel):
     def validate_name(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("Product name is required.")
+            raise ValueError("O nome do produto é obrigatório.")
         return value
 
 
@@ -41,13 +41,13 @@ class ProductUpdate(BaseModel):
             return None
         value = value.strip()
         if not value:
-            raise ValueError("Product name is required.")
+            raise ValueError("O nome do produto é obrigatório.")
         return value
 
     @model_validator(mode="after")
     def require_editable_field(self) -> "ProductUpdate":
         if self.name is None and self.base_unit is None:
-            raise ValueError("At least one product field must be provided.")
+            raise ValueError("Informe ao menos um campo do produto.")
         return self
 
 
@@ -88,7 +88,7 @@ class AdjustmentRequest(BaseModel):
     @classmethod
     def reject_zero(cls, value: Decimal) -> Decimal:
         if value == 0:
-            raise ValueError("Adjustment quantity cannot be zero.")
+            raise ValueError("A quantidade do ajuste não pode ser zero.")
         return value
 
 

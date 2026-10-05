@@ -1,361 +1,361 @@
-# M1 — Products & Inventory Use Cases
+# Casos de Uso do Marco M1 — Produtos e Estoque
 
-**Document version:** 0.1
-**Status:** Ready for implementation
-**Milestone:** M1 — Products & Inventory
-
----
-
-# 1. Purpose
-
-This document describes the user-facing use cases for M1 — Products & Inventory.
-
-It translates the M1 specification into concrete operational flows.
-
-These use cases describe:
-
-* who performs an operation;
-* what the user wants to accomplish;
-* the normal flow;
-* relevant alternative flows;
-* expected business behavior.
-
-They do not prescribe:
-
-* API endpoints;
-* database implementation;
-* frontend architecture;
-* framework-specific behavior;
-* internal service structure.
-
-Those are implementation concerns.
+**Versão do documento:** 0.1
+**Status:** Pronto para implementação
+**Marco:** M1 — Produtos e Estoque (Products & Inventory)
 
 ---
 
-# 2. Actors
+# 1. Finalidade
 
-M1 has one primary actor:
+Este documento descreve os casos de uso voltados para o usuário do M1 — Produtos e Estoque (Products & Inventory).
 
-### Casa Afeto Operator
+Ele traduz a especificação de M1 em fluxos operacionais concretos.
 
-The person responsible for managing products and physical inventory.
+Esses casos de uso descrevem:
 
-The operator may:
+* quem executa uma operação;
+* o que o usuário deseja realizar;
+* o fluxo normal;
+* fluxos alternativos relevantes;
+* o comportamento esperado de negócio.
 
-* register products;
-* maintain product information;
-* activate/deactivate products;
-* register inventory entries;
-* correct inventory;
-* inspect inventory;
-* inspect inventory history.
+Eles não prescrevem:
 
-No separate roles or permission model are required by M1.
+* endpoints de API;
+* implementação de banco de dados;
+* arquitetura de frontend;
+* comportamento específico da framework;
+* estrutura interna de serviço.
+
+Esses são detalhes de implementação.
 
 ---
 
-# 3. Use Case Overview
+# 2. Atores
+
+M1 tem um ator principal:
+
+### Operador da Casa Afeto
+
+A pessoa responsável por gerenciar produtos e estoque físico.
+
+O operador pode:
+
+* cadastrar produtos;
+* manter informações do produto;
+* ativar/desativar produtos;
+* registrar entradas de estoque;
+* corrigir estoque;
+* inspecionar estoque;
+* inspecionar histórico de estoque.
+
+Nenhum papel separado ou modelo de permissão é exigido por M1.
+
+---
+
+# 3. Visão geral dos casos de uso
 
 ```text
-Product Management
+Gestão de Produtos
 │
-├── UC-M1-01 Create Product
-├── UC-M1-02 Edit Product
-├── UC-M1-03 Activate Product
-├── UC-M1-04 Deactivate Product
-├── UC-M1-05 List Products
-└── UC-M1-06 Search Products
+├── UC-M1-01 Criar Produto
+├── UC-M1-02 Editar Produto
+├── UC-M1-03 Ativar Produto
+├── UC-M1-04 Desativar Produto
+├── UC-M1-05 Listar Produtos
+└── UC-M1-06 Buscar Produtos
 
-Inventory Management
+Gestão de Estoque
 │
-├── UC-M1-07 Add Inventory
-├── UC-M1-08 Adjust Inventory
-├── UC-M1-09 View Inventory Balance
-├── UC-M1-10 View Inventory History
-└── UC-M1-11 Check Inventory Availability
+├── UC-M1-07 Adicionar Estoque
+├── UC-M1-08 Ajustar Estoque
+├── UC-M1-09 Visualizar Saldo de Estoque
+├── UC-M1-10 Visualizar Histórico de Estoque
+└── UC-M1-11 Verificar Disponibilidade de Estoque
 ```
 
 ---
 
-# 4. UC-M1-01 — Create Product
+# 4. UC-M1-01 — Criar produto
 
-## Goal
+## Objetivo
 
-Allow the operator to register a new product.
+Permitir que o operador registre um novo produto.
 
-## Preconditions
+## Pré-condições
 
-None.
+Nenhuma.
 
-## Main Flow
+## Fluxo principal
 
-1. The operator opens the product management area.
-2. The operator chooses to create a product.
-3. The system requests the product information.
-4. The operator enters the product name.
-5. The operator selects or enters the base inventory unit (`base_unit`: `UN`, `KG`, `G`, `L`, `ML`).
-6. The operator submits the product.
-7. The system validates the required information:
-   - Product name must be non-empty;
-   - Base unit must be one of `UN`, `KG`, `G`, `L`, `ML` (`BD-01`).
-8. The system creates the product.
-9. The product is initially active.
-10. The system confirms successful creation.
+1. O operador abre a área de gestão de produtos.
+2. O operador escolhe criar um produto.
+3. O sistema solicita as informações do produto.
+4. O operador informa o nome do produto.
+5. O operador seleciona ou informa a unidade base de estoque (`base_unit`: `UN`, `KG`, `G`, `L`, `ML`).
+6. O operador envia o produto.
+7. O sistema valida as informações obrigatórias:
+   - O nome do produto deve ser não vazio;
+   - A unidade base deve ser uma de `UN`, `KG`, `G`, `L`, `ML` (`BD-01`).
+8. O sistema cria o produto.
+9. O produto fica inicialmente ativo.
+10. O sistema confirma a criação com sucesso.
 
-Product names are **not required to be unique** in M1 (`PROD-002`). Two distinct products may have the same name.
+Nomes de produtos não são **obrigatórios como únicos** em M1 (`PROD-002`). Dois produtos distintos podem ter o mesmo nome.
 
-## Example
-
-```text
-Name: Chocolate
-Base unit: UN
-```
-
-Result:
+## Exemplo
 
 ```text
-Product: Chocolate
-Unit: UN
-Active: Yes
-Inventory balance: 0
+Nome: Chocolate
+Unidade base: UN
 ```
 
-## Alternative Flows
+Resultado:
 
-### A1 — Missing name
+```text
+Produto: Chocolate
+Unidade: UN
+Ativo: Sim
+Saldo de estoque: 0
+```
 
-If the operator does not provide a product name:
+## Fluxos alternativos
 
-1. The system rejects the operation.
-2. The system indicates that the product name is required.
-3. No product is created.
+### A1 — Nome ausente
 
-### A2 — Invalid unit
+Se o operador não fornecer um nome de produto:
 
-If the submitted base inventory unit is not one of `UN`, `KG`, `G`, `L`, `ML`:
+1. O sistema rejeita a operação.
+2. O sistema indica que o nome do produto é obrigatório.
+3. Nenhum produto é criado.
 
-1. The system rejects the operation.
-2. The system informs the operator that only `UN`, `KG`, `G`, `L`, and `ML` are valid units.
-3. No product is created.
+### A2 — Unidade inválida
 
-## Postconditions
+Se a unidade base informada não estiver entre `UN`, `KG`, `G`, `L`, `ML`:
 
-A new active product exists with zero inventory balance.
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador que apenas `UN`, `KG`, `G`, `L` e `ML` são unidades válidas.
+3. Nenhum produto é criado.
 
-No inventory movement is created.
+## Pós-condições
+
+Existe um novo produto ativo com saldo zero de estoque.
+
+Nenhuma movimentação de estoque é criada.
 
 ---
 
-# 5. UC-M1-02 — Edit Product
+# 5. UC-M1-02 — Editar produto
 
-## Goal
+## Objetivo
 
-Allow the operator to update product information.
+Permitir que o operador atualize as informações do produto.
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
+* O produto existe.
 
-## Main Flow
+## Fluxo principal
 
-1. The operator opens the product.
-2. The system displays its current information.
-3. The operator changes editable information (e.g., name, or `base_unit` if permitted).
-4. The operator saves the changes.
-5. The system validates the changes:
-   - Name must be non-empty;
-   - If `base_unit` was changed, the product must have **zero inventory movements** (`BD-02`);
-   - If `base_unit` was changed, the new value must be one of `UN`, `KG`, `G`, `L`, `ML`.
-6. The system persists the updated product.
-7. The system confirms the update.
+1. O operador abre o produto.
+2. O sistema exibe suas informações atuais.
+3. O operador altera informações editáveis (por exemplo, nome ou `base_unit`, se permitido).
+4. O operador salva as alterações.
+5. O sistema valida as alterações:
+   - O nome deve ser não vazio;
+   - Se `base_unit` foi alterada, o produto deve ter **zero movimentações de estoque** (`BD-02`);
+   - Se `base_unit` foi alterada, o novo valor deve ser um de `UN`, `KG`, `G`, `L`, `ML`.
+6. O sistema persiste o produto atualizado.
+7. O sistema confirma a atualização.
 
-## Example
+## Exemplo
 
 ```text
-Before:
-Chocolate (UN, movements: 0)
+Antes:
+Chocolate (UN, movimentações: 0)
 
-After:
+Depois:
 Premium Chocolate (KG)
 ```
 
-## Alternative Flows
+## Fluxos alternativos
 
-### A1 — Product does not exist
+### A1 — Produto não existe
 
-The system reports that the requested product could not be found.
+O sistema informa que o produto solicitado não foi encontrado.
 
-No changes are made.
+Nenhuma alteração é feita.
 
-### A2 — Invalid information
+### A2 — Informação inválida
 
-The system rejects the change and explains the validation problem.
+O sistema rejeita a alteração e explica o problema de validação.
 
-The previous product information remains unchanged.
+As informações anteriores do produto permanecem inalteradas.
 
-### A3 — Attempt to edit base unit when inventory movements exist
+### A3 — Tentativa de editar a unidade base quando existem movimentações de estoque
 
-If the operator attempts to change `base_unit` on a product that has at least one inventory movement:
+Se o operador tentar alterar `base_unit` em um produto que tenha pelo menos uma movimentação de estoque:
 
-1. The system rejects the change to `base_unit`.
-2. The system informs the operator that `base_unit` cannot be changed after inventory movements have been recorded (`BD-02`).
-3. The existing `base_unit` remains unchanged.
+1. O sistema rejeita a alteração de `base_unit`.
+2. O sistema informa ao operador que `base_unit` não pode ser alterada após o registro de movimentações de estoque (`BD-02`).
+3. A `base_unit` existente permanece inalterada.
 
-## Important Behavior
+## Comportamento importante
 
-Editing a product must not alter its historical inventory movements.
+A edição de um produto não deve alterar seu histórico de estoque.
 
-For example:
+Por exemplo:
 
 ```text
-Inventory history:
+Histórico de estoque:
 
 +20 Chocolate
 -3 Chocolate
 
-Rename:
+Renomear:
 Chocolate → Premium Chocolate
 
-History remains associated with the same product.
+O histórico permanece associado ao mesmo produto.
 ```
 
 ---
 
-# 6. UC-M1-03 — Activate Product
+# 6. UC-M1-03 — Ativar produto
 
-## Goal
+## Objetivo
 
-Make an inactive product available for new operations.
+Tornar um produto inativo disponível para novas operações.
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
-* The product is currently inactive.
+* O produto existe.
+* O produto está atualmente inativo.
 
-## Main Flow
+## Fluxo principal
 
-1. The operator opens the inactive product.
-2. The operator chooses to activate it.
-3. The system changes the product state to active.
-4. The system confirms the operation.
+1. O operador abre o produto inativo.
+2. O operador escolhe ativá-lo.
+3. O sistema altera o estado do produto para ativo.
+4. O sistema confirma a operação.
 
-## Postconditions
+## Pós-condições
 
-The product is active.
+O produto está ativo.
 
-Its inventory and historical movements remain unchanged.
+Seu estoque e movimentações históricas permanecem inalterados.
 
 ---
 
-# 7. UC-M1-04 — Deactivate Product
+# 7. UC-M1-04 — Desativar produto
 
-## Goal
+## Objetivo
 
-Prevent a product from being selected for new operational activities.
+Impedir que um produto seja selecionado para novas atividades operacionais.
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
-* The product is currently active.
+* O produto existe.
+* O produto está atualmente ativo.
 
-## Main Flow
+## Fluxo principal
 
-1. The operator opens the product.
-2. The operator chooses to deactivate it.
-3. The system changes the product state to inactive.
-4. The system confirms the operation.
+1. O operador abre o produto.
+2. O operador escolhe desativá-lo.
+3. O sistema altera o estado do produto para inativo.
+4. O sistema confirma a operação.
 
-## Important Behavior
+## Comportamento importante
 
-Deactivation does not:
+A desativação não:
 
-* delete the product;
-* delete inventory;
-* delete inventory movements;
-* change the inventory balance.
+* exclui o produto;
+* exclui o estoque;
+* exclui movimentações de estoque;
+* altera o saldo de estoque.
 
-Example:
+Exemplo:
 
 ```text
 Chocolate
-Active: Yes
-Inventory: 15
+Ativo: Sim
+Estoque: 15
 
-Deactivate
+Desativar
 
 Chocolate
-Active: No
-Inventory: 15
+Ativo: Não
+Estoque: 15
 ```
 
-## Postconditions
+## Pós-condições
 
-The product is inactive.
+O produto está inativo.
 
-Future operations requiring an active product must not allow it to be selected.
-
----
-
-# 8. UC-M1-05 — List Products
-
-## Goal
-
-Allow the operator to view registered products.
-
-## Preconditions
-
-None.
-
-## Main Flow
-
-1. The operator opens the product list.
-2. The system retrieves the available products.
-3. The system displays each product.
-4. The operator can identify at least:
-
-   * name;
-   * base unit;
-   * active/inactive state;
-   * current inventory balance.
-
-## Important Behavior
-
-Inactive products remain visible in product management.
-
-Deactivation does not remove them from historical or administrative views.
-
-## Empty State
-
-If no products exist, the system should clearly indicate that no products have been registered.
+Operações futuras que exigem um produto ativo não devem permitir que ele seja selecionado.
 
 ---
 
-# 9. UC-M1-06 — Search Products
+# 8. UC-M1-05 — Listar produtos
 
-## Goal
+## Objetivo
 
-Allow the operator to find a product by name.
+Permitir que o operador visualize produtos cadastrados.
 
-## Preconditions
+## Pré-condições
 
-None.
+Nenhuma.
 
-## Main Flow
+## Fluxo principal
 
-1. The operator opens the product list.
-2. The operator enters a search term.
-3. The system searches product names case-insensitively using substring matching (`SEARCH-001`, `BD-08`).
-4. The system displays matching products.
+1. O operador abre a lista de produtos.
+2. O sistema recupera os produtos disponíveis.
+3. O sistema exibe cada produto.
+4. O operador pode identificar pelo menos:
 
-## Example
+   * nome;
+   * unidade base;
+   * estado ativo/inativo;
+   * saldo atual de estoque.
 
-Search:
+## Comportamento importante
+
+Produtos inativos permanecem visíveis na gestão de produtos.
+
+A desativação não os remove de visualizações históricas ou administrativas.
+
+## Estado vazio
+
+Se não existirem produtos, o sistema deve indicar claramente que nenhum produto foi cadastrado.
+
+---
+
+# 9. UC-M1-06 — Buscar produtos
+
+## Objetivo
+
+Permitir que o operador encontre um produto pelo nome.
+
+## Pré-condições
+
+Nenhuma.
+
+## Fluxo principal
+
+1. O operador abre a lista de produtos.
+2. O operador digita um termo de busca.
+3. O sistema busca os nomes dos produtos de forma insensível a maiúsculas e minúsculas usando correspondência por substring (`SEARCH-001`, `BD-08`).
+4. O sistema exibe os produtos correspondentes.
+
+## Exemplo
+
+Busca:
 
 ```text
 choc
 ```
 
-Matches (`choc`, `Choc`, `CHOC`, `ChoC`):
+Correspondências (`choc`, `Choc`, `CHOC`, `ChoC`):
 
 ```text
 Chocolate
@@ -363,750 +363,750 @@ Chocolate Premium
 Chocolate Branco
 ```
 
-## Alternative Flow
+## Fluxo alternativo
 
-### A1 — No results
+### A1 — Sem resultados
 
-The system informs the operator that no matching products were found.
+O sistema informa ao operador que nenhum produto correspondente foi encontrado.
 
-No error is generated merely because the search has no matches.
+Nenhum erro é gerado apenas porque a busca não encontrou resultados.
 
 ---
 
-# 10. UC-M1-07 — Add Inventory
+# 10. UC-M1-07 — Adicionar estoque
 
-## Goal
+## Objetivo
 
-Record a positive physical inventory entry (`ENTRY`).
+Registrar uma entrada física positiva de estoque (`ENTRY`).
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
-* The product is active.
+* O produto existe.
+* O produto está ativo.
 
-## Main Flow
+## Fluxo principal
 
-1. The operator selects a product.
-2. The system displays the current inventory balance.
-3. The operator chooses to add inventory.
-4. The operator enters the quantity.
-5. The operator submits the operation.
-6. The system validates the quantity (`BD-03`):
-   - Quantity must be greater than zero (> 0);
-   - If the product's base unit is `UN`, quantity must be a positive integer;
-   - If the product's base unit is `KG`, `G`, `L`, or `ML`, quantity must be a positive decimal.
-7. The system creates an `ENTRY` inventory movement.
-8. The system updates or derives the inventory balance.
-9. The system displays the resulting balance.
+1. O operador seleciona um produto.
+2. O sistema exibe o saldo atual de estoque.
+3. O operador escolhe adicionar estoque.
+4. O operador informa a quantidade.
+5. O operador envia a operação.
+6. O sistema valida a quantidade (`BD-03`):
+   - A quantidade deve ser maior que zero (> 0);
+   - Se a unidade base do produto for `UN`, a quantidade deve ser um inteiro positivo;
+   - Se a unidade base do produto for `KG`, `G`, `L` ou `ML`, a quantidade deve ser um decimal positivo.
+7. O sistema cria uma movimentação de estoque do tipo `ENTRY`.
+8. O sistema atualiza ou deriva o saldo de estoque.
+9. O sistema exibe o saldo resultante.
 
-## Example
+## Exemplo
 
-Current:
+Atual:
 
 ```text
 Chocolate = 5 UN
 ```
 
-Operator enters:
+O operador informa:
 
 ```text
 +20 UN
 ```
 
-Result:
+Resultado:
 
 ```text
 Chocolate = 25 UN
 ```
 
-Movement history contains:
+O histórico de movimentações contém:
 
 ```text
 ENTRY +20
 ```
 
-## Alternative Flows
+## Fluxos Alternativos
 
-### A1 — Invalid quantity
+### A1 — Quantidade inválida
 
-If the quantity is invalid (zero, negative, or a decimal value for a `UN` product):
+Se a quantidade for inválida (zero, negativa ou um valor decimal para um produto cuja unidade é `UN`):
 
-1. The system rejects the operation.
-2. The system informs the operator of the validation rule.
-3. No movement is created.
-4. The inventory remains unchanged.
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador a regra de validação.
+3. Nenhuma movimentação é criada.
+4. O estoque permanece inalterado.
 
-### A2 — Product not found
+### A2 — Produto não encontrado
 
-The system rejects the operation.
+O sistema rejeita a operação.
 
-No movement is created.
+Nenhuma movimentação é criada.
 
-### A3 — Inactive product
+### A3 — Produto inativo
 
-The system rejects inventory entry for an inactive product (`INV-008`, `BD-07`).
+O sistema rejeita a entrada de estoque para um produto inativo (`INV-008`, `BD-07`).
 
-The operation is rejected without creating a movement. The product must first be reactivated.
+A operação é rejeitada sem criar uma movimentação. O produto deve ser reativado antes.
 
-## Postconditions
+## Pós-condições
 
-A new positive inventory movement exists.
+Existe uma nova movimentação positiva de estoque.
 
-The product's inventory balance has increased by the specified quantity.
+O saldo de estoque do produto aumentou pela quantidade especificada.
 
 ---
 
-# 11. UC-M1-08 — Adjust Inventory
+# 11. UC-M1-08 — Ajustar Estoque
 
-## Goal
+## Objetivo
 
-Correct the recorded inventory to match the physical quantity (`ADJUSTMENT`).
+Corrigir o estoque registrado para corresponder à quantidade física (`ADJUSTMENT`).
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
-* The product is active.
+* O produto existe.
+* O produto está ativo.
 
-## Main Flow
+## Fluxo Principal
 
-1. The operator selects a product.
-2. The system displays the current balance.
-3. The operator chooses to adjust inventory.
-4. The operator specifies the signed quantity adjustment (`BD-04`):
-   - Quantity must not be zero;
-   - Positive values increase inventory; negative values decrease inventory;
-   - If `base_unit` is `UN`, quantity must be an integer;
-   - If `base_unit` is `KG`, `G`, `L`, or `ML`, quantity may be a decimal.
-5. The operator submits the adjustment.
-6. The system calculates the resulting balance: `current_balance + adjustment`.
-7. The system verifies that the resulting balance will not be negative (`INV-006`).
-8. Under transactional serialization (`ADR-001`), the system creates an `ADJUSTMENT` movement.
-9. The system updates or derives the balance.
-10. The system displays the resulting balance.
+1. O operador seleciona um produto.
+2. O sistema exibe o saldo atual.
+3. O operador escolhe ajustar o estoque.
+4. O operador especifica o ajuste de quantidade com sinal (`BD-04`):
+   - A quantidade não pode ser zero;
+   - Valores positivos aumentam o estoque; valores negativos o diminuem;
+   - Se `base_unit` for `UN`, a quantidade deve ser um número inteiro;
+   - Se `base_unit` for `KG`, `G`, `L` ou `ML`, a quantidade pode ser decimal.
+5. O operador envia o ajuste.
+6. O sistema calcula o saldo resultante: `current_balance + adjustment`.
+7. O sistema verifica se o saldo resultante não será negativo (`INV-006`).
+8. Com serialização transacional (`ADR-001`), o sistema cria uma movimentação `ADJUSTMENT`.
+9. O sistema atualiza ou deriva o saldo.
+10. O sistema exibe o saldo resultante.
 
-## Positive Adjustment Example
+## Exemplo de Ajuste Positivo
 
-Current:
+Atual:
 
 ```text
 Chocolate = 17 UN
 ```
 
-Physical count:
+Contagem física:
 
 ```text
 Chocolate = 19 UN
 ```
 
-Adjustment:
+Ajuste:
 
 ```text
 +2
 ```
 
-Result:
+Resultado:
 
 ```text
 Chocolate = 19 UN
 ```
 
-## Negative Adjustment Example
+## Exemplo de Ajuste Negativo
 
-Current:
+Atual:
 
 ```text
 Chocolate = 20 UN
 ```
 
-Physical count:
+Contagem física:
 
 ```text
 Chocolate = 17 UN
 ```
 
-Adjustment:
+Ajuste:
 
 ```text
 -3
 ```
 
-Result:
+Resultado:
 
 ```text
 Chocolate = 17 UN
 ```
 
-## Alternative Flows
+## Fluxos Alternativos
 
-### A1 — Adjustment would create negative inventory
+### A1 — O ajuste criaria estoque negativo
 
-Current:
+Atual:
 
 ```text
 Chocolate = 2 UN
 ```
 
-Requested adjustment:
+Ajuste solicitado:
 
 ```text
 -3
 ```
 
-The system must:
+O sistema deve:
 
-1. reject the adjustment;
-2. inform the operator that the resulting inventory would be negative;
-3. create no movement;
-4. preserve the current balance.
+1. rejeitar o ajuste;
+2. informar ao operador que o estoque resultante ficaria negativo;
+3. não criar nenhuma movimentação;
+4. preservar o saldo atual.
 
-Result:
+Resultado:
 
 ```text
 Chocolate = 2 UN
 ```
 
-### A2 — Invalid quantity
+### A2 — Quantidade inválida
 
-If the quantity is zero, or if a decimal quantity is submitted for a `UN` product:
+Se a quantidade for zero ou se for informada uma quantidade decimal para um produto cuja unidade é `UN`:
 
-1. The system rejects the operation.
-2. No movement is created.
-3. The balance remains unchanged.
+1. O sistema rejeita a operação.
+2. Nenhuma movimentação é criada.
+3. O saldo permanece inalterado.
 
-### A3 — Product not found
+### A3 — Produto não encontrado
 
-The system rejects the operation.
+O sistema rejeita a operação.
 
-No movement is created.
+Nenhuma movimentação é criada.
 
-### A4 — Inactive product
+### A4 — Produto inativo
 
-The system rejects inventory adjustment for an inactive product (`INV-008`, `BD-07`).
+O sistema rejeita o ajuste de estoque para um produto inativo (`INV-008`, `BD-07`).
 
-No movement is created. The product must first be reactivated.
+Nenhuma movimentação é criada. O produto deve ser reativado antes.
 
-## Concurrency Safety
+## Segurança em Operações Concorrentes
 
-Simultaneous adjustments targeting the same product are serialized at the database transaction level (`ADR-001`). Two concurrent negative adjustments that individually appear valid against a stale balance cannot both commit if their combined effect would produce a negative balance.
+Ajustes simultâneos direcionados ao mesmo produto são serializados no nível da transação do banco de dados (`ADR-001`). Dois ajustes negativos concorrentes que, individualmente, pareçam válidos com base em um saldo desatualizado não podem ser confirmados se seu efeito combinado produzir um saldo negativo.
 
-## Important Behavior
+## Comportamento Importante
 
-An adjustment never rewrites an earlier inventory movement.
+Um ajuste nunca reescreve uma movimentação de estoque anterior.
 
-Example:
+Exemplo:
 
 ```text
-History:
+Histórico:
 
 +20
 -3
 ```
 
-If another correction of `-2` is required:
+Se for necessária outra correção de `-2`:
 
 ```text
-History:
+Histórico:
 
 +20
 -3
 -2
 ```
 
-The existing movements remain unchanged.
+As movimentações existentes permanecem inalteradas.
 
 ---
 
-# 12. UC-M1-09 — View Inventory Balance
+# 12. UC-M1-09 — Visualizar Saldo de Estoque
 
-## Goal
+## Objetivo
 
-Allow the operator to see the current physical inventory of a product.
+Permitir que o operador veja o estoque físico atual de um produto.
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
+* O produto existe.
 
-## Main Flow
+## Fluxo Principal
 
-1. The operator selects a product.
-2. The system calculates or retrieves its current balance.
-3. The system displays:
+1. O operador seleciona um produto.
+2. O sistema calcula ou recupera o saldo atual.
+3. O sistema exibe:
 
-   * product;
-   * base unit;
-   * current quantity.
+   * produto;
+   * unidade base;
+   * quantidade atual.
 
-## Example
-
-```text
-Product: Chocolate
-Unit: UN
-Available inventory: 17
-```
-
-## Empty Inventory
-
-If no inventory movement exists:
+## Exemplo
 
 ```text
-Available inventory: 0
+Produto: Chocolate
+Unidade: UN
+Estoque disponível: 17
 ```
 
-The absence of inventory must not be treated as an error.
+## Estoque Vazio
+
+Se não houver nenhuma movimentação de estoque:
+
+```text
+Estoque disponível: 0
+```
+
+A ausência de estoque não deve ser tratada como um erro.
 
 ---
 
-# 13. UC-M1-10 — View Inventory History
+# 13. UC-M1-10 — Visualizar Histórico de Estoque
 
-## Goal
+## Objetivo
 
-Allow the operator to understand how the current inventory balance was formed.
+Permitir que o operador entenda como o saldo atual de estoque foi formado.
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
+* O produto existe.
 
-## Main Flow
+## Fluxo Principal
 
-1. The operator selects a product.
-2. The operator opens inventory history.
-3. The system retrieves the product's inventory movements.
-4. The system displays the movements chronologically.
-5. The operator can identify the effect of each movement.
+1. O operador seleciona um produto.
+2. O operador abre o histórico de estoque.
+3. O sistema recupera as movimentações de estoque do produto.
+4. O sistema exibe as movimentações em ordem cronológica.
+5. O operador consegue identificar o efeito de cada movimentação.
 
-## Example
+## Exemplo
 
 ```text
 Chocolate
 
-Date        Type          Quantity
+Data        Tipo          Quantidade
 -----------------------------------
 10/09       ENTRY          +20
 11/09       ADJUSTMENT      -3
 12/09       ADJUSTMENT      +2
 ```
 
-Current balance:
+Saldo atual:
 
 ```text
 19
 ```
 
-## Important Behavior
+## Comportamento Importante
 
-Historical movements must not disappear because of later corrections.
+Movimentações históricas não devem desaparecer por causa de correções posteriores.
 
-The system must preserve the auditability of inventory changes.
+O sistema deve preservar a auditabilidade das alterações de estoque.
 
 ---
 
-# 14. UC-M1-11 — Check Inventory Availability
+# 14. UC-M1-11 — Verificar Disponibilidade de Estoque
 
-## Goal
+## Objetivo
 
-Determine whether a product has sufficient inventory for a requested quantity.
+Determinar se um produto tem estoque suficiente para a quantidade solicitada.
 
-## Preconditions
+## Pré-condições
 
-* The product exists.
+* O produto existe.
 
-## Main Flow
+## Fluxo Principal
 
-1. A future operation requests a quantity for a product.
-2. The system obtains the current inventory balance.
-3. The system compares available quantity with requested quantity.
-4. The system reports the result.
+1. Uma operação futura solicita uma quantidade de um produto.
+2. O sistema obtém o saldo atual de estoque.
+3. O sistema compara a quantidade disponível com a quantidade solicitada.
+4. O sistema informa o resultado.
 
-## Example — Available
+## Exemplo — Disponível
 
 ```text
-Available: 10
-Required:  4
+Disponível: 10
+Necessário:  4
 
-Result:
+Resultado:
 Available
-Shortage: 0
+Falta: 0
 ```
 
-## Example — Insufficient
+## Exemplo — Insuficiente
 
 ```text
-Available: 2
-Required: 5
+Disponível: 2
+Necessário: 5
 
-Result:
-Insufficient inventory
-Shortage: 3
+Resultado:
+Estoque insuficiente
+Falta: 3
 ```
 
-## Important Behavior
+## Comportamento Importante
 
-An insufficient inventory result does not modify inventory.
+Um resultado de estoque insuficiente não modifica o estoque.
 
-It does not create a negative movement.
+Ele não cria uma movimentação negativa.
 
-It does not prevent the product from being included in a future basket or draft sale.
+Ele não impede que o produto seja incluído em uma cesta futura ou em uma venda em rascunho.
 
-The future sale confirmation process will determine whether the required inventory exists before deducting it.
+O processo futuro de confirmação da venda determinará se há estoque suficiente antes de deduzi-lo.
 
 ---
 
-# 15. Cross-Use-Case Business Rules
+# 15. Regras de Negócio Comuns aos Casos de Uso
 
-The following rules apply across multiple use cases.
+As regras a seguir se aplicam a vários casos de uso.
 
-## 15.1 No Negative Physical Inventory
+## 15.1 Estoque Físico Não Negativo
 
-No use case may create an inventory movement that produces a negative physical balance.
+Nenhum caso de uso pode criar uma movimentação de estoque que produza um saldo físico negativo.
 
 ```text
-Current = 2
-Requested decrease = 3
+Atual = 2
+Redução solicitada = 3
 
-Result:
-Rejected
+Resultado:
+Rejeitada
 ```
 
 ---
 
-## 15.2 Historical Movements Are Preserved
+## 15.2 Movimentações Históricas São Preservadas
 
-No product or inventory operation may rewrite previous inventory movements. Corrections are represented by new movements.
+Nenhuma operação de produto ou estoque pode reescrever movimentações de estoque anteriores. As correções são representadas por novas movimentações.
 
-Corrections are represented by new movements.
-
----
-
-## 15.3 Product Deactivation Is Non-Destructive
-
-Deactivating a product does not:
-
-* delete the product;
-* delete inventory;
-* delete history;
-* change the current balance.
+As correções são representadas por novas movimentações.
 
 ---
 
-## 15.4 Insufficient Inventory Is Not the Same as Invalid Product
+## 15.3 A Desativação do Produto Não é Destrutiva
 
-A product with insufficient inventory remains a valid product.
+Desativar um produto não:
 
-Example:
+* exclui o produto;
+* exclui o estoque;
+* exclui o histórico;
+* altera o saldo atual.
+
+---
+
+## 15.4 Estoque Insuficiente Não Torna o Produto Inválido
+
+Um produto com estoque insuficiente continua sendo um produto válido.
+
+Exemplo:
 
 ```text
-Product exists: Yes
-Active: Yes
-Inventory: 0
+Produto existe: Sim
+Ativo: Sim
+Estoque: 0
 ```
 
-The product is still valid.
+O produto continua válido.
 
-Its availability simply indicates:
+Sua disponibilidade apenas indica:
 
 ```text
-Insufficient inventory
+Estoque insuficiente
 ```
 
 ---
 
-## 15.5 Inventory Is Not Reserved
+## 15.5 O Estoque Não é Reservado
 
-M1 does not reserve inventory.
+M1 não reserva estoque.
 
-Checking availability does not alter inventory.
+Verificar a disponibilidade não altera o estoque.
 
-Creating a product does not alter inventory.
+Criar um produto não altera o estoque.
 
-The future sale confirmation operation will be responsible for the actual deduction.
+A operação futura de confirmação da venda será responsável pela dedução efetiva.
 
 ---
 
-# 16. Common Operational Scenario
+# 16. Cenário Operacional Comum
 
-The following scenario combines the main M1 use cases.
+O cenário a seguir combina os principais casos de uso de M1.
 
-## Scenario
+## Cenário
 
-Casa Afeto starts with no Chocolate inventory.
+A Casa Afeto começa sem estoque de Chocolate.
 
-### Step 1 — Create Product
+### Etapa 1 — Criar Produto
 
 ```text
 Chocolate
-Unit: UN
+Unidade: UN
 ```
 
-Inventory:
+Estoque:
 
 ```text
 0
 ```
 
-### Step 2 — Add Inventory
+### Etapa 2 — Adicionar Estoque
 
-Operator receives 20 units.
+O operador recebe 20 unidades.
 
 ```text
 +20
 ```
 
-Inventory:
+Estoque:
 
 ```text
 20
 ```
 
-### Step 3 — Physical Correction
+### Etapa 3 — Correção Física
 
-Operator counts the inventory and finds only 17 units.
+O operador conta o estoque e encontra apenas 17 unidades.
 
 ```text
 -3
 ```
 
-Inventory:
+Estoque:
 
 ```text
 17
 ```
 
-History:
+Histórico:
 
 ```text
 +20
 -3
 ```
 
-### Step 4 — Check Availability
+### Etapa 4 — Verificar Disponibilidade
 
-A future basket requires:
+Uma cesta futura exige:
 
 ```text
 20 Chocolate
 ```
 
-System reports:
+O sistema informa:
 
 ```text
-Available: 17
-Required: 20
-Shortage: 3
+Disponível: 17
+Necessário: 20
+Falta: 3
 ```
 
-Inventory remains:
+O estoque permanece:
 
 ```text
 17
 ```
 
-### Step 5 — Replenish
+### Etapa 5 — Repor Estoque
 
-Operator receives 10 additional units.
+O operador recebe mais 10 unidades.
 
 ```text
 +10
 ```
 
-Inventory:
+Estoque:
 
 ```text
 27
 ```
 
-### Step 6 — Check Again
+### Etapa 6 — Verificar Novamente
 
-Required:
+Necessário:
 
 ```text
 20
 ```
 
-Available:
+Disponível:
 
 ```text
 27
 ```
 
-Result:
+Resultado:
 
 ```text
-Available
+Disponível
 ```
 
-### Step 7 — Deactivate Product
+### Etapa 7 — Desativar Produto
 
-Operator decides the product should no longer be used.
+O operador decide que o produto não deve mais ser usado.
 
-Product:
+Produto:
 
 ```text
-Active: No
+Ativo: Não
 ```
 
-Inventory remains:
+O estoque permanece:
 
 ```text
 27
 ```
 
-History remains intact.
+O histórico permanece intacto.
 
 ---
 
-# 17. Invalid Operation Example
+# 17. Exemplo de Operação Inválida
 
-The following operation must never be allowed.
+A operação a seguir nunca deve ser permitida.
 
-Current:
-
-```text
-Inventory = 5
-```
-
-Operator requests:
+Atual:
 
 ```text
-Adjustment = -8
+Estoque = 5
 ```
 
-The system calculates:
+A solicitação do operador:
+
+```text
+Ajuste = -8
+```
+
+O sistema calcula:
 
 ```text
 5 - 8 = -3
 ```
 
-Because physical inventory cannot become negative:
+Como o estoque físico não pode se tornar negativo:
 
 ```text
-Operation = Rejected
+Operação = Rejeitada
 ```
 
-The resulting state remains:
+O estado resultante permanece:
 
 ```text
-Inventory = 5
+Estoque = 5
 ```
 
-No `-8` movement is created.
+Nenhuma movimentação `-8` é criada.
 
 ---
 
-# 18. Interaction With Future Milestones
+# 18. Interação com Marcos Futuros
 
-M1 establishes inventory behavior used by later milestones.
+M1 estabelece o comportamento de estoque usado por marcos posteriores.
 
-### M2 — Baskets
+### M2 — Cestas (Baskets)
 
-M2 may:
+M2 pode:
 
-* select products;
-* inspect availability;
-* warn about insufficient inventory.
+* selecionar produtos;
+* consultar a disponibilidade;
+* avisar sobre estoque insuficiente.
 
-M2 must not deduct inventory.
+M2 não deve deduzir estoque.
 
-### M4 — Sales
+### M4 — Vendas (Sales)
 
-M4 may create draft sales containing products with insufficient inventory.
+M4 pode criar vendas em rascunho que contenham produtos com estoque insuficiente.
 
-M4 must not deduct inventory merely because a sale exists.
+M4 não deve deduzir estoque apenas porque uma venda existe.
 
-### M5 — Payments
+### M5 — Pagamentos (Payments)
 
-M5 will use the M1 inventory behavior when confirming sales.
+M5 usará o comportamento de estoque de M1 ao confirmar vendas.
 
-Before confirmation:
-
-```text
-Check availability
-```
-
-If sufficient:
+Antes da confirmação:
 
 ```text
-Deduct inventory
+Verificar disponibilidade
 ```
 
-If insufficient:
+Se houver estoque suficiente:
 
 ```text
-Do not create negative inventory
-Confirmation cannot proceed
+Deduzir estoque
 ```
 
-M1 itself does not implement these future workflows.
+Se o estoque for insuficiente:
+
+```text
+Não criar estoque negativo
+A confirmação não pode prosseguir
+```
+
+O próprio M1 não implementa esses fluxos futuros.
 
 ---
 
-# 19. Error Behavior Principles
+# 19. Princípios de Tratamento de Erros
 
-Errors should be presented in business terms.
+Erros devem ser apresentados em termos de negócio.
 
-Prefer:
-
-```text
-"Insufficient inventory. Available: 2 UN. Required: 5 UN."
-```
-
-over:
+Prefira:
 
 ```text
-"Constraint violation: inventory_balance >= 0"
+"Estoque insuficiente. Disponível: 2 UN. Necessário: 5 UN."
 ```
 
-Technical details should be logged or handled internally when appropriate.
+em vez de:
 
-The user should receive enough information to understand what action is required.
+```text
+"Violação de restrição: inventory_balance >= 0"
+```
 
----
+Detalhes técnicos devem ser registrados em log ou tratados internamente quando apropriado.
 
-# 20. Use Case Traceability
-
-| Use Case                              | Specification Section  | Business Rules                               |
-| ------------------------------------- | ---------------------- | -------------------------------------------- |
-| UC-M1-01 Create Product               | Product                | PROD-001, PROD-002                           |
-| UC-M1-02 Edit Product                 | Product Editing        | PROD-001 (mutability), Historical preservation |
-| UC-M1-03 Activate Product             | Product Activation     | Product activation                           |
-| UC-M1-04 Deactivate Product           | Product Activation     | Non-destructive deactivation, INV-008        |
-| UC-M1-05 List Products                | Product Listing        | —                                            |
-| UC-M1-06 Search Products              | Product Search         | SEARCH-001                                   |
-| UC-M1-07 Add Inventory                | Inventory Entry        | INV-001, INV-008                             |
-| UC-M1-08 Adjust Inventory             | Inventory Adjustment   | INV-001, INV-002, INV-006, INV-008           |
-| UC-M1-09 View Inventory Balance       | Inventory Balance      | INV-001                                      |
-| UC-M1-10 View Inventory History       | Movement History       | INV-002                                      |
-| UC-M1-11 Check Inventory Availability | Inventory Availability | INV-003, INV-006                             |
+O usuário deve receber informações suficientes para entender qual ação é necessária.
 
 ---
 
-# 21. Implementation Boundary
+# 20. Rastreabilidade dos Casos de Uso
 
-These use cases define observable business behavior.
-
-They do not require a particular technical implementation.
-
-The implementation must not introduce additional business behavior simply because a technical framework makes it convenient.
-
-If a technical decision changes one of these behaviors, the agent must identify the conflict before implementation.
+| Caso de Uso                               | Seção da Especificação       | Regras de Negócio                                |
+| ----------------------------------------- | ---------------------------- | ------------------------------------------------ |
+| UC-M1-01 Criar Produto                    | Produto                      | PROD-001, PROD-002                               |
+| UC-M1-02 Editar Produto                   | Edição de Produto            | PROD-001 (mutabilidade), preservação histórica   |
+| UC-M1-03 Ativar Produto                   | Ativação de Produto          | ativação de produto                              |
+| UC-M1-04 Desativar Produto                | Ativação de Produto          | desativação não destrutiva, INV-008              |
+| UC-M1-05 Listar Produtos                  | Listagem de Produtos         | —                                                |
+| UC-M1-06 Buscar Produtos                  | Busca de Produtos            | SEARCH-001                                       |
+| UC-M1-07 Adicionar Estoque                | Entrada de Estoque            | INV-001, INV-008                                 |
+| UC-M1-08 Ajustar Estoque                  | Ajuste de Estoque             | INV-001, INV-002, INV-006, INV-008               |
+| UC-M1-09 Visualizar Saldo de Estoque      | Saldo de Estoque             | INV-001                                          |
+| UC-M1-10 Visualizar Histórico de Estoque  | Histórico de Movimentações   | INV-002                                          |
+| UC-M1-11 Verificar Disponibilidade        | Disponibilidade de Estoque   | INV-003, INV-006                                 |
 
 ---
 
-# 22. M1 Use Case Completion
+# 21. Limites da Implementação
 
-The use-case documentation is complete when all in-scope M1 operations have:
+Esses casos de uso definem comportamentos de negócio observáveis.
 
-* a defined actor;
-* a defined goal;
-* defined preconditions where applicable;
-* a normal flow;
-* relevant alternative/error flows;
-* defined postconditions where applicable;
-* traceability to the M1 specification.
+Eles não exigem uma implementação técnica específica.
 
-The next artifact is:
+A implementação não deve introduzir comportamento de negócio adicional apenas porque um framework técnico torna isso conveniente.
+
+Se uma decisão técnica alterar algum desses comportamentos, o agente deve identificar o conflito antes da implementação.
+
+---
+
+# 22. Conclusão dos Casos de Uso de M1
+
+A documentação dos casos de uso está completa quando todas as operações de M1 dentro do escopo têm:
+
+* um ator definido;
+* um objetivo definido;
+* pré-condições definidas, quando aplicável;
+* um fluxo normal;
+* fluxos alternativos/de erro relevantes;
+* pós-condições definidas, quando aplicável;
+* rastreabilidade até a especificação de M1.
+
+O próximo artefato é:
 
 ```text
 docs/milestones/m1-products-inventory/acceptance-criteria.md
 ```
 
-Acceptance criteria will translate these use cases into objective, testable conditions that determine whether the implementation is correct.
+Os critérios de aceitação traduzirão esses casos de uso em condições objetivas e testáveis para determinar se a implementação está correta.

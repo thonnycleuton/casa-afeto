@@ -1,14 +1,27 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   status: 'online' | 'offline' | 'loading' | 'idle'
   label?: string
 }>()
+
+const displayLabel = computed(
+  () =>
+    props.label ??
+    {
+      online: 'Conectado',
+      offline: 'Desconectado',
+      loading: 'Carregando',
+      idle: 'Aguardando',
+    }[props.status],
+)
 </script>
 
 <template>
   <span :class="['status-badge', status]">
     <span class="status-dot"></span>
-    <span class="status-text">{{ label || status }}</span>
+    <span class="status-text">{{ displayLabel }}</span>
   </span>
 </template>
 

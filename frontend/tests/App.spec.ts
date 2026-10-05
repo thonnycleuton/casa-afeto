@@ -21,9 +21,9 @@ describe('M1 product and inventory UI', () => {
     const wrapper = mount(App)
     await vi.waitFor(() => expect(productApi.fetchProducts).toHaveBeenCalled())
     expect(wrapper.text()).toContain('Casa Afeto')
-    expect(wrapper.text()).toContain('Product management')
-    expect(wrapper.text()).toContain('Inventory')
-    expect(wrapper.text()).toContain('Create product')
+    expect(wrapper.text()).toContain('Gestão de produtos')
+    expect(wrapper.text()).toContain('Estoque')
+    expect(wrapper.text()).toContain('Criar produto')
   })
 
   it('restricts product units to the approved vocabulary', async () => {
@@ -71,7 +71,7 @@ describe('M1 product and inventory UI', () => {
       name: 'Chocolate',
       base_unit: 'UN',
       active: true,
-      inventory_balance: '7',
+      inventory_balance: '7.5',
       created_at: '',
       updated_at: '',
     }
@@ -98,7 +98,7 @@ describe('M1 product and inventory UI', () => {
     await wrapper.findAll('.nav-item')[1].trigger('click')
     await wrapper.get('#inventory-product').setValue(String(product.id))
     await vi.waitFor(() => expect(productApi.fetchInventoryHistory).toHaveBeenCalledWith(product.id))
-    expect(wrapper.find('.balance-card').text()).toContain('7 UN')
+    expect(wrapper.find('.balance-card').text()).toContain('7,5 UN')
 
     await wrapper.get('#entry-quantity').setValue('4')
     await wrapper.findAll('form.operation-card')[0].trigger('submit')
@@ -138,7 +138,7 @@ describe('M1 product and inventory UI', () => {
     await wrapper.get('.row-actions button:nth-of-type(2)').trigger('click')
     await vi.waitFor(() => expect(productApi.deactivateProduct).toHaveBeenCalledWith(3))
     await vi.waitFor(() =>
-      expect(wrapper.get('.row-actions button:nth-of-type(2)').text()).toBe('Activate'),
+      expect(wrapper.get('.row-actions button:nth-of-type(2)').text()).toBe('Ativar'),
     )
     await wrapper.get('.row-actions button:nth-of-type(2)').trigger('click')
     await vi.waitFor(() => expect(productApi.activateProduct).toHaveBeenCalledWith(3))

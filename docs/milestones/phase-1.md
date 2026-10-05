@@ -1,776 +1,829 @@
-# Casa Afeto — Phase 1
+# Casa Afeto — Fase 1
 
-**Document version:** 0.1
-**Status:** Active
-**Phase:** 1 — Core Operations
-
----
-
-## 1. Purpose
-
-Phase 1 establishes the operational foundation of the Casa Afeto Sales Management System.
-
-The objective is to implement the minimum set of capabilities required to manage:
-
-* products;
-* inventory;
-* basket templates;
-* baskets;
-* customers;
-* sales;
-* payments.
-
-The phase must result in a coherent operational flow from product registration through sale confirmation and inventory deduction.
-
-Phase 1 follows the project's core development principle:
-
-> Build little, validate, learn, then build the next thing.
-
-Each milestone must be implemented, tested, and manually validated before the next milestone begins.
+**Versão do documento:** 0.1
+**Status:** Ativo
+**Fase:** 1 — Operações Centrais (Core Operations)
 
 ---
 
-## 2. Phase 1 Development Sequence
+## 1. Finalidade
 
-Phase 1 is divided into five milestones:
+A Fase 1 estabelece a fundação operacional do Sistema de Gestão de Vendas da Casa Afeto.
+
+O objetivo é implementar o conjunto mínimo de capacidades necessário para gerenciar:
+
+* produtos;
+* estoque;
+* templates de cesta;
+* cestas;
+* clientes;
+* vendas;
+* pagamentos.
+
+A fase deve resultar em um fluxo operacional coerente desde o cadastro de produtos até a confirmação da venda e a dedução de estoque.
+
+A Fase 1 segue o princípio central de desenvolvimento do projeto:
+
+> Construa pouco, valide, aprenda e depois construa a próxima coisa.
+
+Cada marco deve ser implementado, testado e validado manualmente antes que o próximo marco comece.
+
+---
+
+## 2. Sequência de Desenvolvimento da Fase 1
+
+A Fase 1 é dividida em cinco marcos:
 
 ```text
-M1 — Products & Inventory
+M1 — Produtos e Estoque (Products & Inventory)
         ↓
-M2 — Baskets & Basket Templates
+M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
         ↓
-M3 — Customers
+M3 — Clientes (Customers)
         ↓
-M4 — Sales
+M4 — Vendas (Sales)
         ↓
-M5 — Payments
+M5 — Pagamentos (Payments)
 ```
 
-The order is intentional.
+A ordem é intencional.
 
-Each milestone should establish the minimum foundation required by the next one without implementing functionality that belongs to later milestones.
+Cada marco deve estabelecer a base mínima necessária para o próximo, sem implementar funcionalidade que pertença a marcos posteriores.
 
 ---
 
-# 3. Milestone M1 — Products & Inventory
+# 3. Marco M1 — Produtos e Estoque (Products & Inventory)
 
-## Objective
+## Objetivo
 
-Establish the basic product and inventory foundation.
+Estabelecer a base básica de produto e estoque.
 
-## Scope
+## Escopo
 
-M1 includes:
+M1 inclui:
 
-* product creation;
-* product editing;
-* product activation/deactivation;
-* product listing;
-* product search;
-* base inventory unit;
-* manual inventory entry;
-* inventory adjustments;
-* inventory balance;
-* inventory movement history;
-* basic inventory availability information.
+* criação de produto;
+* edição de produto;
+* ativação/desativação de produto;
+* listagem de produtos;
+* busca de produtos;
+* unidade base de estoque;
+* entrada manual de estoque;
+* ajustes de estoque;
+* saldo de estoque;
+* histórico de movimentações de estoque;
+* informações básicas de disponibilidade de estoque.
 
-## Expected capabilities
+## Capacidades esperadas
 
-The user must be able to:
+O usuário deve ser capaz de:
 
-1. Create a product.
-2. Define its base inventory unit.
-3. Edit its basic information.
-4. Activate or deactivate the product.
-5. Add inventory manually.
-6. Adjust inventory.
-7. View the current balance.
-8. View inventory movement history.
-9. Identify whether a product currently has available stock.
+1. Criar um produto.
+2. Definir sua unidade base de estoque.
+3. Editar suas informações básicas.
+4. Ativar ou desativar o produto.
+5. Adicionar estoque manualmente.
+6. Ajustar o estoque.
+7. Visualizar o saldo atual.
+8. Visualizar o histórico de movimentações de estoque.
+9. Identificar se um produto possui estoque disponível no momento.
 
-## Important business behavior
+## Comportamento importante de negócio
 
-Inventory must be represented through movements rather than relying exclusively on a mutable stock value.
+O estoque deve ser representado por meio de movimentações em vez de depender exclusivamente de um valor mutável de estoque.
 
-The system must preserve the history of inventory changes.
+O sistema deve preservar o histórico de alterações do estoque.
 
-An inventory correction must not erase or rewrite previous movements.
+Uma correção de estoque não deve apagar nem reescrever movimentações anteriores.
 
-A product with insufficient stock may still be selected for a future basket, provided that the lack of stock is clearly visible to the user.
+Um produto com estoque insuficiente ainda pode ser selecionado para uma cesta futura, desde que a falta de estoque seja claramente visível ao usuário.
 
-## Explicitly out of scope
+## Explicitamente fora de escopo
 
-M1 does not implement:
+M1 não implementa:
 
-* purchases;
-* suppliers;
-* purchase items;
-* inventory lots;
-* expiration dates;
-* FEFO/lot selection;
-* automatic replenishment;
-* loss management;
-* production;
-* recipes;
-* reserved inventory;
-* sales-related inventory deduction.
+* compras;
+* fornecedores;
+* itens de compra;
+* lotes de estoque;
+* datas de vencimento;
+* FEFO/seleção por lote;
+* reposição automática;
+* gestão de perdas;
+* produção;
+* receitas;
+* estoque reservado;
+* dedução de estoque relacionada a vendas.
 
-These capabilities may be introduced in later phases or milestones.
+Essas capacidades podem ser introduzidas em fases ou marcos posteriores.
 
-## M1 validation example
+## Exemplo de validação de M1
 
-A basic validation flow should demonstrate:
+Um fluxo básico de validação deve demonstrar:
 
 ```text
-Create Chocolate
+Criar Chocolate
     ↓
-Add 20 units
+Adicionar 20 unidades
     ↓
-Balance = 20
+Saldo = 20
     ↓
-Adjust -3
+Ajustar -3
     ↓
-Balance = 17
+Saldo = 17
     ↓
-Review movement history
+Revisar histórico de movimentações
     ↓
-Deactivate product
+Desativar produto
     ↓
-Verify inactive product cannot be selected for new operations
+Verificar que produto inativo não pode ser selecionado para novas operações
 ```
 
-## Dependency
+## Dependência
 
-None.
+Nenhuma.
 
-M1 is the foundation of Phase 1.
+M1 é a base da Fase 1.
 
 ---
 
-# 4. Milestone M2 — Baskets & Basket Templates
+# 4. Marco M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
 
-## Objective
+## Objetivo
 
-Allow Casa Afeto to define reusable basket compositions and create concrete baskets from them.
+Permitir que a Casa Afeto defina composições reutilizáveis de cesta e crie cestas concretas a partir delas.
 
-## Scope
+## Escopo
 
-M2 includes:
+M2 inclui:
 
-* basket template creation;
-* basket template editing;
-* basket template activation/deactivation;
-* template composition;
-* product quantities in templates;
-* basket creation from a template;
-* basket creation without a template;
-* basket customization;
-* adding products;
-* removing products;
-* substituting products;
-* multiple quantities of the same product;
-* basket composition persistence;
-* basket cost calculation;
-* suggested basket price calculation;
-* manual final price.
+* criação de template de cesta;
+* edição de template de cesta;
+* ativação/desativação de template;
+* composição do template;
+* quantidades de produtos em templates;
+* criação de cesta a partir de template;
+* criação de cesta sem template;
+* personalização de cesta;
+* adicionar produtos;
+* remover produtos;
+* substituir produtos;
+* múltiplas quantidades do mesmo produto;
+* persistência da composição da cesta;
+* cálculo de custo da cesta;
+* cálculo de preço sugerido;
+* preço final manual.
 
-## Expected capabilities
+## Capacidades esperadas
 
-The user must be able to:
+O usuário deve ser capaz de:
 
-1. Create a basket template.
-2. Add products and quantities to the template.
-3. Create a concrete basket from the template.
-4. Create a basket without a template.
-5. Modify the concrete basket.
-6. Add or remove products.
-7. Substitute products.
-8. Use multiple units of the same product.
-9. View the basket cost.
-10. View a suggested selling price.
-11. Define the final selling price manually.
+1. Criar um template de cesta.
+2. Adicionar produtos e quantidades ao template.
+3. Criar uma cesta concreta a partir do template.
+4. Criar uma cesta sem template.
+5. Modificar a cesta concreta.
+6. Adicionar ou remover produtos.
+7. Substituir produtos.
+8. Usar múltiplas unidades do mesmo produto.
+9. Ver o custo da cesta.
+10. Ver um preço sugerido de venda.
+11. Definir o preço final manualmente.
 
-## Important business behavior
+## Comportamento importante de negócio
 
-A concrete basket must be independent from future changes to its template.
+Uma cesta concreta deve ser independente de futuras alterações em seu template.
 
-For example:
+Por exemplo:
 
 ```text
 Template A
     Chocolate × 2
-    Juice × 1
+    Suco × 1
 
-        ↓ create basket
+        ↓ criar cesta
 
-Basket X
+Cesta X
     Chocolate × 2
-    Juice × 1
+    Suco × 1
 
-        ↓ later change template
+        ↓ alterar template depois
 
 Template A
     Chocolate × 1
-    Juice × 2
+    Suco × 2
 ```
 
-Basket X must continue to contain:
+A cesta X deve continuar contendo:
 
 ```text
 Chocolate × 2
-Juice × 1
+Suco × 1
 ```
 
-The template change must not modify the existing basket.
+A mudança no template não deve alterar a cesta existente.
 
-A basket may also be customized after creation.
+Uma cesta também pode ser personalizada após sua criação.
 
-A product with insufficient inventory may still be added to the basket, but the user must receive a clear stock warning.
+Um produto com estoque insuficiente ainda pode ser adicionado à cesta, mas o usuário deve receber um aviso claro sobre a falta de estoque.
 
-## Pricing behavior
+## Comportamento de precificação
 
-The system should calculate:
+O sistema deve calcular:
 
 ```text
-Basket Cost
+Custo da Cesta
     ↓
-Suggested Price
+Preço Sugerido
     ↓
-Final Selling Price
+Preço Final
 ```
 
-The current business practice of approximately 2× cost is treated as a pricing suggestion, not as an enforced rule.
+A prática atual de negócio de aproximadamente 2× o custo é tratada como sugestão de precificação, não como regra imposta.
 
-The final selling price remains under user control.
+O preço final de venda permanece sob controle do usuário.
 
-## Explicitly out of scope
+## Explicitamente fora de escopo
 
-M2 does not implement:
+M2 não implementa:
 
-* sales;
-* customers;
-* payments;
-* stock deduction;
-* purchase management;
-* lot selection;
-* expiration management;
-* recipient management as a separate entity;
-* discounts or promotions.
+* vendas;
+* clientes;
+* pagamentos;
+* dedução de estoque;
+* gestão de compras;
+* seleção de lote;
+* gestão de vencimento;
+* gerenciamento de destinatário como entidade separada;
+* descontos ou promoções.
 
-## Dependency
+## Dependência
 
-M1.
+M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
+
+## Status atual
+
+```text
+Status: Planejado
+```
+
+M2 não entrará em implementação até que M1 passe pelo Gate de Conclusão do Marco.
 
 ---
 
-# 5. Milestone M3 — Customers
+# 5. Marco M3 — Clientes (Customers)
 
-## Objective
+## Objetivo
 
-Establish the basic customer information required to associate sales with customers.
+Estabelecer o registro básico de cliente necessário para associar vendas a clientes.
 
-## Scope
+## Escopo
 
-M3 includes:
+M3 inclui:
 
-* customer creation;
-* customer editing;
-* customer activation/deactivation;
-* customer listing;
-* customer search.
+* criação de clientes;
+* edição de informações do cliente;
+* ativação/desativação de clientes;
+* listagem de clientes;
+* busca de clientes;
 
-## Expected capabilities
+## Capacidades esperadas
 
-The user must be able to:
+O usuário deve ser capaz de:
 
-1. Create a customer.
-2. Edit customer information.
-3. Search for customers.
-4. Identify an active customer.
-5. Deactivate a customer.
+1. Criar um cliente.
+2. Editar dados do cliente.
+3. Buscar clientes.
+4. Identificar um cliente ativo.
+5. Desativar um cliente.
 
-## Business model
+## Modelo de Negócio
 
-A customer represents the person who makes the purchase.
+Um cliente representa a pessoa que realiza a compra.
 
-The recipient of a basket does not need to be represented as a separate customer/person entity during Phase 1.
+O destinatário de uma cesta não precisa ser representado como uma entidade separada de Cliente/Pessoa durante a Fase 1.
 
-Recipient information will be associated with the basket/delivery context when sales are implemented.
+As informações do destinatário serão associadas ao contexto da cesta/entrega quando as vendas forem implementadas.
 
-## Explicitly out of scope
+## Explicitamente fora de escopo
 
-M3 does not implement:
+M3 não inclui:
 
 * CRM;
-* customer segmentation;
-* customer campaigns;
-* affective dates;
-* birthday management;
-* wedding anniversary management;
-* automated reminders;
-* recipient entities;
-* communication integrations;
-* WhatsApp integration.
+* segmentação de clientes;
+* campanhas para clientes;
+* datas afetivas;
+* gestão de aniversários;
+* gestão de aniversários de casamento;
+* lembretes automatizados;
+* entidades de destinatário;
+* integrações de comunicação;
+* integração com WhatsApp.
 
-These are future capabilities.
+Essas são capacidades futuras.
 
-## Dependency
+## Dependência
 
 M2.
 
----
-
-# 6. Milestone M4 — Sales
-
-## Objective
-
-Introduce the sale as the operational transaction connecting customers and baskets.
-
-## Scope
-
-M4 includes:
-
-* sale creation;
-* customer selection;
-* one or more baskets per sale;
-* basket selection;
-* basket composition visualization;
-* basket composition editing;
-* recipient information;
-* delivery address;
-* delivery date;
-* sale notes;
-* sale total;
-* draft sales;
-* sale editing.
-
-## Expected capabilities
-
-The user must be able to:
-
-1. Create a sale.
-2. Select a customer.
-3. Add one or more baskets.
-4. Review each basket's composition.
-5. Modify basket composition when necessary.
-6. Define recipient information.
-7. Define delivery address.
-8. Define delivery date.
-9. Add notes.
-10. Review the sale total.
-11. Save the sale as a draft.
-12. Edit the sale before confirmation.
-
-## Sale structure
-
-Conceptually:
+## Status atual
 
 ```text
-Customer
+Status: Planejado
+```
+
+---
+
+# 6. Marco M4 — Vendas (Sales)
+
+## Objetivo
+
+Criar e gerenciar a transação comercial conectando clientes e cestas.
+
+## Escopo
+
+M4 inclui:
+
+* criação de vendas;
+* seleção de cliente;
+* inclusão de uma ou mais cestas por venda;
+* seleção de cestas;
+* visualização da composição das cestas;
+* edição da composição das cestas;
+* informações do destinatário;
+* endereço de entrega;
+* data de entrega;
+* observações da venda;
+* total da venda;
+* vendas em rascunho;
+* edição de vendas.
+
+## Capacidades Esperadas
+
+O usuário deve ser capaz de:
+
+1. Criar uma venda.
+2. Selecionar um cliente.
+3. Adicionar uma ou mais cestas.
+4. Revisar a composição de cada cesta.
+5. Modificar a composição da cesta quando necessário.
+6. Definir as informações do destinatário.
+7. Definir o endereço de entrega.
+8. Definir a data de entrega.
+9. Adicionar observações.
+10. Revisar o total da venda.
+11. Salvar a venda como rascunho.
+12. Editar a venda antes da confirmação.
+
+## Estrutura da Venda
+
+Conceitualmente:
+
+```text
+Cliente
     │
-    └── Sale
+    └── Venda
           │
-          ├── Basket
-          │     └── Basket Items
+          ├── Cesta
+          │     └── Itens da Cesta
           │
-          ├── Basket
-          │     └── Basket Items
+          ├── Cesta
+          │     └── Itens da Cesta
           │
           └── ...
 ```
 
-A sale must contain at least one basket.
+Uma venda deve conter pelo menos uma cesta.
 
-A sale may contain multiple baskets.
+Uma venda pode conter várias cestas.
 
-Each basket has its own delivery/recipient information.
+Cada cesta tem suas próprias informações de entrega/destinatário.
 
-Multiple baskets may share the same address.
+Várias cestas podem compartilhar o mesmo endereço.
 
-## Important business behavior
+## Ciclo de vida esperado
 
-M4 introduces the sale but does not yet confirm the sale from a payment perspective.
+O ciclo operacional inicial esperado segue:
 
-Inventory must not be deducted merely because a draft sale exists.
+```text
+DRAFT
+   ↓
+CONFIRMED
+   ↓
+PREPARING
+   ↓
+READY
+   ↓
+DELIVERED
+```
 
-Payment processing and confirmation rules belong to M5.
+Também é esperada uma situação de cancelamento:
 
-## Explicitly out of scope
+```text
+DRAFT / CONFIRMED / PREPARING / READY
+                  ↓
+               CANCELLED
+```
 
-M4 does not implement:
+As regras exatas de transição serão definidas na especificação do marco.
 
-* payment recording;
-* payment confirmation;
-* payment proofs;
-* 50% confirmation rule;
-* 100% payment-before-delivery rule;
-* inventory deduction caused by confirmation;
-* payment gateways;
-* automatic payment reconciliation.
+## Comportamento Importante de Negócio
 
-## Dependency
+M4 introduz a venda, mas ainda não confirma a venda do ponto de vista do pagamento.
 
-M1, M2, and M3.
+O estoque não deve ser deduzido apenas porque existe uma venda em rascunho.
+
+O processamento de pagamentos e as regras de confirmação pertencem a M5.
+
+## Explicitamente Fora de Escopo
+
+M4 não implementa:
+
+* registro de pagamentos;
+* confirmação de pagamento;
+* comprovantes de pagamento;
+* regra de confirmação de 50%;
+* regra de pagamento integral antes da entrega;
+* dedução de estoque causada pela confirmação;
+* gateways de pagamento;
+* conciliação automática de pagamentos.
+
+## Dependência
+
+M1, M2 e M3.
+
+## Status atual
+
+```text
+Status: Planejado
+```
 
 ---
 
-# 7. Milestone M5 — Payments
+# 7. Marco M5 — Pagamentos (Payments)
 
-## Objective
+## Objetivo
 
-Introduce payment tracking and complete the operational sale flow.
+Conectar informações de pagamento ao ciclo de vida de vendas e estabelecer as regras para confirmação da venda e dedução de estoque.
 
-## Scope
+## Escopo
 
-M5 includes:
+M5 inclui:
 
-* payment registration;
-* PIX payments;
-* card payments;
-* payment amount;
-* payment proof;
-* payment status;
-* total amount paid;
-* remaining amount;
-* sale confirmation;
-* inventory deduction on confirmation;
-* post-confirmation sale changes;
-* inventory delta adjustments;
-* delivery payment requirement.
+* registrar pagamentos;
+* pagamentos via PIX;
+* pagamentos com cartão;
+* valor do pagamento;
+* comprovante de pagamento;
+* status do pagamento;
+* total pago;
+* valor restante;
+* confirmação da venda;
+* dedução de estoque na confirmação;
+* alterações na venda após a confirmação;
+* ajustes da diferença de estoque;
+* exigência de pagamento para entrega.
 
-## Payment rules
+## Regras de Pagamento
 
-The system must support the following business rules:
+O sistema deve oferecer suporte às seguintes regras de negócio:
 
-### Confirmation threshold
+### Limite de Confirmação
 
-A sale is confirmed when at least 50% of its total value has been paid.
+Uma venda é confirmada quando pelo menos 50% de seu valor total tiver sido pago.
+
+Exemplo:
 
 ```text
 Total = R$ 200
-Paid  = R$ 100
+Pago  = R$ 100
        ↓
-Sale may be confirmed
+A venda pode ser confirmada
 ```
 
-### Delivery requirement
+### Exigência para Entrega
 
-The remaining balance must be fully paid before delivery.
+O saldo restante deve ser integralmente pago antes da entrega.
 
 ```text
-Confirmed
+Confirmada
     ↓
-Remaining balance
+Saldo restante
     ↓
-Payment completed
+Pagamento concluído
     ↓
-Delivery allowed
+Entrega permitida
 ```
 
-Payment status and sale status are separate concepts.
+O status do pagamento e o status da venda são conceitos separados.
 
-A sale may be confirmed while still having an outstanding balance.
+Uma venda pode ser confirmada mesmo que ainda tenha saldo pendente.
 
-## Inventory behavior
+## Comportamento do Estoque
 
-When a sale becomes confirmed, the system deducts the required inventory.
+Quando uma venda é confirmada, o sistema deduz o estoque necessário.
 
-Example:
+Exemplo:
 
 ```text
-Before confirmation
+Antes da confirmação
 
 Chocolate: 20
-Juice:      8
+Suco:       8
 
-Sale:
+Venda:
 Chocolate × 2
-Juice × 1
+Suco × 1
 
-After confirmation
+Após a confirmação
 
 Chocolate: 18
-Juice:      7
+Suco:      7
 ```
 
-## Changes after confirmation
+## Alterações após confirmação
 
-A confirmed sale may be modified.
+Uma venda confirmada pode ser modificada.
 
-Inventory must be adjusted according to the difference between the previous and new composition.
+O estoque deve ser ajustado de acordo com a diferença entre a composição anterior e a nova.
 
-Example:
+Exemplo:
 
 ```text
 Original:
-Chocolate × 2
-Juice × 1
+2 × Chocolate
+1 × Suco
 
-New:
-Biscuit × 2
-Juice × 1
-```
+Novo:
+2 × Biscoito
+1 × Suco
 
-The adjustment is:
-
-```text
+Ajuste de estoque:
 +2 Chocolate
--2 Biscuit
+-2 Biscoito
 ```
 
-The original inventory movements remain in history.
+A movimentação original de estoque permanece no histórico.
 
-The system must not rewrite the original movement to make it appear as though the original sale never happened.
+O sistema não deve reescrever a movimentação original para dar a impressão de que a venda original nunca aconteceu.
 
-## Cancellation
+## Cancelamento
 
-A confirmed sale may later be cancelled.
+Uma venda confirmada pode ser cancelada posteriormente.
 
-Cancellation must preserve the sale and its historical information.
+O cancelamento deve preservar a venda e suas informações históricas.
 
-The system must not assume that every item physically returns to inventory.
+O sistema não deve presumir que todos os itens retornam fisicamente ao estoque.
 
-The physical inventory situation must determine whether inventory corrections are required.
+A situação física do estoque deve determinar se são necessárias correções.
 
-## Explicitly out of scope
+## Explicitamente Fora de Escopo
 
-M5 does not implement:
+M5 não implementa:
 
-* payment gateway integration;
-* automatic bank reconciliation;
-* automatic PIX verification;
-* credit card processing;
-* refunds through external providers;
-* advanced financial reporting.
+* integração com gateways de pagamento;
+* conciliação bancária automática;
+* verificação automática de PIX;
+* processamento de cartão de crédito;
+* reembolsos por meio de provedores externos;
+* relatórios financeiros avançados.
 
-## Dependency
+## Dependência
 
-M1, M2, M3, and M4.
+M1, M2, M3 e M4.
 
----
-
-# 8. Phase 1 Integrated Flow
-
-At the end of Phase 1, the following operational flow must be possible:
+## Status atual
 
 ```text
-Product
-   ↓
-Inventory
-   ↓
-Basket Template
-   ↓
-Basket
-   ↓
-Customer
-   ↓
-Sale
-   ↓
-Payment
-   ↓
-Sale Confirmation
-   ↓
-Inventory Deduction
+Status: Planejado
 ```
 
-The system should support the following real-world scenario:
+---
+
+---
+
+# 8. Fluxo Integrado da Fase 1
+
+Ao final da Fase 1, o seguinte fluxo operacional deve ser possível:
 
 ```text
-1. Register products
-2. Add products to inventory
-3. Create or select a basket template
-4. Create a basket
-5. Customize the basket if necessary
-6. Register/select the customer
-7. Create a sale
-8. Add one or more baskets
-9. Define recipient and delivery information
-10. Register payment
-11. Reach the 50% payment threshold
-12. Confirm the sale
-13. Deduct inventory
-14. Register remaining payment
-15. Allow delivery only after full payment
+Produto
+   ↓
+Estoque
+   ↓
+Template de Cesta
+   ↓
+Cesta
+   ↓
+Cliente
+   ↓
+Venda
+   ↓
+Pagamento
+   ↓
+Confirmação da Venda
+   ↓
+Dedução de Estoque
 ```
 
----
-
-# 9. Phase 1 Definition of Done
-
-Phase 1 is considered complete only when all of the following are true:
-
-## Product and inventory
-
-* Products can be created and managed.
-* Product activation/deactivation works.
-* Inventory can be added manually.
-* Inventory adjustments are supported.
-* Current balances can be viewed.
-* Inventory movements are preserved historically.
-
-## Baskets
-
-* Basket templates can be created and managed.
-* Baskets can be created from templates.
-* Baskets can be created without templates.
-* Basket compositions can be customized.
-* Multiple quantities of the same product are supported.
-* Existing baskets are independent from future template changes.
-* Basket cost is calculated.
-* Suggested price is calculated.
-* Final price can be manually controlled.
-
-## Customers
-
-* Customers can be created and managed.
-* Customers can be searched.
-* Customers can be activated/deactivated.
-
-## Sales
-
-* Sales can be created.
-* A sale can contain one or more baskets.
-* Customer association works.
-* Basket delivery information works.
-* Draft sales can be saved and edited.
-* Sale totals are calculated.
-
-## Payments
-
-* PIX and card payments can be recorded.
-* Payment amounts are tracked.
-* Payment proof can be associated.
-* Total paid and remaining balance are visible.
-* Sale confirmation follows the 50% payment rule.
-* Inventory is deducted when the sale is confirmed.
-* Confirmed sale changes adjust inventory by delta.
-* Full payment is required before delivery.
-* Cancelled sales preserve their history.
-
-## Quality
-
-* Automated tests cover the implemented business behavior.
-* Existing automated tests remain passing.
-* Manual validation has been performed for each milestone.
-* No known critical data-integrity issue remains.
-* No milestone has introduced undocumented business rules.
-* No unnecessary future functionality has been implemented.
-
----
-
-# 10. Milestone Completion Rule
-
-A milestone is not considered complete merely because its code has been implemented.
-
-The completion sequence is:
+O sistema deve oferecer suporte ao seguinte cenário real:
 
 ```text
-Specification
-    ↓
-Implementation
-    ↓
-Automated Tests
-    ↓
-Agent Verification
-    ↓
-Human Validation
-    ↓
-Approval
-    ↓
-Next Milestone
+1. Cadastrar produtos
+2. Adicionar produtos ao estoque
+3. Criar ou selecionar um template de cesta
+4. Criar uma cesta
+5. Personalizar a cesta, se necessário
+6. Cadastrar/selecionar o cliente
+7. Criar uma venda
+8. Adicionar uma ou mais cestas
+9. Definir as informações do destinatário e da entrega
+10. Registrar o pagamento
+11. Atingir o limite de pagamento de 50%
+12. Confirmar a venda
+13. Deduzir o estoque
+14. Registrar o pagamento restante
+15. Permitir a entrega somente após o pagamento integral
 ```
 
-The next milestone must not begin until the current milestone has been explicitly validated.
+---
+
+# 9. Definição de Pronto da Fase 1
+
+A Fase 1 só é considerada concluída quando todas as condições a seguir forem verdadeiras:
+
+## Produtos e Estoque
+
+* Produtos podem ser criados e gerenciados.
+* A ativação/desativação de produtos funciona.
+* É possível adicionar estoque manualmente.
+* Ajustes de estoque são suportados.
+* É possível visualizar os saldos atuais.
+* As movimentações de estoque são preservadas no histórico.
+
+## Cestas
+
+* Templates de cesta podem ser criados e gerenciados.
+* Cestas podem ser criadas a partir de templates.
+* Cestas podem ser criadas sem templates.
+* As composições das cestas podem ser personalizadas.
+* Várias unidades do mesmo produto são suportadas.
+* Cestas existentes são independentes de alterações futuras em templates.
+* O custo da cesta é calculado.
+* O preço sugerido é calculado.
+* O preço final pode ser controlado manualmente.
+
+## Clientes
+
+* Clientes podem ser criados e gerenciados.
+* Clientes podem ser pesquisados.
+* Clientes podem ser ativados/desativados.
+
+## Vendas
+
+* Vendas podem ser criadas.
+* Uma venda pode conter uma ou mais cestas.
+* A associação de clientes funciona.
+* As informações de entrega das cestas funcionam.
+* Vendas em rascunho podem ser salvas e editadas.
+* Os totais das vendas são calculados.
+
+## Pagamentos
+
+* Pagamentos via PIX e cartão podem ser registrados.
+* Os valores dos pagamentos são acompanhados.
+* Um comprovante de pagamento pode ser associado.
+* O total pago e o saldo restante ficam visíveis.
+* A confirmação da venda segue a regra de pagamento de 50%.
+* O estoque é deduzido quando a venda é confirmada.
+* Alterações em vendas confirmadas ajustam o estoque pela diferença.
+* O pagamento integral é exigido antes da entrega.
+* Vendas canceladas preservam seu histórico.
+
+## Qualidade
+
+* Testes automatizados cobrem o comportamento de negócio implementado.
+* Os testes automatizados existentes continuam passando.
+* A validação manual foi realizada para cada marco.
+* Não há problemas críticos conhecidos de integridade de dados.
+* Nenhum marco introduziu regras de negócio não documentadas.
+* Nenhuma funcionalidade futura desnecessária foi implementada.
 
 ---
 
-# 11. Scope Control
+# 10. Regra de Conclusão do Marco
 
-During Phase 1, new requirements must be classified before implementation.
+Um marco não é considerado concluído apenas porque seu código foi implementado.
 
-### A — Required for current milestone
-
-The requirement is necessary for the current milestone to work correctly.
-
-It may be added to the current specification.
-
-### B — Required for a later milestone
-
-The requirement is valid but belongs to another milestone.
-
-It must be documented for that milestone without expanding the current implementation.
-
-### C — Future backlog
-
-The idea may be useful but is not currently required.
-
-It should be recorded as a future opportunity.
-
-### D — Unnecessary complexity
-
-The proposal does not solve a currently established business problem or introduces speculative architecture.
-
-It should not be implemented.
-
-The agent must not silently expand the scope of a milestone.
-
----
-
-# 12. Handling New Business Rules
-
-If implementation reveals a behavior that has not been defined by the business documentation, the agent must stop and identify the ambiguity.
-
-The agent must not silently invent a business rule.
-
-The process is:
+A sequência de conclusão é:
 
 ```text
-Ambiguity detected
-        ↓
-Identify the exact business decision
-        ↓
-Ask the user
-        ↓
-Document the decision
-        ↓
-Update specification if necessary
-        ↓
-Continue implementation
+Especificação
+    ↓
+Implementação
+    ↓
+Testes Automatizados
+    ↓
+Verificação pelo Agente
+    ↓
+Validação Humana
+    ↓
+Aprovação
+    ↓
+Próximo Marco
 ```
 
-Technical implementation details may be chosen by the agent when they do not change business behavior and the simplest reasonable solution is clear.
-
-Business behavior requires explicit confirmation.
+O próximo marco não deve começar até que o marco atual tenha sido validado explicitamente.
 
 ---
 
-# 13. Phase 1 Architecture Principle
+# 11. Controle de Escopo
 
-Phase 1 should remain intentionally simple.
+Durante a Fase 1, novos requisitos devem ser classificados antes da implementação.
 
-The implementation should favor:
+### A — Necessário para o Marco Atual
 
-* clear domain concepts;
-* straightforward data models;
-* simple service/application logic;
-* explicit business rules;
-* readable code;
-* automated tests;
-* maintainable database design;
-* minimal abstraction;
-* incremental evolution.
+O requisito é necessário para que o marco atual funcione corretamente.
 
-The implementation must not introduce speculative architecture for future requirements.
+Ele pode ser adicionado à especificação atual.
 
-The existence of future ideas such as lots, expiration, production, affective dates, communication, or advanced pricing does not justify implementing them during Phase 1.
+### B — Necessário para um Marco Posterior
 
-The current system should be designed so that future evolution remains possible without prematurely implementing that evolution.
+O requisito é válido, mas pertence a outro marco.
+
+Ele deve ser documentado para esse marco sem ampliar a implementação atual.
+
+### C — Ideia para o Backlog Futuro
+
+A ideia pode ser útil, mas não é necessária neste momento.
+
+Ela deve ser registrada como uma oportunidade futura.
+
+### D — Complexidade Desnecessária
+
+A proposta não resolve um problema de negócio estabelecido atualmente ou introduz arquitetura especulativa.
+
+Ela não deve ser implementada.
+
+O agente não deve ampliar silenciosamente o escopo de um marco.
 
 ---
 
-# 14. Phase 1 Documentation
+# 12. Tratamento de Novas Regras de Negócio
 
-Each milestone must have its own documentation folder:
+Se a implementação revelar um comportamento que não foi definido pela documentação de negócio, o agente deve parar e identificar a ambiguidade.
+
+O agente não deve inventar silenciosamente uma regra de negócio.
+
+O processo é:
+
+```text
+Ambiguidade detectada
+        ↓
+Identificar a decisão de negócio exata
+        ↓
+Perguntar ao usuário
+        ↓
+Documentar a decisão
+        ↓
+Atualizar a especificação, se necessário
+        ↓
+Continuar a implementação
+```
+
+Detalhes técnicos de implementação podem ser escolhidos pelo agente quando não alterarem o comportamento de negócio e a solução razoável mais simples estiver clara.
+
+O comportamento de negócio exige confirmação explícita.
+
+---
+
+# 13. Princípio de Arquitetura da Fase 1
+
+A Fase 1 deve permanecer intencionalmente simples.
+
+A implementação deve priorizar:
+
+* conceitos de domínio claros;
+* modelos de dados diretos;
+* lógica simples de serviço/aplicação;
+* regras de negócio explícitas;
+* código legível;
+* testes automatizados;
+* projeto de banco de dados sustentável;
+* abstração mínima;
+* evolução incremental.
+
+A implementação não deve introduzir arquitetura especulativa para requisitos futuros.
+
+A existência de ideias futuras como lotes, vencimentos, produção, datas afetivas, comunicação ou precificação avançada não justifica implementá-las durante a Fase 1.
+
+O sistema atual deve ser projetado de modo a permitir evolução futura sem implementá-la prematuramente.
+
+---
+
+# 14. Documentação da Fase 1
+
+Cada marco deve ter sua própria pasta de documentação:
 
 ```text
 docs/milestones/
@@ -808,79 +861,108 @@ docs/milestones/
     └── validation.md
 ```
 
-Milestone-specific documentation should be created when that milestone is about to begin.
+A documentação específica do marco deve ser criada quando ele estiver prestes a começar.
 
-Do not create detailed specifications for all milestones in advance.
-
----
-
-# 15. Current Phase Status
-
-| Milestone                       | Status                   | Notes                                                                        |
-| ------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
-| M1 — Products & Inventory       | Ready for implementation | Core business decisions resolved; documentation finalized for implementation |
-| M2 — Baskets & Basket Templates | Planned                  | Depends on M1                                                                |
-| M3 — Customers                  | Planned                  | Depends on M2                                                                |
-| M4 — Sales                      | Planned                  | Depends on M1, M2, M3                                                        |
-| M5 — Payments                   | Planned                  | Depends on M1–M4                                                             |
-
-The current development focus is:
-
-> **M1 — Products & Inventory**
-
-Core business decisions for M1 have been resolved:
-
-* **Negative inventory policy: RESOLVED**
-  * **Policy:** Physical inventory must never become negative (`INV-006`).
-  * Operations that would produce a negative balance are rejected.
-  * The invariant is absolute and applies also to concurrent inventory operations (`ADR-001`).
+Não crie especificações detalhadas para todos os marcos antecipadamente.
 
 ---
 
-# 16. Relationship With Other Documentation
+# 15. Status Atual da Fase
 
-Phase 1 follows the project's documentation hierarchy:
+| Marco                           | Status                       | Observações                                                                 |
+| ------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
+| M1 — Produtos e Estoque          | Em andamento                 | Implementação, refinamento visual e validação concluídos; aceitação humana pendente |
+| M2 — Cestas e Templates de Cesta | Planejado                    | Depende de M1; não autorizado para início                                  |
+| M3 — Clientes                    | Planejado                    | Depende de M2                                                              |
+| M4 — Vendas                      | Planejado                    | Depende de M1, M2 e M3                                                     |
+| M5 — Pagamentos                  | Planejado                    | Depende de M1–M4                                                           |
+
+### Dependências dos Marcos
 
 ```text
-Product Vision
-      ↓
-Product Roadmap
-      ↓
-Business Contract
-      ↓
-Phase 1
-      ↓
-Milestone Specification
-      ↓
-Use Cases
-      ↓
-Acceptance Criteria
-      ↓
-Implementation
-      ↓
-Validation
+M1 — Produtos e Estoque (Products & Inventory)
+├── pré-requisito para M2 (cestas referenciam produtos e estoque)
+└── pré-requisito para M4 (vendas referenciam estoque para dedução)
+
+M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
+└── pré-requisito para M4 (vendas contêm cestas)
+
+M3 — Clientes (Customers)
+└── pré-requisito para M4 (vendas pertencem a clientes)
+
+M4 — Vendas (Sales)
+└── pré-requisito para M5 (pagamentos confirmam vendas e acionam dedução de estoque)
 ```
 
-The documents serve different purposes and should not duplicate one another unnecessarily.
+O marco que aguarda aceitação humana é:
 
-`phase-1.md` defines the phase structure and boundaries.
+> **M1 — Produtos e Estoque**
 
-It does not replace:
+O estado detalhado de M1 é:
 
-* the Business Contract;
-* milestone specifications;
-* acceptance criteria;
-* architectural decisions;
-* implementation documentation.
+```text
+Implementação:       Concluída
+Refinamento visual:  Concluído
+Validação:           Concluída
+Aceitação humana:    Pendente
+Status geral:        Em andamento
+```
+
+Decisões fundamentais de negócio para M1 foram resolvidas:
+
+* **Política de estoque negativo: RESOLVIDA**
+  * **Política:** o estoque físico nunca deve ficar negativo (`INV-006`).
+  * Operações que produziriam saldo negativo são rejeitadas.
+  * O invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
+
+Nenhum marco posterior deve começar antes que o escopo seja explicitamente autorizado e o marco atual tenha passado pelo Gate de Conclusão do Marco.
 
 ---
 
-# 17. Guiding Principle
+# 16. Relação com a Outra Documentação
 
-Phase 1 should produce a useful operational system without attempting to solve the entire future of Casa Afeto.
+A Fase 1 segue a hierarquia de documentação do projeto:
 
-The objective is not to predict every future requirement.
+```text
+Visão do Produto
+      ↓
+Roadmap do Produto
+      ↓
+Contrato de Negócio
+      ↓
+Fase 1
+      ↓
+Especificação do Marco
+      ↓
+Casos de Uso
+      ↓
+Critérios de Aceitação
+      ↓
+Implementação
+      ↓
+Validação
+```
 
-The objective is to establish a solid, simple foundation that can evolve based on real business needs.
+Os documentos têm finalidades diferentes e não devem duplicar informações desnecessariamente.
 
-> **Build what has been decided. Validate it. Learn from using it. Then build the next thing.**
+`phase-1.md` define a estrutura e os limites da fase.
+
+Ele não substitui:
+
+* o Contrato de Negócio;
+* as especificações dos marcos;
+* os critérios de aceitação;
+* as decisões de arquitetura;
+* a documentação da implementação.
+
+---
+
+# 17. Princípio Orientador
+
+A Fase 1 deve produzir um sistema operacional útil sem tentar resolver todo o futuro da Casa Afeto.
+
+O objetivo não é prever todos os requisitos futuros.
+
+O objetivo é estabelecer uma base sólida e simples que possa evoluir com base em necessidades reais do negócio.
+
+> **Construa o que foi decidido. Valide. Aprenda com o uso. Então construa a próxima coisa.**

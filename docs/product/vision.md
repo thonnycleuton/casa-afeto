@@ -1,729 +1,728 @@
-# Casa Afeto — Product Vision
+# Casa Afeto — Visão do Produto
 
-**Document version:** 0.1
-**Status:** Draft
-**Last updated:** 2026-10-02
+**Versão do documento:** 0.1
+**Status:** Rascunho
+**Última atualização:** 2026-10-02
 
 ---
 
-## 1. Product Overview
+## 1. Visão Geral do Produto
 
-Casa Afeto is a business focused on creating and selling breakfast baskets and affectionate gift baskets.
+Casa Afeto é um negócio focado na criação e venda de cestas de café da manhã e cestas de presente afetivas.
 
-The business operates through personalized orders, where a customer chooses a basket, requests changes when necessary, agrees on a delivery date and recipient, makes payment, and the Casa Afeto team prepares and delivers the order.
+A operação se dá por meio de pedidos personalizados, em que um cliente escolhe uma cesta, solicita alterações quando necessário, concorda com uma data de entrega e destinatário, efetua o pagamento e a equipe da Casa Afeto prepara e entrega o pedido.
 
-The purpose of this system is to provide Casa Afeto with a simple, reliable, and centralized way to manage its sales operation.
+O propósito deste sistema é oferecer à Casa Afeto uma forma simples, confiável e centralizada de gerenciar sua operação de vendas.
 
-The system should connect the main business activities involved in an order:
+O sistema deve conectar as principais atividades de negócio envolvidas em um pedido:
 
 ```text
-Products
+Produtos
     ↓
-Inventory
+Estoque
     ↓
-Baskets
+Cestas
     ↓
-Customers
+Clientes
     ↓
-Sales
+Vendas
     ↓
-Payments
+Pagamentos
     ↓
-Inventory
+Estoque
 ```
 
-The system is intended to reduce manual work, improve visibility over the business, preserve historical information, and provide a foundation for future operational improvements.
+O sistema pretende reduzir o trabalho manual, melhorar a visibilidade do negócio, preservar informações históricas e fornecer uma base para futuros aprimoramentos operacionais.
 
 ---
 
-## 2. Product Vision
+## 2. Visão do Produto
 
-Build a practical sales management system that allows Casa Afeto to manage its products, inventory, baskets, customers, sales, and payments in one place, while keeping the system simple enough to reflect the actual way the business operates.
+Construir um sistema prático de gestão de vendas que permita à Casa Afeto gerenciar seus produtos, estoque, cestas, clientes, vendas e pagamentos em um único lugar, mantendo o sistema simples o suficiente para refletir a forma real como o negócio opera.
 
-The system should support the business without forcing the business to adapt its processes to unnecessary software complexity.
+O sistema deve apoiar o negócio sem forçar o negócio a adaptar seus processos a complexidade desnecessária de software.
 
-The guiding principle is:
+O princípio orientador é:
 
-> **The software should make the Casa Afeto operation easier to manage, not make the operation more complicated.**
-
----
-
-## 3. Problem
-
-The Casa Afeto operation involves several pieces of information that are naturally connected but can become difficult to manage when handled manually.
-
-A single sale may involve:
-
-* a customer;
-* one or more baskets;
-* different basket compositions;
-* products with different quantities;
-* a recipient different from the customer;
-* a delivery address;
-* a delivery date;
-* payments made at different times;
-* inventory consumption;
-* changes to the order after it has been created.
-
-Without a centralized system, maintaining consistency between these pieces of information becomes increasingly difficult.
-
-The system therefore needs to provide a reliable source of operational information while preserving the flexibility required by the business.
+> **O software deve tornar a operação da Casa Afeto mais fácil de gerenciar, não tornar a operação mais complicada.**
 
 ---
 
-## 4. Target Users
+## 3. Problema
 
-The primary users are the people responsible for operating Casa Afeto.
+A operação da Casa Afeto envolve diversas informações naturalmente conectadas, mas que podem se tornar difíceis de gerenciar quando tratadas manualmente.
 
-The initial system is designed primarily for internal business use rather than for customers to place orders directly.
+Uma única venda pode envolver:
 
-The system should prioritize:
+* um cliente;
+* uma ou mais cestas;
+* composições diferentes de cesta;
+* produtos com quantidades diferentes;
+* um destinatário diferente do cliente;
+* um endereço de entrega;
+* uma data de entrega;
+* pagamentos realizados em momentos diferentes;
+* consumo de estoque;
+* alterações no pedido após sua criação.
 
-* simplicity;
-* speed of operation;
-* clarity;
-* low administrative overhead;
-* reliable historical information;
-* easy correction of operational mistakes.
+Sem um sistema centralizado, manter a consistência entre essas informações torna-se cada vez mais difícil.
+
+O sistema, portanto, precisa fornecer uma fonte confiável de informação operacional, preservando a flexibilidade exigida pelo negócio.
 
 ---
 
-## 5. Core Business Flow
+## 4. Usuários-Alvo
 
-The system should support the real-world flow of a typical Casa Afeto order.
+Os usuários principais são as pessoas responsáveis por operar a Casa Afeto.
+
+O sistema inicial foi pensado principalmente para uso interno do negócio, em vez de permitir que os clientes façam pedidos diretamente.
+
+O sistema deve priorizar:
+
+* simplicidade;
+* rapidez de operação;
+* clareza;
+* baixo custo administrativo;
+* informações históricas confiáveis;
+* correção fácil de erros operacionais.
+
+---
+
+## 5. Fluxo Central do Negócio
+
+O sistema deve suportar o fluxo real de um pedido típico da Casa Afeto.
 
 ```text
-Customer contacts Casa Afeto
+Cliente entra em contato com a Casa Afeto
         ↓
-Customer chooses a basket
+Cliente escolhe uma cesta
         ↓
-Basket composition may be customized
+Composição da cesta pode ser personalizada
         ↓
-Delivery information is defined
+Informações de entrega são definidas
         ↓
-Payment is received
+Pagamento é recebido
         ↓
-Sale is confirmed
+Venda é confirmada
         ↓
-Inventory is consumed
+Estoque é consumido
         ↓
-Basket is prepared
+Cesta é preparada
         ↓
-Basket is delivered
+Cesta é entregue
 ```
 
-The system does not need to reproduce every communication or operational activity performed by the business.
+O sistema não precisa reproduzir todas as comunicações ou atividades operacionais executadas pelo negócio.
 
-Its responsibility is to maintain the information necessary to manage and control the business operation.
-
----
-
-## 6. Product Principles
-
-### 6.1 Business-first
-
-Business rules should drive the software design.
-
-The system should represent how Casa Afeto actually operates instead of introducing generic processes merely because they are common in other systems.
+Sua responsabilidade é manter as informações necessárias para gerenciar e controlar a operação do negócio.
 
 ---
 
-### 6.2 Simplicity over abstraction
+## 6. Princípios do Produto
 
-The system should use the simplest design that correctly solves the current business problem.
+### 6.1 Negócio em primeiro lugar
 
-It should avoid unnecessary:
+As regras de negócio devem orientar o design do software.
 
-* abstractions;
+O sistema deve representar como a Casa Afeto realmente opera em vez de introduzir processos genéricos apenas porque são comuns em outros sistemas.
+
+---
+
+### 6.2 Simplicidade sobre abstração
+
+O sistema deve usar o design mais simples que resolva corretamente o problema de negócio atual.
+
+Deve evitar abstrações desnecessárias:
+
+* abstrações;
 * frameworks;
-* architectural layers;
-* generic infrastructure;
-* integrations;
-* automation;
-* domain concepts;
-* configuration mechanisms.
+* camadas arquiteturais;
+* infraestrutura genérica;
+* integrações;
+* automações;
+* conceitos de domínio;
+* mecanismos de configuração.
 
-Complexity should be introduced only when there is a concrete business or technical reason.
-
----
-
-### 6.3 Historical information matters
-
-Important business events should preserve their history.
-
-For example:
-
-* changing the cost of a product should not rewrite historical acquisition information;
-* changing a basket template should not change baskets that were already created;
-* correcting inventory should preserve the original movement and create a new correction;
-* cancelling a sale should not erase the sale from the system.
-
-The system should favor traceability over destructive updates when historical information is relevant.
+A complexidade deve ser introduzida somente quando houver uma razão concreta de negócio ou técnica.
 
 ---
 
-### 6.4 Flexibility where the business needs it
+### 6.3 Informações históricas importam
 
-Casa Afeto sells personalized baskets.
+Eventos importantes do negócio devem preservar seu histórico.
 
-Therefore, the system must allow a basket based on a standard template to be modified for a specific customer.
+Por exemplo:
 
-A basket may:
+* alterar o custo de um produto não deve reescrever informações históricas de aquisição;
+* alterar um template de cesta não deve alterar cestas já criadas;
+* corrigir o estoque deve preservar a movimentação original e criar uma nova correção;
+* cancelar uma venda não deve apagar a venda do sistema.
 
-* use a template;
-* be created without a template;
-* contain multiple quantities of the same product;
-* have products added or removed;
-* have products substituted.
-
-The resulting basket represents the actual basket sold to the customer.
+O sistema deve favorecer a rastreabilidade em vez de atualizações destrutivas quando a informação histórica for relevante.
 
 ---
 
-### 6.5 Human control over final decisions
+### 6.4 Flexibilidade onde o negócio precisa
 
-The system may calculate and suggest values, but the business should retain control over important commercial decisions.
+Casa Afeto vende cestas personalizadas.
 
-For example, the system may calculate:
+Portanto, o sistema deve permitir que uma cesta baseada em um template padrão seja modificada para um cliente específico.
 
-* basket cost;
-* suggested selling price;
-* amount already paid;
-* remaining amount.
+Uma cesta pode:
 
-The final selling price remains a business decision.
+* usar um template;
+* ser criada sem template;
+* conter múltiplas quantidades do mesmo produto;
+* ter produtos adicionados ou removidos;
+* ter produtos substituídos.
+
+A cesta resultante representa a cesta real vendida ao cliente.
 
 ---
 
-### 6.6 Progressive evolution
+### 6.5 Controle humano sobre decisões finais
 
-The product should evolve incrementally.
+O sistema pode calcular e sugerir valores, mas o negócio deve manter o controle sobre decisões comerciais importantes.
 
-Each milestone should solve a clearly defined problem before the next area is implemented.
+Por exemplo, o sistema pode calcular:
 
-The project should follow:
+* custo da cesta;
+* preço de venda sugerido;
+* valor já pago;
+* valor restante.
+
+O preço final de venda continua sendo uma decisão de negócio.
+
+---
+
+### 6.6 Evolução progressiva
+
+O produto deve evoluir de forma incremental.
+
+Cada marco deve resolver um problema claramente definido antes que a próxima área seja implementada.
+
+O projeto deve seguir:
 
 ```text
-Define
+Definir
   ↓
-Specify
+Especificar
   ↓
-Build
+Construir
   ↓
-Test
+Testar
   ↓
-Validate
+Validar
   ↓
-Learn
+Aprender
   ↓
-Build the next thing
+Construir a próxima coisa
 ```
 
-Future ideas should not automatically become current requirements.
+Ideias futuras não devem se tornar automaticamente requisitos atuais.
 
 ---
 
-## 7. Core Product Areas
+## 7. Áreas Centrais do Produto
 
-The initial product is organized around five core operational areas.
+O produto inicial é organizado em cinco áreas operacionais centrais.
 
-### Products
+### Produtos
 
-Products represent items that Casa Afeto uses in its baskets.
+Produtos representam itens que a Casa Afeto usa em suas cestas.
 
-Examples include:
+Exemplos incluem:
 
 * chocolates;
-* cereal bars;
-* juices;
-* cakes;
-* coffees;
-* mugs;
-* cards;
-* packaging materials.
+* barras de cereal;
+* sucos;
+* bolos;
+* cafés;
+* canecas;
+* cartões;
+* materiais de embalagem.
 
-Products have a base inventory unit and can be activated or deactivated.
-
----
-
-### Inventory
-
-Inventory represents the physical availability of products used by Casa Afeto.
-
-The system should provide visibility into:
-
-* current quantities;
-* additions;
-* deductions;
-* corrections;
-* inventory history.
-
-Inventory should ultimately be based on movements rather than relying only on a manually edited current quantity.
-
-The system is expected to evolve toward more detailed inventory concepts such as acquisition lots, costs, and expiration dates as the business requires them.
+Produtos têm uma unidade base de estoque e podem ser ativados ou desativados.
 
 ---
 
-### Baskets
+### Estoque
 
-Baskets are the main commercial product sold by Casa Afeto.
+Estoque representa a disponibilidade física de produtos usados pela Casa Afeto.
 
-A basket can be created from a standard template or created independently.
+O sistema deve fornecer visibilidade sobre:
 
-A template provides a standard composition, but the concrete basket sold to a customer may differ from that template.
+* quantidades atuais;
+* adições;
+* deduções;
+* correções;
+* histórico de estoque.
 
-The system should preserve the actual composition of each basket.
+O estoque deve, em última instância, ser baseado em movimentações e não apenas em um valor atual editado manualmente.
 
----
-
-### Customers
-
-Customers represent the people who purchase from Casa Afeto.
-
-The customer record should provide the information necessary to identify and manage customers and their sales.
-
-More advanced customer relationship functionality is intentionally outside the initial product scope.
+O sistema deve evoluir para conceitos de estoque mais detalhados, como lotes de aquisição, custos e datas de vencimento, conforme o negócio exigir.
 
 ---
 
-### Sales
+### Cestas
 
-A sale represents a commercial transaction with a customer.
+Cestas são o principal produto comercial vendido pela Casa Afeto.
 
-A sale may contain one or more baskets.
+Uma cesta pode ser criada a partir de um template padrão ou criada independentemente.
 
-Each basket may have its own:
+Um template fornece uma composição padrão, mas a cesta concreta vendida a um cliente pode diferir desse template.
 
-* recipient;
-* delivery address;
-* delivery date;
-* composition.
-
-A sale progresses through operational states as it moves from creation to delivery.
+O sistema deve preservar a composição real de cada cesta.
 
 ---
 
-### Payments
+### Clientes
 
-Payments represent amounts received for a sale.
+Clientes representam as pessoas que compram da Casa Afeto.
 
-The initial system should support the business's current payment process, including:
+O registro do cliente deve fornecer as informações necessárias para identificar e gerenciar clientes e suas vendas.
+
+Funcionalidades mais avançadas de relacionamento com clientes ficam intencionalmente fora do escopo inicial do produto.
+
+---
+
+### Vendas
+
+Uma venda representa uma transação comercial com um cliente.
+
+Uma venda pode conter uma ou mais cestas.
+
+Cada cesta pode ter seu próprio:
+
+* destinatário;
+* endereço de entrega;
+* data de entrega;
+* composição.
+
+Uma venda avança por estados operacionais conforme se move da criação até a entrega.
+
+---
+
+### Pagamentos
+
+Pagamentos representam valores recebidos para uma venda.
+
+O sistema inicial deve suportar o processo atual de pagamento do negócio, incluindo:
 
 * PIX;
-* card payments;
-* payment proof;
-* partial payments;
-* payment balance.
+* pagamentos com cartão;
+* comprovante de pagamento;
+* pagamentos parciais;
+* saldo de pagamento.
 
-Payment status is related to, but distinct from, the operational status of the sale.
+O status do pagamento está relacionado ao status operacional da venda, mas é distinto dele.
 
 ---
 
-## 8. Pricing Vision
+## 8. Visão de Precificação
 
-The system should assist Casa Afeto with pricing without imposing a rigid pricing formula.
+O sistema deve auxiliar a Casa Afeto com a precificação sem impor uma fórmula rígida de preços.
 
-The current business practice uses approximately twice the basket cost as a reference for the suggested selling price.
+A prática atual do negócio utiliza aproximadamente o dobro do custo da cesta como referência para o preço de venda sugerido.
 
-Conceptually:
+Conceitualmente:
 
 ```text
-Basket Cost
+Custo da Cesta
      ↓
-Suggested Price
+Preço Sugerido
      ↓
-Business Adjustment
+Ajuste de Negócio
      ↓
-Final Selling Price
+Preço Final de Venda
 ```
 
-For example, a basket costing R$85 may have a suggested price of approximately R$170, while the final selling price may be manually adjusted.
+Por exemplo, uma cesta com custo de R$85 pode ter um preço sugerido de aproximadamente R$170, enquanto o preço final de venda pode ser ajustado manualmente.
 
-The suggested price is therefore a reference, not a mandatory business rule.
+O preço sugerido é, portanto, uma referência, não uma regra de negócio obrigatória.
 
-When the composition of a basket changes, its cost and suggested price should be recalculated based on the resulting composition.
+Quando a composição de uma cesta muda, seu custo e preço sugerido devem ser recalculados com base na composição resultante.
 
 ---
 
-## 9. Inventory and Sales Relationship
+## 9. Relação entre Estoque e Vendas
 
-Inventory is directly connected to the sales lifecycle.
+O estoque está diretamente conectado ao ciclo de vida das vendas.
 
-The intended behavior is:
+O comportamento pretendido é:
 
 ```text
-Sale created
+Venda criada
     ↓
-Sale remains a draft
+Venda permanece em rascunho
     ↓
-Payment reaches confirmation threshold
+Pagamento alcança o limite de confirmação
     ↓
-Sale becomes confirmed
+Venda se torna confirmada
     ↓
-Inventory is deducted
+Estoque é deduzido
 ```
 
-The system should preserve the relationship between a sale and the inventory changes it causes.
+O sistema deve preservar a relação entre uma venda e as alterações de estoque que ela provoca.
 
-If a confirmed sale is later modified, the system should adjust inventory according to the difference between the previous and new compositions rather than rewriting the original inventory history.
+Se uma venda confirmada for modificada mais tarde, o sistema deve ajustar o estoque conforme a diferença entre as composições anterior e nova, em vez de reescrever o histórico original de estoque.
 
-This allows the business to understand what happened over time.
+Isso permite que o negócio entenda o que aconteceu ao longo do tempo.
 
 ---
 
-## 10. Product Cost and Acquisition History
+## 10. Custo do Produto e Histórico de Aquisição
 
-The cost of a product is not necessarily fixed.
+O custo de um produto não é necessariamente fixo.
 
-The same product may be purchased at different prices.
+O mesmo produto pode ser comprado a preços diferentes.
 
-For example:
+Por exemplo:
 
 ```text
 Cereal Bar
 
-Purchase A → R$2.50 / unit
-Purchase B → R$1.80 / unit
+Compra A → R$2,50 / unidade
+Compra B → R$1,80 / unidade
 ```
 
-The system should therefore avoid treating product cost as a permanent property of the product itself.
+O sistema deve, portanto, evitar tratar o custo do produto como uma propriedade permanente do próprio produto.
 
-Future inventory evolution may associate stock with its acquisition context, including:
+A evolução futura do estoque pode associar o estoque ao seu contexto de aquisição, incluindo:
 
-* acquisition cost;
-* quantity;
-* expiration date;
-* remaining quantity.
+* custo de aquisição;
+* quantidade;
+* data de vencimento;
+* quantidade restante.
 
-The exact implementation and business rules for this functionality will be defined when that functionality becomes part of an approved milestone.
+A implementação exata e as regras de negócio para essa funcionalidade serão definidas quando essa funcionalidade entrar em um marco aprovado.
 
 ---
 
-## 11. Personalization
+## 11. Personalização
 
-Personalization is an important characteristic of the Casa Afeto business.
+Personalização é uma característica importante do negócio da Casa Afeto.
 
-The system should support the reality that a customer may request changes to a standard basket.
+O sistema deve suportar a realidade de que um cliente pode solicitar alterações a uma cesta padrão.
 
-For example:
+Por exemplo:
 
 ```text
 Template
     ↓
-Standard basket
+Cesta padrão
     ↓
-Customer requests changes
+Cliente solicita alterações
     ↓
-Concrete basket
+Cesta concreta
     ↓
-Actual sale
+Venda real
 ```
 
-The concrete basket must represent what was actually sold, regardless of later changes to the original template.
+A cesta concreta deve representar o que foi realmente vendido, independentemente de mudanças posteriores no template original.
 
 ---
 
-## 12. Future Product Evolution
+## 12. Evolução Futura do Produto
 
-The initial product focuses on the core sales operation.
+O produto inicial foca na operação central de vendas.
 
-Future versions may evolve to support additional capabilities such as:
+Versões futuras podem evoluir para suportar capacidades adicionais, como:
 
-### Customer relationship and affective dates
+### Relacionamento com clientes e datas afetivas
 
-Casa Afeto may eventually maintain important dates associated with customers and recipients, such as:
+Casa Afeto pode eventualmente manter datas importantes associadas a clientes e destinatários, como:
 
-* birthdays;
-* wedding anniversaries;
-* other relevant occasions.
+* aniversários;
+* bodas;
+* outras ocasiões relevantes.
 
-This could allow the business to identify upcoming dates and proactively contact customers.
+Isso pode permitir que o negócio identifique datas próximas e entre em contato proativamente com clientes.
 
-This functionality is intentionally outside the initial MVP.
-
----
-
-### Expiration and inventory optimization
-
-Future inventory functionality may include:
-
-* product lots;
-* expiration dates;
-* expiration warnings;
-* preferential use of products approaching expiration;
-* more sophisticated stock selection.
-
-The business currently considers a nearest-expiration-first strategy conceptually desirable, but this is a future business policy and should not be treated as an immutable architectural rule.
+Essa funcionalidade é intencionalmente fora do escopo inicial do MVP.
 
 ---
 
-### Internal production
+### Vencimento e otimização de estoque
 
-Some Casa Afeto products may eventually be produced internally, such as cakes.
+Futuras funcionalidades de estoque podem incluir:
 
-Future functionality could therefore support:
+* lotes de produto;
+* datas de vencimento;
+* alertas de vencimento;
+* uso preferencial de produtos próximos do vencimento;
+* seleção de estoque mais sofisticada.
 
-* recipes;
-* ingredients;
-* production quantities;
-* production costs;
-* expiration.
-
-This functionality is not part of the initial product.
+O negócio atualmente considera uma estratégia de primeiro vencimento como conceitualmente desejável, mas isso é uma política de negócio futura e não deve ser tratada como uma regra arquitetural imutável.
 
 ---
 
-### Replenishment
+### Produção interna
 
-The system may eventually identify situations where products required by already-sold baskets need to be replenished.
+Alguns produtos da Casa Afeto podem eventualmente ser produzidos internamente, como bolos.
 
-This could provide visibility into upcoming inventory needs.
+Futuras funcionalidades poderiam, portanto, suportar:
 
-This functionality is not part of the initial product.
+* receitas;
+* ingredientes;
+* quantidades de produção;
+* custos de produção;
+* vencimento.
 
----
-
-### Business communication
-
-Future versions may integrate with communication channels such as WhatsApp to reduce manual work around customer communication.
-
-Such integrations should only be introduced when there is a clearly defined business requirement.
+Essa funcionalidade não faz parte do produto inicial.
 
 ---
 
-## 13. MVP Scope
+### Reposição
 
-The first phase of the product focuses on the following capabilities:
+O sistema pode eventualmente identificar situações em que produtos requisitados por cestas já vendidas precisam ser repostos.
+
+Isso pode fornecer visibilidade sobre necessidades futuras de estoque.
+
+Essa funcionalidade não faz parte do produto inicial.
+
+---
+
+### Comunicação de negócios
+
+Versões futuras podem integrar canais de comunicação, como WhatsApp, para reduzir o trabalho manual em torno da comunicação com clientes.
+
+Essas integrações só devem ser introduzidas quando houver um requisito de negócio claramente definido.
+
+---
+
+## 13. Escopo do MVP
+
+A primeira fase do produto foca nas seguintes capacidades:
 
 ```text
-Products
+Produtos
     ↓
-Inventory
+Estoque
     ↓
-Basket Templates
+Templates de Cesta
     ↓
-Baskets
+Cestas
     ↓
-Customers
+Clientes
     ↓
-Sales
+Vendas
     ↓
-Payments
+Pagamentos
     ↓
-Inventory deduction
+Dedução de estoque
 ```
 
-The first phase is divided into:
+A primeira fase é dividida em:
 
 ```text
-M1 — Products & Inventory
-M2 — Baskets & Basket Templates
-M3 — Customers
-M4 — Sales
-M5 — Payments
+M1 — Produtos e Estoque (Products & Inventory)
+M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
+M3 — Clientes (Customers)
+M4 — Vendas (Sales)
+M5 — Pagamentos (Payments)
 ```
 
-The goal is not to implement every possible Casa Afeto process.
+O objetivo não é implementar todos os possíveis processos da Casa Afeto.
 
-The goal is to establish a reliable operational foundation that can be validated and evolved.
-
----
-
-## 14. Explicitly Outside the Initial Scope
-
-The following are not part of the initial product unless a future requirement explicitly brings them into scope:
-
-* customer self-service ordering;
-* online payment gateway integration;
-* WhatsApp integration;
-* automated marketing campaigns;
-* affective-date reminders;
-* advanced CRM;
-* supplier management;
-* automated purchasing;
-* expiration alerts;
-* automated replenishment;
-* production management;
-* recipe management;
-* ingredient management;
-* shipping/logistics management;
-* promotions;
-* discount management;
-* invoicing integration;
-* multi-company management;
-* advanced reporting and business intelligence.
-
-Their exclusion does not mean they can never exist.
-
-It means they should not influence the architecture or implementation of the current product unless a concrete requirement makes them relevant.
+O objetivo é estabelecer uma base operacional confiável que possa ser validada e evoluída.
 
 ---
 
-## 15. Success Criteria
+## 14. Explicitamente Fora do Escopo Inicial
 
-The initial product should be considered successful when Casa Afeto can manage the core operational flow without depending on disconnected manual records for the information covered by the system.
+O seguinte não faz parte do produto inicial, a menos que um requisito futuro o coloque explicitamente em escopo:
 
-At minimum, the system should allow the business to:
+* pedido por autoatendimento do cliente;
+* integração com gateway de pagamento online;
+* integração com WhatsApp;
+* campanhas de marketing automatizadas;
+* lembretes de datas afetivas;
+* CRM avançado;
+* gestão de fornecedores;
+* compras automatizadas;
+* alertas de vencimento;
+* reposição automatizada;
+* gestão de produção;
+* gestão de receitas;
+* gestão de ingredientes;
+* gestão de logística/envio;
+* promoções;
+* gestão de descontos;
+* integração de faturamento;
+* gestão multiempresa;
+* relatórios avançados e business intelligence.
 
-1. Maintain its products.
-2. Know current inventory quantities.
-3. Understand inventory movements.
-4. Define standard basket templates.
-5. Create customized baskets.
-6. Maintain customer information.
-7. Create sales containing one or more baskets.
-8. Record payment information.
-9. Determine when a sale reaches the confirmation threshold.
-10. Deduct inventory when a sale is confirmed.
-11. Preserve historical information when corrections or changes occur.
-12. Understand the current state of an order without reconstructing it manually from different sources.
+Sua exclusão não significa que nunca possam existir.
 
----
-
-## 16. Product Quality Attributes
-
-The system should prioritize the following qualities.
-
-### Correctness
-
-Business rules must be respected consistently.
-
-### Traceability
-
-Important changes to inventory, sales, payments, and other business information should remain understandable after the fact.
-
-### Simplicity
-
-The system should remain easy to understand and operate.
-
-### Maintainability
-
-The codebase should be structured so that future changes can be made without unnecessary coupling.
-
-### Evolvability
-
-The system should be capable of growing as real business requirements emerge, without implementing speculative functionality in advance.
-
-### Usability
-
-Common operational tasks should require as few unnecessary steps as possible.
+Significa que eles não devem influenciar a arquitetura ou a implementação do produto atual, a menos que um requisito concreto os torne relevantes.
 
 ---
 
-## 17. Guiding Principle for Development
+## 15. Critérios de Sucesso
 
-Every feature should answer a concrete business need.
+O produto inicial deve ser considerado bem-sucedido quando a Casa Afeto puder gerenciar o fluxo operacional central sem depender de registros manuais desconectados para as informações cobertas pelo sistema.
 
-Before implementing a new capability, the project should be able to answer:
+No mínimo, o sistema deve permitir que o negócio:
 
-> **What problem in the Casa Afeto operation does this solve?**
+1. Mantenha seus produtos.
+2. Saiba as quantidades atuais de estoque.
+3. Entenda as movimentações de estoque.
+4. Defina templates de cesta padrão.
+5. Crie cestas personalizadas.
+6. Mantenha informações de clientes.
+7. Crie vendas contendo uma ou mais cestas.
+8. Registre informações de pagamento.
+9. Determine quando uma venda atinge o limite de confirmação.
+10. Deduza o estoque quando a venda é confirmada.
+11. Preservar informações históricas quando correções ou mudanças ocorrerem.
+12. Entenda o estado atual de um pedido sem reconstruí-lo manualmente a partir de diferentes fontes.
 
-If the answer is unclear, the feature should not automatically be added to the current scope.
+---
 
-The project should favor:
+## 16. Atributos de Qualidade do Produto
+
+O sistema deve priorizar as seguintes qualidades.
+
+### Correção
+
+As regras de negócio devem ser respeitadas de forma consistente.
+
+### Rastreabilidade
+
+Mudanças importantes em estoque, vendas, pagamentos e outras informações de negócio devem permanecer compreensíveis posteriormente.
+
+### Simplicidade
+
+O sistema deve permanecer fácil de entender e operar.
+
+### Manutenibilidade
+
+A base de código deve ser estruturada para que mudanças futuras possam ser feitas sem acoplamento desnecessário.
+
+### Evolutividade
+
+O sistema deve ser capaz de crescer conforme requisitos reais de negócio surgirem, sem implementar funcionalidade especulativa com antecedência.
+
+### Usabilidade
+
+Tarefas operacionais comuns devem exigir o menor número possível de etapas desnecessárias.
+
+---
+
+## 17. Princípio Orientador para Desenvolvimento
+
+Cada funcionalidade deve responder a uma necessidade concreta de negócio.
+
+Antes de implementar uma nova capacidade, o projeto deve ser capaz de responder:
+
+> **Qual problema na operação da Casa Afeto isso resolve?**
+
+Se a resposta for ambígua, a funcionalidade não deve ser adicionada automaticamente ao escopo atual.
+
+O projeto deve preferir:
 
 ```text
-Real requirement
+Requisito real
     ↓
-Clear business rule
+Regra de negócio clara
     ↓
-Small implementation
+Implementação pequena
     ↓
-Automated tests
+Testes automatizados
     ↓
-Human validation
+Validação humana
     ↓
-Real-world feedback
+Feedback do mundo real
 ```
 
-over:
+em vez de:
 
 ```text
-Possible future need
+Necessidade futura possível
     ↓
-Generic abstraction
+Abstração genérica
     ↓
-Complex architecture
+Arquitetura complexa
     ↓
-Unused functionality
+Funcionalidade não utilizada
 ```
 
 ---
 
-## 18. Relationship With Other Documentation
+## 18. Relação com a Outra Documentação
 
-This document defines the product vision and high-level direction.
+Este documento define a visão do produto e a direção de alto nível.
 
-It does not define detailed implementation requirements.
+Ele não define requisitos detalhados de implementação.
 
-The documentation hierarchy is:
+A hierarquia da documentação é:
 
 ```text
-Product Vision
+Visão do Produto
       ↓
-Business Contract
+Contrato de Negócio
       ↓
-Domain Model / Business Rules
+Modelo de Domínio / Regras de Negócio
       ↓
-Milestone Specification
+Especificação do Marco
       ↓
-Use Cases
+Casos de Uso
       ↓
-Acceptance Criteria
+Critérios de Aceitação
       ↓
-Implementation
+Implementação
       ↓
-Validation
+Validação
 ```
 
-Each document should have a clear responsibility and should avoid duplicating information already defined elsewhere.
+Cada documento deve ter uma responsabilidade clara e evitar duplicar informações já definidas em outro lugar.
 
-The Product Vision should remain relatively stable as the system evolves.
-
----
-
-## 19. Change Policy
-
-The product vision may evolve as Casa Afeto learns from using the system.
-
-Changes should be made deliberately.
-
-A new idea should first be classified as one of:
-
-* current requirement;
-* future milestone;
-* future backlog item;
-* rejected or unnecessary complexity.
-
-A future idea should not automatically become an implementation requirement.
-
-When a significant change affects the product direction, this document should be updated so that it remains an accurate representation of the product's purpose and boundaries.
+A Visão do Produto deve permanecer relativamente estável conforme o sistema evolui.
 
 ---
 
-## 20. Current Product Direction
+## 19. Política de Mudança
 
-The immediate objective is to build the smallest useful version of the Casa Afeto management system and validate it through real business use.
+A visão do produto pode evoluir conforme a Casa Afeto aprende com o uso do sistema.
 
-The project will begin with:
+Mudanças devem ser feitas de forma deliberada.
 
-**M1 — Products & Inventory**
+Uma nova ideia deve primeiro ser classificada como uma de:
 
-and progressively evolve through:
+* requisito atual;
+* marco futuro;
+* item de backlog futuro;
+* complexidade rejeitada ou desnecessária.
+
+Uma ideia futura não deve se tornar automaticamente um requisito de implementação.
+
+Quando uma mudança significativa afeta a direção do produto, este documento deve ser atualizado para que continue sendo uma representação precisa do propósito e dos limites do produto.
+
+---
+
+## 20. Direção Atual do Produto
+
+O objetivo imediato é construir a menor versão útil do sistema de gestão da Casa Afeto e validá-la por meio do uso real do negócio.
+
+O projeto começará com:
+
+**M1 — Produtos e Estoque (Products & Inventory)**
+
+e evoluirá progressivamente por:
 
 ```text
-M1 Products & Inventory
+M1 Produtos e Estoque (Products & Inventory)
         ↓
-M2 Baskets & Basket Templates
+M2 Cestas e Templates de Cesta (Baskets & Basket Templates)
         ↓
-M3 Customers
+M3 Clientes (Customers)
         ↓
-M4 Sales
+M4 Vendas (Sales)
         ↓
-M5 Payments
+M5 Pagamentos (Payments)
 ```
 
-Each milestone should be specified, implemented, tested, and validated before the project moves forward.
+Cada marco deve ser especificado, implementado, testado e validado antes que o projeto avance.
 
-The system should grow from **real Casa Afeto needs**, rather than from assumptions about what a complete business-management platform might eventually require.
-
+O sistema deve crescer a partir de **necessidades reais da Casa Afeto**, e não a partir de suposições sobre o que uma plataforma completa de gestão de negócios poderia eventualmente exigir.
