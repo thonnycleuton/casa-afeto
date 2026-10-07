@@ -24,17 +24,17 @@ Para a visão completa do produto, consulte:
 
 ## Status Atual
 
-A base técnica M0 foi estabelecida. M1 — Produtos e Estoque está em andamento e aguarda aceitação humana.
+A base técnica M0 foi estabelecida. M1 — Produtos e Estoque foi aceito pelo Product Owner e está concluído.
 
 ```text
 Implementação:       Concluída
 Refinamento visual:  Concluído
 Validação:           Concluída
-Aceitação humana:    Pendente
-Status geral:        Em andamento
+Aceitação humana:    Concluída
+Status geral:        Concluído (COMPLETED)
 ```
 
-Implementação, refinamento visual e validação estão concluídos. A aceitação humana ainda está pendente; portanto, M1 não está concluído.
+O próximo passo é o M2 Implementation Gate. A implementação de M2 não está autorizada por esta conclusão.
 
 A primeira fase de desenvolvimento é:
 
@@ -54,11 +54,11 @@ Vendas
 Pagamentos
 ```
 
-O marco atual é:
+O marco concluído mais recente é:
 
 **M1 — Produtos e Estoque**
 
-Nenhum marco posterior deve ser implementado antes de seu escopo ser explicitamente autorizado.
+O próximo passo é o M2 Implementation Gate; nenhum trabalho de implementação de M2 deve começar antes da conclusão desse gate.
 
 Consulte:
 
@@ -72,7 +72,7 @@ A Fase 1 é dividida em cinco marcos:
 
 | Marco | Escopo                               | Status  |
 | ----- | ------------------------------------ | ------- |
-| M1    | Produtos e Estoque                  | Em andamento |
+| M1    | Produtos e Estoque                  | Concluído (COMPLETED) |
 | M2    | Cestas e Templates de Cesta          | Planejado |
 | M3    | Clientes                             | Planejado |
 | M4    | Vendas                               | Planejado |

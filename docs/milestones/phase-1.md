@@ -871,8 +871,8 @@ Não crie especificações detalhadas para todos os marcos antecipadamente.
 
 | Marco                           | Status                       | Observações                                                                 |
 | ------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| M1 — Produtos e Estoque          | Em andamento                 | Implementação, refinamento visual e validação concluídos; aceitação humana pendente |
-| M2 — Cestas e Templates de Cesta | Planejado                    | Depende de M1; não autorizado para início                                  |
+| M1 — Produtos e Estoque          | Concluído                    | Implementação, refinamento visual, validação e aceitação humana concluídos |
+| M2 — Cestas e Templates de Cesta | Planejado                    | Depende de M1; aguarda o M2 Implementation Gate                             |
 | M3 — Clientes                    | Planejado                    | Depende de M2                                                              |
 | M4 — Vendas                      | Planejado                    | Depende de M1, M2 e M3                                                     |
 | M5 — Pagamentos                  | Planejado                    | Depende de M1–M4                                                           |
@@ -894,19 +894,19 @@ M4 — Vendas (Sales)
 └── pré-requisito para M5 (pagamentos confirmam vendas e acionam dedução de estoque)
 ```
 
-O marco que aguarda aceitação humana é:
+O M1 — Produtos e Estoque — foi concluído após a aceitação humana pelo Product Owner.
 
-> **M1 — Produtos e Estoque**
-
-O estado detalhado de M1 é:
+O estado final de M1 é:
 
 ```text
 Implementação:       Concluída
 Refinamento visual:  Concluído
 Validação:           Concluída
-Aceitação humana:    Pendente
-Status geral:        Em andamento
+Aceitação humana:    Concluída
+Status geral:        Concluído (COMPLETED)
 ```
+
+O próximo passo é o M2 Implementation Gate. A implementação de M2 não começou e depende da conclusão desse gate.
 
 Decisões fundamentais de negócio para M1 foram resolvidas:
 

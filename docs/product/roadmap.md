@@ -2,7 +2,7 @@
 
 **Versão do documento:** 0.3
 **Status:** Ativo
-**Última atualização:** 2026-10-05
+**Última atualização:** 2026-10-06
 
 ---
 
@@ -231,11 +231,11 @@ Esses conceitos podem ser introduzidos em marcos posteriores.
 Implementação:       Concluída
 Refinamento visual:  Concluído
 Validação:           Concluída
-Aceitação humana:    Pendente
-Status geral:        Em andamento
+Aceitação humana:    Concluída
+Status geral:        Concluído
 ```
 
-M1 passou pela validação técnica formal e aguarda a aceitação humana do proprietário do produto.
+M1 foi aprovado na validação técnica e aceito pelo Product Owner. O marco está **COMPLETED**.
 
 ---
 
@@ -550,8 +550,8 @@ M1 — Produtos e Estoque
      Implementação       Concluída
      Refinamento visual  Concluído
      Validação           Concluída
-     Aceitação humana    Pendente
-     Status geral        Em andamento
+     Aceitação humana    Concluída
+     Status geral        Concluído (COMPLETED)
 
 M2 — Cestas e Templates de Cesta  Planejado
 M3 — Clientes                     Planejado
@@ -954,23 +954,21 @@ As regras detalhadas pertencem à documentação do marco.
 
 ---
 
-# 20. Próximo Marco de Governança
+# 20. Encerramento de M1 e Próximo Marco de Governança
 
-O próximo passo de M1 é a aceitação humana:
-
-> **M1 — Produtos e Estoque**
-
-Nenhuma funcionalidade de marcos posteriores deve ser implementada apenas porque poderá ser útil no futuro.
-
-M1 continua em andamento e aguarda a aceitação humana do proprietário do produto. O status é:
+O Product Owner realizou a aceitação humana de **M1 — Produtos e Estoque**. Todas as etapas do marco foram concluídas:
 
 ```text
 Implementação:       Concluída
 Refinamento visual:  Concluído
 Validação:           Concluída
-Aceitação humana:    Pendente
-Status geral:        Em andamento
+Aceitação humana:    Concluída
+Status geral:        Concluído (COMPLETED)
 ```
+
+O próximo passo é o **M2 Implementation Gate**. A conclusão de M1 não inicia nem autoriza a implementação de M2; M2 permanece planejado até que seu gate seja concluído.
+
+Nenhuma funcionalidade de marcos posteriores deve ser implementada apenas porque poderá ser útil no futuro.
 
 As decisões fundamentais de negócio da especificação M1 foram resolvidas:
 
@@ -979,7 +977,7 @@ As decisões fundamentais de negócio da especificação M1 foram resolvidas:
   * Operações que produziriam um saldo negativo são rejeitadas.
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
 
-M2 e os marcos posteriores permanecem planejados. Nenhum marco posterior está autorizado a começar.
+M2 e os marcos posteriores permanecem planejados. M2 não está em implementação.
 
 ---
 
