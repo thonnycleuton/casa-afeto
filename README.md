@@ -259,7 +259,7 @@ As decisões de negócio fundamentais para **M1 — Produtos e Estoque** foram f
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque.
   * Decisão técnica de concorrência documentada em `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
 
-A validação técnica formal de M1 foi concluída. A aceitação humana está pendente; M1 permanece em andamento e M2 ainda não foi autorizado a começar.
+A validação técnica e a aceitação humana de M1 foram concluídas; M1 está finalizado (COMPLETED). M2 permanece planejado e sua implementação depende da conclusão do M2 Implementation Gate.
 
 ---
 

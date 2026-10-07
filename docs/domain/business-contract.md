@@ -377,7 +377,15 @@ A gestão de lotes não faz parte da implementação inicial da Fase 1.
 
 Um **Template de Cesta** representa uma composição padrão reutilizável para uma cesta.
 
-Um template contém produtos e quantidades.
+Um template possui um nome, uma composição de produtos e quantidades e um estado ativo/inativo. Um template novo nasce ativo por padrão; não há estado DRAFT no M2.
+
+Um template pode ser salvo sem itens e editado posteriormente. Um template ativo vazio não pode ser usado para criar uma nova cesta até possuir ao menos um item.
+
+Templates podem ser criados, consultados, editados, ativados e desativados. Um template inativo continua persistido e consultável, mas não pode ser usado para criar uma nova cesta.
+
+Um template que contenha um produto inativo não pode ser usado para criar uma nova cesta até que a composição seja corrigida explicitamente pelo usuário. A referência ao produto inativo permanece no template e não é removida nem substituída automaticamente.
+
+Cada produto aparece no máximo uma vez na composição. Ao incluir novamente produto que já exista no template, sua quantidade é incrementada. Ao substituir item por produto já presente, as quantidades são agregadas na linha única do produto.
 
 Exemplo:
 
@@ -396,14 +404,31 @@ Templates podem ser ativados ou desativados.
 
 # 14. Cesta
 
-Uma **Cesta** é uma cesta concreta preparada para uma venda específica.
+No M2, uma **Cesta concreta** é uma entidade persistida que representa uma composição específica de produtos. Ela não é uma venda e não possui vínculo com cliente, venda, pagamento, destinatário, entrega ou reserva de estoque.
+
+Uma cesta possui, no mínimo:
+
+* `id`;
+* `name`;
+* `template_id` opcional, que registra somente a origem;
+* `created_at`;
+* `updated_at`.
+
+Cada item da composição possui:
+
+* `basket_id`;
+* `product_id`;
+* `quantity`.
 
 Uma cesta pode:
 
 * ser criada a partir de um template;
 * ser criada sem um template;
 * ter sua composição personalizada;
-* conter várias unidades do mesmo produto.
+* conter várias unidades do mesmo produto;
+* permanecer vazia e ser salva.
+
+Uma cesta não possui estado comercial em M2. Seu ciclo de vida é criar, editar, salvar e continuar editando. Estados como confirmada, vendida, entregue, cancelada ou paga pertencem ao domínio futuro de vendas.
 
 Exemplo:
 
@@ -419,9 +444,9 @@ Não é obrigatório que uma cesta mantenha a mesma composição de seu template
 
 # 15. Independência entre Cesta e Template
 
-Quando uma cesta é criada a partir de um template, ela recebe sua própria composição concreta.
+Quando uma cesta é criada a partir de um template ativo utilizável, a composição é copiada naquele momento. O `template_id` opcional identifica apenas a origem; não é uma referência viva à composição.
 
-Alterações futuras no template não devem modificar cestas existentes.
+Alterações futuras no template não adicionam, removem ou alteram produtos ou quantidades de cestas existentes. Alterações na cesta também não modificam o template.
 
 Exemplo:
 
@@ -471,6 +496,10 @@ A personalização pode ser necessária por causa de:
 
 Uma cesta pode conter um produto mesmo quando o estoque atual é insuficiente, desde que a falta esteja visível.
 
+Uma cesta que contenha um produto posteriormente desativado continua persistida e editável. O item não é removido automaticamente. O usuário pode mantê-lo na composição ou removê-lo e pode editar os demais itens. Um produto inativo não pode ser incluído em novas composições, inclusive em novas cestas. A interface deve identificar claramente o produto inativo já presente. Não há substituição automática; substituir é uma ação explícita por outro produto ativo.
+
+O usuário também pode alterar a quantidade de um item já existente cujo produto foi desativado. Cada produto aparece no máximo uma vez por composição; incluir novamente um produto ativo já presente incrementa sua quantidade. Ao substituir item por produto já presente, as quantidades são agregadas em uma única linha.
+
 ---
 
 # 17. Cesta sem Template
@@ -481,51 +510,21 @@ Isso permite que a Casa Afeto crie cestas personalizadas ou excepcionais sem ant
 
 ---
 
-# 18. Custo da Cesta
+# 18. Unidade base e identificação de produtos nas composições
 
-O custo de uma cesta é determinado pelos produtos e quantidades que a compõem.
+As composições de templates e cestas referenciam produtos por sua identidade (`product_id`), não pelo nome. Renomear um produto não cria outro produto, não duplica referências, não altera quantidades e não cria histórico de nomes no M2. A interface pode apresentar o nome atual do produto.
 
-Como os custos de aquisição dos produtos podem variar, o cálculo do custo deverá, futuramente, considerar o contexto relevante de estoque/aquisição.
+A referência em uma composição não é uma movimentação de estoque. Portanto, ela não impede a alteração da unidade base que o M1 permite enquanto o produto não possui movimentações. A quantidade armazenada continua sendo interpretada na unidade base atual do produto; M2 não converte quantidades nem mantém histórico de unidades.
 
-A estratégia detalhada de seleção de lotes e cálculo de custos será especificada quando os lotes de estoque forem implementados.
+Templates e cestas podem conter produtos sem estoque suficiente. A disponibilidade é informativa; sua consulta não reserva estoque, não altera saldo e não cria movimentações. M2 não realiza dedução de estoque.
 
 ---
 
-# 19. Precificação da Cesta
+# 19. Custo e precificação
 
-Atualmente, a Casa Afeto usa aproximadamente 2× o custo dos produtos como referência comum de precificação.
+O M2 não implementa custo de produto, custo de cesta, custo médio, custo por lote, preço sugerido, preço final, markup, margem ou cálculo de preço.
 
-Isso é uma **sugestão**, não uma regra obrigatória de precificação.
-
-Conceitualmente:
-
-```text
-Custo da Cesta
-    ↓
-Preço Sugerido
-    ↓
-Preço Final de Venda
-```
-
-O usuário pode definir manualmente o preço final de venda.
-
-Exemplo:
-
-```text
-Custo:             R$ 85
-Preço sugerido:    R$ 170
-
-Possíveis preços finais:
-R$ 155
-R$ 170
-R$ 185
-```
-
-O preço final de venda é controlado pelo usuário.
-
-Se a composição da cesta mudar, o custo e o preço sugerido devem ser recalculados.
-
-O preço final pode continuar sendo controlado/sobrescrito manualmente.
+M1 não fornece uma fonte formal de custo. A antiga referência aproximada de duas vezes o custo é somente uma ideia futura, não uma regra de negócio vigente. Custos e precificação serão definidos em marco futuro, considerando os requisitos então aprovados para aquisição e estoque. Não se deve criar uma fonte simplificada de custo no M2.
 
 ---
 
@@ -886,6 +885,50 @@ Alterar um Template de Cesta não deve modificar cestas existentes criadas a par
 
 Uma cesta concreta pode ser personalizada após sua criação.
 
+### BASKET-005 — Cesta persistida independente de venda
+
+No M2, uma cesta concreta é uma entidade persistida de composição, editável e sem vínculo estrutural com cliente, venda, pagamento, destinatário, entrega ou estado de venda.
+
+### BASKET-006 — Cesta vazia
+
+Uma cesta sem itens pode ser criada e salva. Remover todos os itens de uma cesta existente e salvá-la vazia também é permitido.
+
+### BASKET-007 — Cópia da composição do template
+
+Ao criar uma cesta a partir de um template ativo utilizável, os itens e quantidades do template são copiados naquele momento. As composições passam a ser independentes, embora a cesta possa guardar o identificador do template de origem.
+
+### BASKET-008 — Produtos inativos em composições
+
+Desativar um produto não remove nem altera referências existentes em templates ou cestas. Essas composições permanecem consultáveis e editáveis; produtos inativos não podem ser incluídos em novas composições. A substituição de um item inativo é sempre explícita.
+
+### BASKET-009 — Template inativo
+
+Um template inativo permanece persistido, consultável, editável e reativável, mas não pode ser usado para criar uma nova cesta.
+
+### BASKET-010 — Template com produto inativo
+
+Um template que contenha um produto inativo não pode ser usado para criar uma nova cesta. A composição existente é preservada e requer correção explícita pelo usuário antes de voltar a ser utilizável.
+
+### BASKET-011 — Estoque em cestas e templates
+
+A consulta de disponibilidade de produtos em M2 é informativa. Estoque insuficiente não bloqueia a composição, e criar ou editar templates e cestas não reserva nem deduz estoque nem cria movimentações.
+
+### BASKET-012 — Identidade, nome e unidade de produto nas composições
+
+Composições referenciam produtos por `product_id`. Renomear o produto não altera a identidade ou quantidade da referência. Referenciar um produto em uma composição não conta como movimentação de estoque para a regra M1 de mutabilidade da unidade base; quantidades são interpretadas na unidade base atual, sem conversão ou histórico de unidades em M2.
+
+### BASKET-013 — Template vazio e estado inicial
+
+Um template novo nasce ativo por padrão e não possui estado DRAFT. Um template pode ser salvo sem itens e editado posteriormente. Um template ativo vazio não pode originar uma nova cesta até possuir ao menos um item.
+
+### BASKET-014 — Produto único por composição
+
+Cada `product_id` aparece no máximo uma vez em cada composição de template ou cesta. Incluir novamente produto já existente incrementa sua quantidade; substituir item por produto já existente agrega as quantidades em uma única linha.
+
+### BASKET-015 — Edição de item com produto inativo
+
+Uma composição existente que referencia produto desativado pode manter o item, alterar sua quantidade ou removê-lo. A inclusão nova do produto inativo continua proibida.
+
 ### SALE-001 — Venda Exige Cesta
 
 Uma venda deve conter pelo menos uma cesta.
@@ -973,6 +1016,10 @@ Os tópicos a seguir permanecem intencionalmente sem resolução e não devem se
 A estratégia provisória é preferir o lote com vencimento mais próximo ao consumir estoque.
 
 A implementação exata do cálculo de custos será definida quando a gestão de lotes for introduzida.
+
+### Custo e Precificação de Cestas
+
+M1 não fornece fonte formal de custo e M2 não implementa custo nem precificação. A fonte de custo, o cálculo do custo de cesta e quaisquer regras de preço serão definidos em um marco futuro. A referência antiga de aproximadamente duas vezes o custo não é uma regra de negócio vigente.
 
 ### Gestão de Compras
 

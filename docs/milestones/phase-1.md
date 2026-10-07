@@ -151,44 +151,44 @@ M1 é a base da Fase 1.
 
 ## Objetivo
 
-Permitir que a Casa Afeto defina composições reutilizáveis de cesta e crie cestas concretas a partir delas.
+Permitir que a Casa Afeto mantenha templates reutilizáveis e cestas concretas persistidas como composições de produtos. A cesta concreta do M2 não é uma venda nem possui cliente, dados de entrega ou estado comercial.
 
 ## Escopo
 
 M2 inclui:
 
 * criação de template de cesta;
+* listagem, consulta e visualização de templates;
 * edição de template de cesta;
 * ativação/desativação de template;
 * composição do template;
 * quantidades de produtos em templates;
+* criação de cesta persistida com nome, com ou sem template;
+* listagem, consulta e visualização de cestas;
 * criação de cesta a partir de template;
 * criação de cesta sem template;
 * personalização de cesta;
 * adicionar produtos;
 * remover produtos;
 * substituir produtos;
+* alterar quantidades;
 * múltiplas quantidades do mesmo produto;
 * persistência da composição da cesta;
-* cálculo de custo da cesta;
-* cálculo de preço sugerido;
-* preço final manual.
+* salvar e continuar editando cesta, inclusive vazia.
 
 ## Capacidades esperadas
 
 O usuário deve ser capaz de:
 
 1. Criar um template de cesta.
-2. Adicionar produtos e quantidades ao template.
-3. Criar uma cesta concreta a partir do template.
-4. Criar uma cesta sem template.
-5. Modificar a cesta concreta.
-6. Adicionar ou remover produtos.
-7. Substituir produtos.
-8. Usar múltiplas unidades do mesmo produto.
-9. Ver o custo da cesta.
-10. Ver um preço sugerido de venda.
-11. Definir o preço final manualmente.
+2. Consultar, visualizar e editar templates.
+3. Ativar ou desativar templates.
+4. Adicionar produtos ativos e quantidades a um template.
+5. Criar uma cesta a partir de um template ativo cuja composição contenha somente produtos ativos.
+6. Criar uma cesta sem template.
+7. Consultar, visualizar e editar cestas.
+8. Adicionar, remover ou substituir produtos e alterar quantidades.
+9. Salvar uma cesta vazia.
 
 ## Comportamento importante de negócio
 
@@ -225,37 +225,17 @@ A mudança no template não deve alterar a cesta existente.
 
 Uma cesta também pode ser personalizada após sua criação.
 
-Um produto com estoque insuficiente ainda pode ser adicionado à cesta, mas o usuário deve receber um aviso claro sobre a falta de estoque.
+Ao criar uma cesta a partir de um template, sua composição é copiada naquele momento. Alterações posteriores em qualquer uma das composições não alteram a outra.
 
-## Comportamento de precificação
+Uma cesta sem itens é válida e pode ser salva. A composição usa produtos identificados por `product_id` e quantidades na unidade base atual do produto, conforme as regras de unidade de M1. Referenciar um produto não é uma movimentação e não impede uma alteração de unidade base que M1 permita.
 
-O sistema deve calcular:
+Produtos inativos já referenciados permanecem na composição e não impedem a edição de outros itens; devem ser identificados claramente. Produtos inativos não podem ser incluídos novamente nem substituídos automaticamente. Template inativo não pode originar uma nova cesta. Template que contenha produto inativo também não pode originar nova cesta até correção explícita.
 
-```text
-Custo da Cesta
-    ↓
-Preço Sugerido
-    ↓
-Preço Final
-```
-
-A prática atual de negócio de aproximadamente 2× o custo é tratada como sugestão de precificação, não como regra imposta.
-
-O preço final de venda permanece sob controle do usuário.
+Produto sem estoque suficiente pode ser incluído com aviso. A disponibilidade é informativa e pode mudar; M2 não reserva, deduz ou movimenta estoque.
 
 ## Explicitamente fora de escopo
 
-M2 não implementa:
-
-* vendas;
-* clientes;
-* pagamentos;
-* dedução de estoque;
-* gestão de compras;
-* seleção de lote;
-* gestão de vencimento;
-* gerenciamento de destinatário como entidade separada;
-* descontos ou promoções.
+M2 não implementa vendas, clientes, pagamentos, compras, fornecedores, lotes, validade, FEFO, reposição, reserva ou dedução de estoque, comunicação, notificações, dashboards, custo, preço, margem ou markup. Não existe relacionamento estrutural com Sale/Venda. Duplicação, exclusão e arquivamento de cestas ou templates não fazem parte das operações aprovadas.
 
 ## Dependência
 
@@ -265,9 +245,10 @@ M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
 
 ```text
 Status: Planejado
+Implementation Gate: aguardando nova revisão humana da documentação
 ```
 
-M2 não entrará em implementação até que M1 passe pelo Gate de Conclusão do Marco.
+M1 está concluído. A documentação preparatória não autoriza a implementação de M2; o início depende de um novo M2 Implementation Gate.
 
 ---
 
@@ -669,9 +650,6 @@ A Fase 1 só é considerada concluída quando todas as condições a seguir fore
 * As composições das cestas podem ser personalizadas.
 * Várias unidades do mesmo produto são suportadas.
 * Cestas existentes são independentes de alterações futuras em templates.
-* O custo da cesta é calculado.
-* O preço sugerido é calculado.
-* O preço final pode ser controlado manualmente.
 
 ## Clientes
 

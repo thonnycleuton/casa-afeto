@@ -176,22 +176,13 @@ Uma cesta pode:
 * ter produtos adicionados ou removidos;
 * ter produtos substituídos.
 
-A cesta resultante representa a cesta real vendida ao cliente.
+A composição concreta usada por uma venda futura deve representar o que foi vendido ao cliente. No M2, uma cesta persistida ainda não é uma venda; a relação e a cópia da composição no contexto da venda serão definidas no M4.
 
 ---
 
 ### 6.5 Controle humano sobre decisões finais
 
-O sistema pode calcular e sugerir valores, mas o negócio deve manter o controle sobre decisões comerciais importantes.
-
-Por exemplo, o sistema pode calcular:
-
-* custo da cesta;
-* preço de venda sugerido;
-* valor já pago;
-* valor restante.
-
-O preço final de venda continua sendo uma decisão de negócio.
+O negócio deve manter o controle sobre decisões comerciais importantes. Custos e precificação dependem de regras e fontes de dados que serão definidos em marcos futuros; a visão de longo prazo não os torna requisitos do M2.
 
 ---
 
@@ -319,29 +310,9 @@ O status do pagamento está relacionado ao status operacional da venda, mas é d
 
 ---
 
-## 8. Visão de Precificação
+## 8. Evolução de Custos e Precificação
 
-O sistema deve auxiliar a Casa Afeto com a precificação sem impor uma fórmula rígida de preços.
-
-A prática atual do negócio utiliza aproximadamente o dobro do custo da cesta como referência para o preço de venda sugerido.
-
-Conceitualmente:
-
-```text
-Custo da Cesta
-     ↓
-Preço Sugerido
-     ↓
-Ajuste de Negócio
-     ↓
-Preço Final de Venda
-```
-
-Por exemplo, uma cesta com custo de R$85 pode ter um preço sugerido de aproximadamente R$170, enquanto o preço final de venda pode ser ajustado manualmente.
-
-O preço sugerido é, portanto, uma referência, não uma regra de negócio obrigatória.
-
-Quando a composição de uma cesta muda, seu custo e preço sugerido devem ser recalculados com base na composição resultante.
+Custos e precificação são capacidades futuras. M1 não fornece uma fonte formal de custo e o M2 não calcula custo de produto ou cesta, preço sugerido ou final, margem ou markup. A antiga ideia de aproximadamente duas vezes o custo é apenas uma ideia futura, não uma regra de negócio vigente. As regras e fontes de dados aplicáveis serão definidas em marco futuro.
 
 ---
 
@@ -419,7 +390,7 @@ Cesta concreta
 Venda real
 ```
 
-A cesta concreta deve representar o que foi realmente vendido, independentemente de mudanças posteriores no template original.
+A composição concreta usada por uma venda deve representar o que foi realmente vendido, independentemente de mudanças posteriores no template original. A cesta mantida no M2 é uma entidade separada e não possui vínculo estrutural com uma venda; o M4 definirá como ela será usada em uma venda.
 
 ---
 
