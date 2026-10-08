@@ -26,3 +26,37 @@ export interface InventoryMovement {
   type: 'ENTRY' | 'ADJUSTMENT'
   created_at: string
 }
+
+export interface CompositionItem {
+  product_id: number
+  product_name: string
+  product_active: boolean
+  base_unit: ProductUnit
+  quantity: string
+  inventory_balance: string
+  stock_available: boolean
+  stock_shortage: string
+}
+
+export interface BasketTemplate {
+  id: number
+  name: string
+  active: boolean
+  created_at: string
+  updated_at: string
+  items: CompositionItem[]
+}
+
+export interface Basket {
+  id: number
+  name: string
+  template_id: number | null
+  created_at: string
+  updated_at: string
+  items: CompositionItem[]
+}
+
+export interface CompositionInput {
+  product_id: number
+  quantity: string
+}

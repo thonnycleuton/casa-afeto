@@ -845,6 +845,99 @@ td.numeric {
   font-size: var(--font-size-sm);
 }
 
+.m2-columns {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.7fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.m2-detail,
+.composition-editor {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+}
+
+.selectable-row {
+  cursor: pointer;
+}
+
+.selectable-row:hover,
+.selected-row {
+  background: var(--color-surface-hover);
+}
+
+.table-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+.table-link:hover {
+  color: var(--color-primary);
+}
+
+.status-warning {
+  border-color: rgb(245 158 11 / 24%);
+  background: rgb(245 158 11 / 9%);
+  color: #fcd34d;
+}
+
+.composition-add {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.composition-add-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.7fr) auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.quantity-edit,
+.composition-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.quantity-edit input,
+.composition-actions select {
+  min-width: 92px;
+  min-height: 34px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.composition-actions select {
+  max-width: 190px;
+}
+
+.composition-editor .product-name {
+  display: block;
+  color: var(--color-text-primary);
+}
+
+.composition-editor .status-pill {
+  margin-top: var(--space-1);
+}
+
+.composition-editor .field-hint {
+  display: block;
+  margin-top: var(--space-1);
+}
+
 .spinner {
   width: 15px;
   height: 15px;
@@ -936,6 +1029,14 @@ td.numeric {
 
   .page-content section {
     gap: var(--space-5);
+  }
+
+  .m2-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .composition-add-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

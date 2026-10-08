@@ -245,7 +245,7 @@ M1 foi aprovado na validação técnica e aceito pelo Product Owner. O marco est
 
 Permitir que a Casa Afeto mantenha templates reutilizáveis e cestas concretas persistidas como composições de produtos. A cesta concreta do M2 não é uma venda nem possui cliente, dados de entrega ou estado comercial.
 
-## Capacidades planejadas
+## Capacidades do marco
 
 ### Templates de cesta
 
@@ -339,11 +339,14 @@ M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
 ## Status atual
 
 ```text
-Status: Planejado
-Implementation Gate: aguardando nova revisão humana da documentação
+Status: COMPLETED
+Implementation Gate: READY FOR IMPLEMENTATION
+Implementation: Concluída
+Validation/Review: VALIDATED
+Aprovação humana: Concluída
 ```
 
-M1 está concluído. A preparação documental não autoriza a implementação de M2; o início depende de um novo M2 Implementation Gate.
+M2 foi aprovado pelo Product Owner após a Validation/Review. M3 permanece planejado e não foi iniciado.
 
 ---
 
@@ -534,7 +537,7 @@ M1 — Produtos e Estoque
      Aceitação humana    Concluída
      Status geral        Concluído (COMPLETED)
 
-M2 — Cestas e Templates de Cesta  Planejado
+M2 — Cestas e Templates de Cesta  Concluído (COMPLETED)
 M3 — Clientes                     Planejado
 M4 — Vendas                       Planejado
 M5 — Pagamentos                   Planejado
@@ -935,7 +938,7 @@ As regras detalhadas pertencem à documentação do marco.
 
 ---
 
-# 20. Encerramento de M1 e Próximo Marco de Governança
+# 20. Encerramento de M1 e Estado Atual dos Marcos
 
 O Product Owner realizou a aceitação humana de **M1 — Produtos e Estoque**. Todas as etapas do marco foram concluídas:
 
@@ -947,9 +950,17 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-O próximo passo é o **M2 Implementation Gate**. A conclusão de M1 não inicia nem autoriza a implementação de M2; M2 permanece planejado até que seu gate seja concluído.
+O **M2 — Cestas e Templates de Cesta** passou pelo ciclo aprovado:
 
-Nenhuma funcionalidade de marcos posteriores deve ser implementada apenas porque poderá ser útil no futuro.
+```text
+Implementation Gate: READY FOR IMPLEMENTATION
+Implementation:      Concluída
+Validation/Review:   VALIDATED
+Aprovação humana:    Concluída
+Status geral:       COMPLETED
+```
+
+M3 — Clientes é o próximo marco do roadmap e permanece planejado, não iniciado. Nenhuma funcionalidade de marcos posteriores deve ser implementada apenas porque poderá ser útil no futuro.
 
 As decisões fundamentais de negócio da especificação M1 foram resolvidas:
 
@@ -958,7 +969,7 @@ As decisões fundamentais de negócio da especificação M1 foram resolvidas:
   * Operações que produziriam um saldo negativo são rejeitadas.
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
 
-M2 e os marcos posteriores permanecem planejados. M2 não está em implementação.
+M2 está concluído. M3 e os marcos posteriores permanecem planejados.
 
 ---
 

@@ -24,17 +24,18 @@ Para a visão completa do produto, consulte:
 
 ## Status Atual
 
-A base técnica M0 foi estabelecida. M1 — Produtos e Estoque foi aceito pelo Product Owner e está concluído.
+A base técnica M0 foi estabelecida. M1 — Produtos e Estoque e M2 — Cestas e Templates de Cesta foram aceitos pelo Product Owner e estão concluídos.
 
 ```text
-Implementação:       Concluída
-Refinamento visual:  Concluído
-Validação:           Concluída
-Aceitação humana:    Concluída
-Status geral:        Concluído (COMPLETED)
+M1 — Produtos e Estoque: COMPLETED
+M2 — Cestas e Templates de Cesta: COMPLETED
+M2 Implementation Gate: READY FOR IMPLEMENTATION
+M2 Implementation: Concluída
+M2 Validation/Review: VALIDATED
+M2 Aprovação humana: Concluída
 ```
 
-O próximo passo é o M2 Implementation Gate. A implementação de M2 não está autorizada por esta conclusão.
+M3 — Clientes permanece planejado e não foi iniciado.
 
 A primeira fase de desenvolvimento é:
 
@@ -56,9 +57,9 @@ Pagamentos
 
 O marco concluído mais recente é:
 
-**M1 — Produtos e Estoque**
+**M2 — Cestas e Templates de Cesta**
 
-O próximo passo é o M2 Implementation Gate; nenhum trabalho de implementação de M2 deve começar antes da conclusão desse gate.
+O próximo marco no roadmap é M3 — Clientes, ainda planejado. Esta atualização documental não inicia M3.
 
 Consulte:
 
@@ -73,7 +74,7 @@ A Fase 1 é dividida em cinco marcos:
 | Marco | Escopo                               | Status  |
 | ----- | ------------------------------------ | ------- |
 | M1    | Produtos e Estoque                  | Concluído (COMPLETED) |
-| M2    | Cestas e Templates de Cesta          | Planejado |
+| M2    | Cestas e Templates de Cesta          | Concluído (COMPLETED) |
 | M3    | Clientes                             | Planejado |
 | M4    | Vendas                               | Planejado |
 | M5    | Pagamentos                           | Planejado |
@@ -259,7 +260,7 @@ As decisões de negócio fundamentais para **M1 — Produtos e Estoque** foram f
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque.
   * Decisão técnica de concorrência documentada em `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
 
-A validação técnica e a aceitação humana de M1 foram concluídas; M1 está finalizado (COMPLETED). M2 permanece planejado e sua implementação depende da conclusão do M2 Implementation Gate.
+A validação técnica e a aceitação humana de M1 e M2 foram concluídas; ambos estão finalizados (COMPLETED). M2 passou pelo Implementation Gate (READY FOR IMPLEMENTATION), teve sua implementação concluída e foi VALIDATED antes da aprovação humana. M3 permanece planejado e não iniciado.
 
 ---
 

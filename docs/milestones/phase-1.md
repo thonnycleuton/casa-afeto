@@ -244,11 +244,14 @@ M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
 ## Status atual
 
 ```text
-Status: Planejado
-Implementation Gate: aguardando nova revisão humana da documentação
+Status: COMPLETED
+Implementation Gate: READY FOR IMPLEMENTATION
+Implementation: Concluída
+Validation/Review: VALIDATED
+Aprovação humana: Concluída
 ```
 
-M1 está concluído. A documentação preparatória não autoriza a implementação de M2; o início depende de um novo M2 Implementation Gate.
+M2 foi aprovado pelo Product Owner após a Validation/Review. M3 permanece planejado e não foi iniciado.
 
 ---
 
@@ -850,7 +853,7 @@ Não crie especificações detalhadas para todos os marcos antecipadamente.
 | Marco                           | Status                       | Observações                                                                 |
 | ------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
 | M1 — Produtos e Estoque          | Concluído                    | Implementação, refinamento visual, validação e aceitação humana concluídos |
-| M2 — Cestas e Templates de Cesta | Planejado                    | Depende de M1; aguarda o M2 Implementation Gate                             |
+| M2 — Cestas e Templates de Cesta | Concluído (COMPLETED)         | Gate READY FOR IMPLEMENTATION; implementação concluída; Validation/Review VALIDATED; aprovação humana concluída |
 | M3 — Clientes                    | Planejado                    | Depende de M2                                                              |
 | M4 — Vendas                      | Planejado                    | Depende de M1, M2 e M3                                                     |
 | M5 — Pagamentos                  | Planejado                    | Depende de M1–M4                                                           |
@@ -884,7 +887,7 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-O próximo passo é o M2 Implementation Gate. A implementação de M2 não começou e depende da conclusão desse gate.
+M2 — Cestas e Templates de Cesta — está **COMPLETED** após Implementation Gate `READY FOR IMPLEMENTATION`, implementação concluída, Validation/Review `VALIDATED` e aprovação humana concluída. M3 — Clientes permanece planejado e não iniciado.
 
 Decisões fundamentais de negócio para M1 foram resolvidas:
 

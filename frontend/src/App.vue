@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import BasketsView from './components/BasketsView.vue'
+import TemplatesView from './components/TemplatesView.vue'
 import {
   activateProduct,
   adjustInventory,
@@ -13,7 +15,7 @@ import {
 import type { InventoryMovement, Product, ProductUnit } from './api/types'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
-const section = ref<'products' | 'inventory'>('products')
+const section = ref<'products' | 'inventory' | 'templates' | 'baskets'>('products')
 const products = ref<Product[]>([])
 const searchResults = ref<Product[]>([])
 const selectedProductId = ref<number | null>(null)
@@ -33,6 +35,12 @@ const notice = ref('')
 const selectedProduct = computed(
   () => products.value.find((product) => product.id === selectedProductId.value) ?? null,
 )
+const sectionTitle = computed(() => ({
+  products: 'Produtos',
+  inventory: 'Estoque',
+  templates: 'Templates de cesta',
+  baskets: 'Cestas',
+})[section.value])
 
 function formatQuantity(value: string): string {
   const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value)
@@ -206,11 +214,36 @@ onMounted(() => {
           </svg>
           <span>Estoque</span>
         </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'templates' }"
+          :aria-current="section === 'templates' ? 'page' : undefined"
+          @click="section = 'templates'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="M3 4.5h14v11H3zM6 7.5h8M6 10h8M6 12.5h5" />
+          </svg>
+          <span>Templates</span>
+        </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'baskets' }"
+          :aria-current="section === 'baskets' ? 'page' : undefined"
+          @click="section = 'baskets'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="M3 7h14l-1.2 9H4.2L3 7Z" />
+            <path d="m6 7 4-4 4 4M7 10v3M10 10v3M13 10v3" />
+          </svg>
+          <span>Cestas</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
         <span class="sidebar-footer-mark" aria-hidden="true"></span>
-        <span>M1 · Produtos e Estoque</span>
+        <span>M1 + M2 · Operações</span>
       </div>
     </aside>
 
@@ -219,9 +252,9 @@ onMounted(() => {
         <div class="breadcrumb">
           <span>Casa Afeto</span>
           <span class="breadcrumb-separator" aria-hidden="true">/</span>
-          <strong>Produtos e Estoque</strong>
+          <strong>{{ sectionTitle }}</strong>
         </div>
-        <span class="milestone-label">M1 · Operações</span>
+        <span class="milestone-label">{{ section === 'templates' || section === 'baskets' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
       </header>
 
       <main class="page-content">
@@ -372,8 +405,7 @@ onMounted(() => {
             </div>
           </div>
         </section>
-
-        <section v-else aria-labelledby="inventory-heading">
+        <section v-if="section === 'inventory'" aria-labelledby="inventory-heading">
           <div class="page-heading">
             <div>
               <p class="page-eyebrow">Controle de estoque</p>
@@ -499,6 +531,8 @@ onMounted(() => {
             <span>Escolha um produto acima para consultar o saldo e registrar movimentações de estoque.</span>
           </div>
         </section>
+        <TemplatesView v-if="section === 'templates'" />
+        <BasketsView v-if="section === 'baskets'" />
       </main>
     </div>
   </div>
