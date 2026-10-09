@@ -947,6 +947,101 @@ td.numeric {
   animation: spin 800ms linear infinite;
 }
 
+.customer-columns {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.4fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.customer-list-column,
+.customer-detail-column {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+}
+
+.customer-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.customer-filters .form-field {
+  min-width: 0;
+}
+
+.customer-filters .button {
+  min-height: 40px;
+}
+
+.customer-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.customer-detail-heading {
+  align-items: center;
+}
+
+.customer-data {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.customer-data > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.35fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.customer-data dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.customer-data dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.important-dates-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.important-dates-card .table-heading {
+  align-items: center;
+}
+
+.important-date-form {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.date-parts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.customer-empty-detail {
+  min-height: 260px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1035,6 +1130,10 @@ td.numeric {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .customer-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .composition-add-fields {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1091,8 +1190,17 @@ td.numeric {
   }
 
   .form-grid,
-  .inventory-grid {
+  .inventory-grid,
+  .customer-filters {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .customer-filters .button {
+    width: 100%;
+  }
+
+  .customer-data > div {
+    grid-template-columns: minmax(86px, 0.4fr) minmax(0, 1fr);
   }
 
   .inventory-selector {

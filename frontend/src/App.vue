@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import BasketsView from './components/BasketsView.vue'
+import CustomersView from './components/CustomersView.vue'
 import TemplatesView from './components/TemplatesView.vue'
 import {
   activateProduct,
@@ -15,7 +16,7 @@ import {
 import type { InventoryMovement, Product, ProductUnit } from './api/types'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
-const section = ref<'products' | 'inventory' | 'templates' | 'baskets'>('products')
+const section = ref<'products' | 'inventory' | 'templates' | 'baskets' | 'customers'>('products')
 const products = ref<Product[]>([])
 const searchResults = ref<Product[]>([])
 const selectedProductId = ref<number | null>(null)
@@ -40,6 +41,7 @@ const sectionTitle = computed(() => ({
   inventory: 'Estoque',
   templates: 'Templates de cesta',
   baskets: 'Cestas',
+  customers: 'Clientes',
 })[section.value])
 
 function formatQuantity(value: string): string {
@@ -239,6 +241,19 @@ onMounted(() => {
           </svg>
           <span>Cestas</span>
         </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'customers' }"
+          :aria-current="section === 'customers' ? 'page' : undefined"
+          @click="section = 'customers'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <circle cx="7" cy="6" r="3" />
+            <path d="M2.5 16c0-2.5 1.8-4 4.5-4s4.5 1.5 4.5 4M13 5.5a2.5 2.5 0 0 1 0 5M14 12c2.2.3 3.5 1.6 3.5 4" />
+          </svg>
+          <span>Clientes</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -254,7 +269,7 @@ onMounted(() => {
           <span class="breadcrumb-separator" aria-hidden="true">/</span>
           <strong>{{ sectionTitle }}</strong>
         </div>
-        <span class="milestone-label">{{ section === 'templates' || section === 'baskets' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
+        <span class="milestone-label">{{ section === 'customers' ? 'M3 · Clientes' : section === 'templates' || section === 'baskets' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
       </header>
 
       <main class="page-content">
@@ -533,6 +548,7 @@ onMounted(() => {
         </section>
         <TemplatesView v-if="section === 'templates'" />
         <BasketsView v-if="section === 'baskets'" />
+        <CustomersView v-if="section === 'customers'" />
       </main>
     </div>
   </div>

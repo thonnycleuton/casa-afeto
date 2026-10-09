@@ -12,6 +12,8 @@ from app.core.config import settings
 from app.core.database import Base
 import app.products.models
 import app.baskets.models
+import app.customers.models
+import app.important_dates.models
 
 config = context.config
 

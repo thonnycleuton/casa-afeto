@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.baskets import router as baskets_router
+from app.api.v1.customers import router as customers_router
 from app.api.v1.health import router as health_router
 from app.api.v1.products import router as products_router
 from app.core.config import settings
@@ -36,6 +37,7 @@ def create_application() -> FastAPI:
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(products_router, prefix="/api/v1")
     app.include_router(baskets_router, prefix="/api/v1")
+    app.include_router(customers_router, prefix="/api/v1")
     register_error_handlers(app)
 
     return app

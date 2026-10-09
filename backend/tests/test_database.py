@@ -2,8 +2,8 @@ from sqlalchemy import text
 from app.core.database import Base, engine
 
 
-def test_m1_and_m2_tables_in_metadata() -> None:
-    """Verify the current product, inventory, basket, and template schema."""
+def test_m3_tables_in_metadata() -> None:
+    """Verify the current product, inventory, basket, template, customer, and important-date schema."""
     assert set(Base.metadata.tables) == {
         "products",
         "inventory_movements",
@@ -11,6 +11,8 @@ def test_m1_and_m2_tables_in_metadata() -> None:
         "basket_template_items",
         "baskets",
         "basket_items",
+        "customers",
+        "important_dates",
     }
 
 

@@ -29,13 +29,17 @@ A base técnica M0 foi estabelecida. M1 — Produtos e Estoque e M2 — Cestas e
 ```text
 M1 — Produtos e Estoque: COMPLETED
 M2 — Cestas e Templates de Cesta: COMPLETED
+M3 — Clientes e Datas Importantes: COMPLETED
 M2 Implementation Gate: READY FOR IMPLEMENTATION
 M2 Implementation: Concluída
 M2 Validation/Review: VALIDATED
 M2 Aprovação humana: Concluída
+M3 Implementation: IMPLEMENTED
+M3 Validation/Review: VALIDATED
+M3 Aprovação humana: Concluída
 ```
 
-M3 — Clientes permanece planejado e não foi iniciado.
+M3 — Clientes e Datas Importantes foi validado e concluído.
 
 A primeira fase de desenvolvimento é:
 
@@ -57,9 +61,9 @@ Pagamentos
 
 O marco concluído mais recente é:
 
-**M2 — Cestas e Templates de Cesta**
+**M3 — Clientes e Datas Importantes**
 
-O próximo marco no roadmap é M3 — Clientes, ainda planejado. Esta atualização documental não inicia M3.
+M4 — Vendas é o próximo marco planejado.
 
 Consulte:
 
@@ -75,7 +79,7 @@ A Fase 1 é dividida em cinco marcos:
 | ----- | ------------------------------------ | ------- |
 | M1    | Produtos e Estoque                  | Concluído (COMPLETED) |
 | M2    | Cestas e Templates de Cesta          | Concluído (COMPLETED) |
-| M3    | Clientes                             | Planejado |
+| M3    | Clientes e Datas Importantes        | Concluído (COMPLETED) |
 | M4    | Vendas                               | Planejado |
 | M5    | Pagamentos                           | Planejado |
 
@@ -260,7 +264,7 @@ As decisões de negócio fundamentais para **M1 — Produtos e Estoque** foram f
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque.
   * Decisão técnica de concorrência documentada em `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
 
-A validação técnica e a aceitação humana de M1 e M2 foram concluídas; ambos estão finalizados (COMPLETED). M2 passou pelo Implementation Gate (READY FOR IMPLEMENTATION), teve sua implementação concluída e foi VALIDATED antes da aprovação humana. M3 permanece planejado e não iniciado.
+A validação técnica e a aceitação humana de M1, M2 e M3 foram concluídas; os três marcos estão finalizados (COMPLETED). M4 — Vendas permanece planejado.
 
 ---
 

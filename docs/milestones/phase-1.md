@@ -251,7 +251,7 @@ Validation/Review: VALIDATED
 Aprovação humana: Concluída
 ```
 
-M2 foi aprovado pelo Product Owner após a Validation/Review. M3 permanece planejado e não foi iniciado.
+M2 foi aprovado pelo Product Owner após a Validation/Review. M3 — Clientes e Datas Importantes foi implementado, validado e concluído (COMPLETED).
 
 ---
 
@@ -259,7 +259,7 @@ M2 foi aprovado pelo Product Owner após a Validation/Review. M3 permanece plane
 
 ## Objetivo
 
-Estabelecer o registro básico de cliente necessário para associar vendas a clientes.
+Gerenciar clientes e suas datas importantes, sem antecipar o fluxo de vendas do M4.
 
 ## Escopo
 
@@ -268,18 +268,19 @@ M3 inclui:
 * criação de clientes;
 * edição de informações do cliente;
 * ativação/desativação de clientes;
-* listagem de clientes;
-* busca de clientes;
+* listagem paginada e busca de clientes;
+* detalhe de clientes;
+* datas recorrentes e não recorrentes vinculadas ao cliente;
+* ativação e inativação independente das datas.
 
 ## Capacidades esperadas
 
 O usuário deve ser capaz de:
 
 1. Criar um cliente.
-2. Editar dados do cliente.
-3. Buscar clientes.
-4. Identificar um cliente ativo.
-5. Desativar um cliente.
+2. Pesquisar, listar e consultar clientes.
+3. Editar dados e alterar status sem cascatas.
+4. Gerenciar datas recorrentes e não recorrentes, inclusive para clientes inativos.
 
 ## Modelo de Negócio
 
@@ -296,9 +297,6 @@ M3 não inclui:
 * CRM;
 * segmentação de clientes;
 * campanhas para clientes;
-* datas afetivas;
-* gestão de aniversários;
-* gestão de aniversários de casamento;
 * lembretes automatizados;
 * entidades de destinatário;
 * integrações de comunicação;
@@ -313,7 +311,10 @@ M2.
 ## Status atual
 
 ```text
-Status: Planejado
+Implementação: IMPLEMENTED
+Validation/Review: VALIDATED
+Aceitação humana: Concluída
+Status geral: COMPLETED
 ```
 
 ---
@@ -854,7 +855,7 @@ Não crie especificações detalhadas para todos os marcos antecipadamente.
 | ------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
 | M1 — Produtos e Estoque          | Concluído                    | Implementação, refinamento visual, validação e aceitação humana concluídos |
 | M2 — Cestas e Templates de Cesta | Concluído (COMPLETED)         | Gate READY FOR IMPLEMENTATION; implementação concluída; Validation/Review VALIDATED; aprovação humana concluída |
-| M3 — Clientes                    | Planejado                    | Depende de M2                                                              |
+| M3 — Clientes e Datas Importantes | Concluído (COMPLETED) | Implementação e validação aceitas pelo Product Owner                         |
 | M4 — Vendas                      | Planejado                    | Depende de M1, M2 e M3                                                     |
 | M5 — Pagamentos                  | Planejado                    | Depende de M1–M4                                                           |
 
@@ -887,7 +888,7 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-M2 — Cestas e Templates de Cesta — está **COMPLETED** após Implementation Gate `READY FOR IMPLEMENTATION`, implementação concluída, Validation/Review `VALIDATED` e aprovação humana concluída. M3 — Clientes permanece planejado e não iniciado.
+M2 — Cestas e Templates de Cesta — está **COMPLETED** após Implementation Gate `READY FOR IMPLEMENTATION`, implementação concluída, Validation/Review `VALIDATED` e aprovação humana concluída. M3 — Clientes e Datas Importantes está **COMPLETED** após implementação, Validation/Review `VALIDATED` e aceitação humana concluída.
 
 Decisões fundamentais de negócio para M1 foram resolvidas:
 

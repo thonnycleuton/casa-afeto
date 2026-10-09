@@ -5,6 +5,38 @@ export interface HealthResponse {
 }
 
 export type ProductUnit = 'UN' | 'KG' | 'G' | 'L' | 'ML'
+export type CustomerStatus = 'ACTIVE' | 'INACTIVE'
+
+export interface CustomerInput {
+  name: string
+  phone: string
+  email?: string | null
+  notes?: string | null
+}
+
+export interface Customer extends CustomerInput {
+  id: number
+  status: CustomerStatus
+  created_at: string
+  updated_at: string
+  warning?: { code: string } | null
+}
+
+export interface ImportantDateInput {
+  description: string
+  recurring: boolean
+  day?: number | null
+  month?: number | null
+  date?: string | null
+}
+
+export interface ImportantDate extends ImportantDateInput {
+  id: number
+  customer_id: number
+  status: CustomerStatus
+  created_at: string
+  updated_at: string
+}
 
 export interface ProductInput {
   name: string

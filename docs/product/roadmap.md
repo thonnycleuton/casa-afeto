@@ -346,7 +346,7 @@ Validation/Review: VALIDATED
 Aprovação humana: Concluída
 ```
 
-M2 foi aprovado pelo Product Owner após a Validation/Review. M3 permanece planejado e não foi iniciado.
+M2 foi aprovado pelo Product Owner após a Validation/Review. M3 — Clientes e Datas Importantes foi implementado, validado e concluído (COMPLETED).
 
 ---
 
@@ -354,15 +354,15 @@ M2 foi aprovado pelo Product Owner após a Validation/Review. M3 permanece plane
 
 ## Objetivo
 
-Estabelecer o registro básico de cliente necessário para associar vendas a clientes.
+Gerenciar clientes e suas datas importantes, sem antecipar o fluxo de vendas do M4.
 
-## Capacidades planejadas
+## Capacidades do marco
 
 * criar clientes;
+* listar, pesquisar e consultar clientes;
 * editar informações do cliente;
-* buscar clientes;
-* ativar/desativar clientes;
-* associar vendas a clientes.
+* inativar e reativar clientes;
+* gerenciar datas importantes recorrentes e não recorrentes vinculadas ao cliente.
 
 ## Filosofia de escopo
 
@@ -378,7 +378,6 @@ Não se destina a se tornar um CRM completo.
 * programas de fidelidade;
 * pontuação de clientes;
 * análises avançadas de clientes;
-* datas afetivas;
 * comunicação automatizada por WhatsApp.
 
 Essas podem ser avaliadas mais tarde.
@@ -386,7 +385,10 @@ Essas podem ser avaliadas mais tarde.
 ## Status atual
 
 ```text
-Status: Planejado
+Implementation: IMPLEMENTED
+Validation/Review: VALIDATED
+Aceitação humana: Concluída
+Status geral: COMPLETED
 ```
 
 ---
@@ -538,7 +540,7 @@ M1 — Produtos e Estoque
      Status geral        Concluído (COMPLETED)
 
 M2 — Cestas e Templates de Cesta  Concluído (COMPLETED)
-M3 — Clientes                     Planejado
+M3 — Clientes e Datas Importantes  Concluído (COMPLETED)
 M4 — Vendas                       Planejado
 M5 — Pagamentos                   Planejado
 ```
@@ -960,7 +962,7 @@ Aprovação humana:    Concluída
 Status geral:       COMPLETED
 ```
 
-M3 — Clientes é o próximo marco do roadmap e permanece planejado, não iniciado. Nenhuma funcionalidade de marcos posteriores deve ser implementada apenas porque poderá ser útil no futuro.
+M3 — Clientes e Datas Importantes está concluído (COMPLETED) após Validation/Review e aceitação humana pelo Product Owner.
 
 As decisões fundamentais de negócio da especificação M1 foram resolvidas:
 
@@ -969,7 +971,7 @@ As decisões fundamentais de negócio da especificação M1 foram resolvidas:
   * Operações que produziriam um saldo negativo são rejeitadas.
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
 
-M2 está concluído. M3 e os marcos posteriores permanecem planejados.
+M2 e M3 estão concluídos. M4 e os marcos posteriores permanecem planejados.
 
 ---
 
