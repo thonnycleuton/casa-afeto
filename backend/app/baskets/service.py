@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import BusinessRuleError, ResourceNotFoundError
-from app.inventory.service import product_balances
+from app.inventory.service import product_average_costs, product_balances
 from app.products.models import BaseUnit, Product
 from app.baskets.models import (
     Basket,
@@ -123,10 +123,15 @@ def _touch(entity: Basket | BasketTemplate) -> None:
     entity.updated_at = datetime.now(timezone.utc)
 
 
-def create_template(db: Session, name: str, items: list[BasketItemInput]) -> BasketTemplate:
+def create_template(
+    db: Session,
+    name: str,
+    items: list[BasketItemInput],
+    price: Decimal | None = None,
+) -> BasketTemplate:
     with db.begin():
         normalized_items = _normalized_items(db, items)
-        template = BasketTemplate(name=name, active=True)
+        template = BasketTemplate(name=name, price=price, active=True)
         db.add(template)
         db.flush()
         template.items = [
@@ -156,10 +161,19 @@ def get_template(db: Session, template_id: int) -> BasketTemplate:
     return _template_or_raise(db, template_id)
 
 
-def update_template(db: Session, template_id: int, name: str) -> BasketTemplate:
+def update_template(
+    db: Session,
+    template_id: int,
+    name: str | None = None,
+    price: Decimal | None = None,
+    update_price: bool = False,
+) -> BasketTemplate:
     with db.begin():
         template = _template_or_raise(db, template_id, lock=True)
-        template.name = name
+        if name is not None:
+            template.name = name
+        if update_price:
+            template.price = price
         _touch(template)
         db.flush()
     return template
@@ -412,40 +426,95 @@ def replace_basket_item(
     return basket
 
 
+def _calculate_composition_metrics(
+    db: Session, items: list[BasketTemplateItem] | list[BasketItem]
+) -> tuple[list[ProductCompositionRead], Decimal | None, Decimal | None, bool]:
+    if not items:
+        return [], None, None, False
+    products = [item.product for item in items]
+    balances = product_balances(db, products)
+    avg_costs = product_average_costs(db, products)
+
+    comp_items: list[ProductCompositionRead] = []
+    has_reliable_cost = True
+    total_estimated_cost = Decimal("0.00")
+
+    for item in items:
+        product = item.product
+        unit_cost = avg_costs.get(product.id)
+        if unit_cost is None:
+            has_reliable_cost = False
+            item_total_cost = None
+        else:
+            item_total_cost = (item.quantity * unit_cost).quantize(
+                Decimal("0.01")
+            )
+            total_estimated_cost += item.quantity * unit_cost
+
+        comp_items.append(
+            ProductCompositionRead(
+                **_composition_item(
+                    product=product,
+                    quantity=item.quantity,
+                    balance=balances[product.id],
+                    unit_cost=unit_cost,
+                    total_cost=item_total_cost,
+                )
+            )
+        )
+
+    if has_reliable_cost:
+        estimated_cost = total_estimated_cost.quantize(Decimal("0.01"))
+        suggested_price = (estimated_cost * Decimal(2)).quantize(Decimal("0.01"))
+    else:
+        estimated_cost = None
+        suggested_price = None
+
+    return comp_items, estimated_cost, suggested_price, has_reliable_cost
+
+
 def template_read(db: Session, template: BasketTemplate) -> BasketTemplateRead:
-    balances = product_balances(db, [item.product for item in template.items])
+    comp_items, estimated_cost, suggested_price, has_reliable_cost = (
+        _calculate_composition_metrics(db, template.items)
+    )
     return BasketTemplateRead(
         id=template.id,
         name=template.name,
         active=template.active,
+        price=template.price,
+        estimated_cost=estimated_cost,
+        suggested_price=suggested_price,
+        has_reliable_cost=has_reliable_cost,
         created_at=template.created_at,
         updated_at=template.updated_at,
-        items=[
-            ProductCompositionRead(
-                **_composition_item(item.product, item.quantity, balances[item.product_id])
-            )
-            for item in template.items
-        ],
+        items=comp_items,
     )
 
 
 def basket_read(db: Session, basket: Basket) -> BasketRead:
-    balances = product_balances(db, [item.product for item in basket.items])
+    comp_items, estimated_cost, suggested_price, has_reliable_cost = (
+        _calculate_composition_metrics(db, basket.items)
+    )
     return BasketRead(
         id=basket.id,
         name=basket.name,
         template_id=basket.template_id,
+        estimated_cost=estimated_cost,
+        suggested_price=suggested_price,
+        has_reliable_cost=has_reliable_cost,
         created_at=basket.created_at,
         updated_at=basket.updated_at,
-        items=[
-            ProductCompositionRead(
-                **_composition_item(item.product, item.quantity, balances[item.product_id])
-            )
-            for item in basket.items
-        ],
+        items=comp_items,
     )
 
-def _composition_item(product: Product, quantity: Decimal, balance: Decimal) -> dict:
+
+def _composition_item(
+    product: Product,
+    quantity: Decimal,
+    balance: Decimal,
+    unit_cost: Decimal | None = None,
+    total_cost: Decimal | None = None,
+) -> dict:
     shortage = max(Decimal(0), quantity - balance)
     return {
         "product_id": product.id,
@@ -456,4 +525,6 @@ def _composition_item(product: Product, quantity: Decimal, balance: Decimal) -> 
         "inventory_balance": balance,
         "stock_available": shortage == 0,
         "stock_shortage": shortage,
+        "unit_cost": unit_cost,
+        "total_cost": total_cost,
     }

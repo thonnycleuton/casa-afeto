@@ -24,19 +24,14 @@ Para a visão completa do produto, consulte:
 
 ## Status Atual
 
-A base técnica M0 foi estabelecida. M1 — Produtos e Estoque e M2 — Cestas e Templates de Cesta foram aceitos pelo Product Owner e estão concluídos.
+A base técnica M0 foi estabelecida. M1, M2 e M3 foram originalmente concluídos e aceitos conforme seus respectivos históricos. M2 possui uma reabertura pontual em andamento para a correção de preço de venda persistido da cesta-modelo.
 
 ```text
 M1 — Produtos e Estoque: COMPLETED
-M2 — Cestas e Templates de Cesta: COMPLETED
+M2 — Cestas e Templates de Cesta: Conclusão original mantida (COMPLETED); reaberto pontualmente para persistência de preço (implementação e validação da correção pendentes)
 M3 — Clientes e Datas Importantes: COMPLETED
-M2 Implementation Gate: READY FOR IMPLEMENTATION
-M2 Implementation: Concluída
-M2 Validation/Review: VALIDATED
-M2 Aprovação humana: Concluída
-M3 Implementation: IMPLEMENTED
-M3 Validation/Review: VALIDATED
-M3 Aprovação humana: Concluída
+M4 — Vendas: Planejado (documentação formalizada; implementação não iniciada; início condicionado ao fechamento da correção de M2 e decisões pendentes)
+M5 — Pagamentos: Planejado
 ```
 
 M3 — Clientes e Datas Importantes foi validado e concluído.
@@ -63,7 +58,7 @@ O marco concluído mais recente é:
 
 **M3 — Clientes e Datas Importantes**
 
-M4 — Vendas é o próximo marco planejado.
+M4 — Vendas é o próximo marco planejado. Sua documentação está formalizada, a implementação não foi iniciada e o início permanece condicionado ao fechamento da correção pontual aprovada em M2 (preço de venda persistido da cesta-modelo) e à resolução das decisões que bloqueiam o escopo (como a definição do marco e momento da baixa de estoque).
 
 Consulte:
 
@@ -78,9 +73,9 @@ A Fase 1 é dividida em cinco marcos:
 | Marco | Escopo                               | Status  |
 | ----- | ------------------------------------ | ------- |
 | M1    | Produtos e Estoque                  | Concluído (COMPLETED) |
-| M2    | Cestas e Templates de Cesta          | Concluído (COMPLETED) |
+| M2    | Cestas e Templates de Cesta          | Conclusão original mantida no histórico; reaberto pontualmente para preço de venda persistido (implementação e validação da correção pendentes) |
 | M3    | Clientes e Datas Importantes        | Concluído (COMPLETED) |
-| M4    | Vendas                               | Planejado |
+| M4    | Vendas                               | Planejado (documentação formalizada; implementação não iniciada; início condicionado ao fechamento de M2 e decisões pendentes) |
 | M5    | Pagamentos                           | Planejado |
 
 Cada marco deve ser especificado, implementado, testado e validado manualmente antes de avançar para o próximo.
@@ -264,7 +259,7 @@ As decisões de negócio fundamentais para **M1 — Produtos e Estoque** foram f
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque.
   * Decisão técnica de concorrência documentada em `docs/architecture/decisions/ADR-001-inventory-concurrency.md`.
 
-A validação técnica e a aceitação humana de M1, M2 e M3 foram concluídas; os três marcos estão finalizados (COMPLETED). M4 — Vendas permanece planejado.
+A validação técnica e a aceitação humana de M1, M2 e M3 foram originalmente concluídas conforme seus históricos. O marco M2 encontra-se reaberto pontualmente para implementação e validação da persistência manual do preço de venda da cesta-modelo. A documentação de M4 está formalizada, mas sua implementação permanece não iniciada e condicionada ao fechamento da correção de M2 e à resolução das decisões pendentes de negócio (incluindo o momento e marco da baixa de estoque).
 
 ---
 

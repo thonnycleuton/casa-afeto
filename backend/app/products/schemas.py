@@ -61,6 +61,7 @@ class ProductRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     inventory_balance: Decimal
+    average_cost: Optional[Decimal] = None
 
 
 class MovementRead(BaseModel):
@@ -70,6 +71,7 @@ class MovementRead(BaseModel):
     product_id: int
     quantity: Decimal
     type: MovementType
+    unit_cost: Optional[Decimal] = None
     created_at: datetime
 
 
@@ -77,6 +79,27 @@ class QuantityRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     quantity: Annotated[Decimal, Field(gt=0)]
+
+
+class InventoryEntryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    quantity: Annotated[Decimal, Field(gt=0)]
+    unit_cost: Optional[Decimal] = None
+
+    @field_validator("unit_cost")
+    @classmethod
+    def validate_unit_cost(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+        if value is None:
+            return None
+        if not value.is_finite():
+            raise ValueError("O custo unitário deve ser um valor numérico válido.")
+        if value < 0:
+            raise ValueError("O custo unitário não pode ser negativo.")
+        if value.as_tuple().exponent < -2:
+            raise ValueError("O custo unitário deve ter no máximo duas casas decimais.")
+        return value.quantize(Decimal("0.01"))
+
 
 
 class AdjustmentRequest(BaseModel):

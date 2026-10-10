@@ -72,6 +72,10 @@ class InventoryMovement(Base):
             "(type = 'ADJUSTMENT' AND quantity <> 0)",
             name="ck_inventory_movements_quantity",
         ),
+        CheckConstraint(
+            "unit_cost IS NULL OR unit_cost >= 0",
+            name="ck_inventory_movements_unit_cost_non_negative",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -79,6 +83,9 @@ class InventoryMovement(Base):
         ForeignKey("products.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     quantity: Mapped[Decimal] = mapped_column(Numeric(asdecimal=True), nullable=False)
+    unit_cost: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2, asdecimal=True), nullable=True
+    )
     type: Mapped[str] = mapped_column(String(10), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

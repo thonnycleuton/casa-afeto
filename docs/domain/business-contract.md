@@ -320,16 +320,24 @@ Estoque permanece inalterado
 e:
 
 ```text
-Confirmação da venda
+Confirmação da venda em M4
     ↓
-Estoque necessário verificado
+Estado operacional da venda definido
     ↓
-Há estoque suficiente?
-    ├── Sim → deduzir estoque
-    └── Não → bloquear confirmação
+Sem movimentação automática de estoque
 ```
 
-Uma venda não pode ser confirmada enquanto não for possível atender ao estoque necessário.
+No modelo aprovado da Fase 1, a confirmação da venda no M4 não executa baixa automática de estoque.
+
+A autorização financeira da transição `RASCUNHO → CONFIRMADA` pertence ao M5, conforme as regras de pagamento e de dados obrigatórios de entrega já aprovadas.
+
+Esta seção não deve ser interpretada como autorização para deduzir estoque automaticamente na confirmação da venda.
+
+A política de estoque negativo (`INV-006`) permanece aplicável a qualquer movimentação de estoque que venha a ser explicitamente definida, sem antecipar que essa movimentação ocorra na confirmação.
+
+O marco e o momento de uma eventual baixa de estoque associada às vendas permanecem indefinidos nesta formalização e exigem decisão explícita antes de implementação.
+
+Este documento também não atribui, por inferência, a execução dessa baixa ao M5.
 
 Esta política não exige que o sistema implemente reposição automática.
 
@@ -522,281 +530,238 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 
 # 19. Custo e precificação
 
-O M2 não implementa custo de produto, custo de cesta, custo médio, custo por lote, preço sugerido, preço final, markup, margem ou cálculo de preço.
+1. **Custo de aquisição nas entradas:** nas entradas de estoque (tipo ENTRY), é registrado opcionalmente o custo unitário de aquisição do produto com precisão de duas casas decimais. Valores negativos são rejeitados.
+2. **Custo médio ponderado:** o custo médio unitário do produto é calculado ponderando quantidades e custos das entradas com custo registrado. Custos desconhecidos (ausentes) são ignorados no cálculo da média e não são tratados como zero.
+3. **Custo estimado da cesta:** obtido somando o custo médio ponderado dos produtos multiplicado pelas respectivas quantidades na composição. Se algum produto da composição não possuir custo de aquisição conhecido, o custo estimado da cesta é considerado indisponível / não confiável.
+4. **Preço sugerido:** calculado como 2 × custo estimado da cesta quando todos os itens possuem custo de aquisição conhecido e a composição não está vazia. Se houver dados insuficientes, a sugestão não é apresentada como confiável.
+5. **Autonomia de precificação e persistência:** o preço de venda da cesta é definido ou aceito pelo operador. O preço salvo não é sobrescrito automaticamente quando custos de aquisição mudam. Ao editar a composição ou solicitar nova sugestão, o custo estimado e a sugestão são recalculados dinamicamente sem alterar o preço já fixado.
+6. **Precisão monetária:** o preço possui precisão de duas casas decimais. Valores negativos são estritamente rejeitados. O preço zero (`0.00`) é permitido para brindes/cortesias e é semanticamente distinto de preço não informado (`null`).
+7. **Preservação de registros preexistentes:** registros históricos existentes de movimentações e composições são preservados sem custos retroativos fictícios.
 
-M1 não fornece uma fonte formal de custo. A antiga referência aproximada de duas vezes o custo é somente uma ideia futura, não uma regra de negócio vigente. Custos e precificação serão definidos em marco futuro, considerando os requisitos então aprovados para aquisição e estoque. Não se deve criar uma fonte simplificada de custo no M2.
 
 ---
 
 # 20. Venda
 
-Uma **Venda** representa uma transação comercial com um Cliente.
+Uma **Venda** representa a transação comercial operacional vinculada a um Cliente.
 
 Uma venda contém:
 
 * um Cliente;
-* uma ou mais Cestas;
-* informações no nível da venda;
-* informações de pagamento associadas à venda.
+* uma ou mais cestas da venda;
+* um estado operacional;
+* um total calculado a partir dos preços registrados das cestas;
+* histórico operacional aplicável.
 
-Uma venda deve conter pelo menos uma cesta.
+Uma nova venda só pode ser criada e salva quando vinculada a um cliente ativo.
 
-Uma venda pode conter várias cestas.
+Se o cliente se tornar inativo depois da criação, o vínculo da venda existente é preservado. Isso não autoriza a criação de novas vendas para clientes inativos.
+
+Os detalhes funcionais de M4 pertencem a:
+
+```text
+docs/milestones/m4-sales/specification.md
+```
 
 ---
 
-# 21. Informações de Entrega da Cesta
+# 21. Cestas da Venda e Informações de Entrega
 
-Cada cesta pode ter suas próprias informações de entrega/destinatário.
+Uma venda pode conter várias cestas, inclusive várias baseadas na mesma origem.
 
-Isso inclui, conforme necessário:
+Cada cesta da venda possui, de forma independente:
 
+* composição;
 * destinatário;
 * endereço de entrega;
 * data de entrega;
-* observações relevantes.
+* horário de entrega;
+* preço acordado registrado.
 
-Várias cestas na mesma venda podem compartilhar o mesmo endereço.
+Várias cestas da mesma venda podem compartilhar o mesmo endereço, mas isso não elimina sua independência operacional.
 
-O destinatário não precisa ser modelado como uma entidade Cliente independente durante a implementação inicial.
+O destinatário não precisa ser modelado como entidade independente na implementação inicial.
 
 ---
 
-# 22. Ciclo de Vida da Venda
+# 22. Composição e Preço Acordado da Cesta na Venda
 
-O ciclo de vida operacional da venda é representado por status.
+Ao adicionar uma cesta à venda, sua composição é copiada naquele momento e passa a ser independente da origem.
 
-O modelo inicial de status é:
+O preço vigente da origem também é copiado no momento da adição.
+
+Alterações posteriores na venda não modificam a origem. Alterações posteriores na origem também não modificam a cesta já adicionada à venda.
+
+O preço acordado de cada cesta pode ser ajustado manualmente somente enquanto a venda estiver em `RASCUNHO`.
+
+Alterações de composição não recalculam automaticamente o preço acordado.
+
+Renegociações excepcionais posteriores à confirmação não fazem parte do fluxo normal do M4.
+
+---
+
+# 23. Total da Venda
+
+O total da venda é a soma dos preços registrados de todas as cestas que a compõem.
+
+Esse total deve ser recalculado quando os preços registrados das cestas mudarem.
+
+Alterar a composição de uma cesta sem alterar seu preço não recalcula automaticamente o total.
+
+---
+
+# 24. Ciclo Operacional da Venda
+
+Os estados operacionais oficiais da venda são:
 
 ```text
-DRAFT
-  ↓
-CONFIRMED
-  ↓
-PREPARING
-  ↓
-READY
-  ↓
-DELIVERED
+RASCUNHO
+   ↓
+CONFIRMADA
+   ↓
+EM PREPARAÇÃO
+   ↓
+PRONTA
+   ↓
+ENTREGUE
 ```
 
 Uma venda também pode se tornar:
 
 ```text
-CANCELLED
+CANCELADA
 ```
 
-A implementação exata das transições de status pertence à especificação do marco relevante.
+Os estados representam o ciclo operacional da venda e não se confundem com o estado dos pagamentos.
 
-Os status representam o estado operacional e não devem ser confundidos com o estado do pagamento.
+No fluxo normal, a venda não deve pular etapas.
+
+`CONFIRMADA → EM PREPARAÇÃO` exige ação explícita do usuário.
+
+`PRONTA → EM PREPARAÇÃO` só ocorre por reabertura explícita, auditável e com justificativa.
 
 ---
 
-# 23. Venda em Rascunho
+# 25. `RASCUNHO` e Confirmação Financeira
 
-Uma venda em rascunho representa uma venda em preparação que ainda não foi confirmada.
+`RASCUNHO` é o estado inicial da venda.
 
-Uma venda em rascunho pode ser alterada.
+Uma venda em `RASCUNHO` pode ser alterada e pode ter dados de entrega incompletos.
 
-A criação de uma venda em rascunho não deduz estoque.
+Antes da confirmação financeira, todas as cestas precisam ter destinatário, endereço, data e horário de entrega preenchidos.
 
----
+A transição `RASCUNHO → CONFIRMADA` faz parte do contrato funcional da venda, mas sua autorização financeira pertence ao marco de pagamentos.
 
-# 24. Confirmação da Venda
+No modelo aprovado para a Fase 1:
 
-Uma venda é confirmada quando as condições de negócio necessárias são atendidas.
+* o M4 define a estrutura e as restrições operacionais da venda;
+* o M5 registra pagamentos;
+* o M5 verifica se o total pago atingiu pelo menos 50% do valor da venda;
+* o M5 autoriza a transição financeira para `CONFIRMADA`.
 
-A exigência de pagamento é:
-
-> Uma venda é confirmada quando pelo menos 50% de seu valor total tiver sido pago.
-
-Exemplo:
-
-```text
-Total da venda: R$ 200
-
-Pago:
-R$ 100
-
-Percentual pago:
-50%
-
-Resultado:
-A venda pode ser confirmada.
-```
-
-A disponibilidade de estoque também é obrigatória.
-
-Uma venda não pode ser confirmada se não for possível atender ao estoque necessário.
-
-Portanto:
-
-```text
-Requisitos para confirmação
-
-Pelo menos 50% pago
-        E
-Estoque necessário disponível
-        ↓
-A venda pode ser confirmada
-```
+O M4 não registra pagamentos, não calcula valores pagos e não implementa uma segunda lógica independente de confirmação financeira.
 
 ---
 
-# 25. Dedução de Estoque na Confirmação da Venda
+# 26. Alterações de Composição por Estado
 
-Quando uma venda é confirmada, o estoque necessário é deduzido.
+Em `CONFIRMADA`, é permitido adicionar itens, remover itens e alterar quantidades na composição das cestas da venda.
 
-Exemplo:
+Em `EM PREPARAÇÃO`, as mesmas alterações continuam permitidas, mas exigem confirmação explícita antes do salvamento, com aviso de que itens podem já ter sido separados ou preparados.
 
-```text
-Antes da confirmação:
+Em `PRONTA`, alterações diretas de composição ficam bloqueadas até reabertura explícita da venda.
 
-Chocolate = 20
-Suco      = 8
+Vendas `ENTREGUE` ou `CANCELADA` não aceitam alterações comerciais de composição pelo fluxo normal.
 
-Venda:
+Toda alteração de composição deve preservar histórico não apagável pelo fluxo normal, registrando composição anterior, composição nova, identificador textual do operador responsável e data/hora. A ausência do identificador textual bloqueia o salvamento da alteração.
 
-Chocolate × 2
-Suco × 1
-
-Após a confirmação:
-
-Chocolate = 18
-Suco      = 7
-```
-
-A dedução representa o consumo/compromisso físico do estoque para a venda confirmada.
-
-O sistema nunca deve criar uma movimentação que faça o estoque físico ficar negativo.
+Alterar composição não altera automaticamente o preço acordado e não presume ajuste automático de estoque.
 
 ---
 
-# 26. Alterações Após a Confirmação
+# 27. Preparação por Cesta e Venda `PRONTA`
 
-Uma venda confirmada pode ser modificada.
+Cada cesta pode ser marcada individualmente como preparada.
 
-Quando a composição da cesta mudar após a confirmação, o estoque deve ser ajustado de acordo com a diferença entre a composição original e a nova.
+A preparação é uma condição operacional. Ela não representa entrega e não executa movimentação automática de estoque.
 
-Exemplo:
+A venda só passa para `PRONTA` quando todas as suas cestas estiverem marcadas como preparadas.
 
-```text
-Original:
+Se a composição de uma cesta mudar durante `EM PREPARAÇÃO`, sua marcação anterior de preparação é invalidada.
 
-Chocolate × 2
-Suco × 1
-
-Nova:
-
-Biscoito × 2
-Suco × 1
-```
-
-Ajuste de estoque:
-
-```text
-Chocolate +2
-Biscoito  -2
-```
-
-A movimentação original de estoque permanece no histórico.
-
-O sistema não deve reescrever a movimentação original.
-
-Se não for possível atender à nova composição por falta de estoque, o sistema não deve criar uma movimentação de estoque negativo.
+Cestas não alteradas preservam sua preparação concluída.
 
 ---
 
-# 27. Cancelamento da Venda
+# 28. Reabertura de Venda `PRONTA`
 
-Uma venda confirmada pode ser cancelada posteriormente.
+Uma venda `PRONTA` pode ser reaberta somente por ação explícita do usuário.
+
+A justificativa e o identificador textual do operador responsável são obrigatórios.
+
+O registro de auditoria da reabertura deve incluir, no mínimo:
+
+* justificativa obrigatória;
+* identificador textual do operador responsável;
+* data/hora da reabertura.
+
+A ausência de justificativa ou de identificador textual bloqueia a reabertura. O identificador textual é uma declaração operacional fornecida na interface e não pressupõe autenticação de usuários.
+
+A reabertura retorna a venda para `EM PREPARAÇÃO`.
+
+Por si só, a reabertura não altera preços, não cancela a venda e não executa ajustes automáticos de estoque.
+
+---
+
+# 29. Entrega por Cesta e Venda `ENTREGUE`
+
+Cada cesta é marcada como entregue por ação explícita do usuário.
+
+Data e horário agendados não constituem prova de entrega.
+
+Cada registro de entrega deve identificar obrigatoriamente:
+
+* a cesta entregue;
+* o identificador textual do operador responsável pelo registro;
+* a data/hora do registro.
+
+A submissão sem o identificador textual do responsável é rejeitada pela validação. O identificador textual constitui declaração operacional sem autenticação.
+
+Quando todas as cestas da venda estiverem entregues, o status da venda muda automaticamente para `ENTREGUE`.
+
+O fluxo normal do M4 não inclui assinatura, fotografia ou comprovante adicional de entrega.
+
+---
+
+# 30. Cancelamento da Venda
+
+O cancelamento é permitido em `RASCUNHO`, `CONFIRMADA`, `EM PREPARAÇÃO` e `PRONTA`, desde que nenhuma cesta tenha sido entregue.
+
+Se qualquer cesta já tiver sido entregue, o cancelamento pelo fluxo normal é bloqueado, mesmo que outras cestas permaneçam pendentes.
+
+Cestas já preparadas não impedem o cancelamento quando nenhuma entrega foi registrada.
 
 Uma venda cancelada não deve ser excluída.
 
-Suas informações históricas devem permanecer disponíveis.
+Venda, cestas e históricos devem permanecer preservados.
 
-O cancelamento não implica automaticamente que 100% do estoque anteriormente deduzido retorne ao estoque.
+O cancelamento não presume reembolso, devolução física de itens nem ajuste automático de estoque.
 
-A situação física deve determinar o que realmente aconteceu.
-
-Por exemplo:
-
-```text
-Produto devolvido fisicamente
-    → pode ser adicionado novamente ao estoque
-
-Produto consumido
-    → permanece consumido
-
-Produto perdido/danificado
-    → pode exigir um ajuste
-```
-
-O tratamento detalhado de perdas, devoluções e vencimentos está fora do escopo inicial da Fase 1.
+Uma venda `ENTREGUE` não pode ser cancelada pelo fluxo normal.
 
 ---
 
-# 28. Pagamento
+# 31. Pagamentos
 
-O sistema oferece suporte aos seguintes métodos de pagamento:
+Pagamentos pertencem ao escopo funcional do M5.
 
-* PIX;
-* Cartão.
+O negócio pode registrar um ou mais pagamentos vinculados a uma venda, mantendo as informações financeiras separadas do estado operacional da venda.
 
-Uma venda pode ter um ou mais registros de pagamento.
+O contrato de negócio aprovado para a confirmação é:
 
-As informações de pagamento devem ser acompanhadas separadamente do status operacional da venda.
+> A autorização financeira da transição `RASCUNHO → CONFIRMADA` depende de pagamento de pelo menos 50% do valor total da venda e da validação dos dados obrigatórios de entrega de todas as cestas.
 
----
-
-# 29. Comprovante de Pagamento
-
-Um pagamento pode ter um comprovante associado.
-
-O comprovante permite que a Casa Afeto documente o pagamento recebido.
-
-O comportamento exato de armazenamento e tratamento de arquivos será definido pela especificação de implementação relevante.
-
----
-
-# 30. Separação entre Status do Pagamento e da Venda
-
-O status do pagamento e o status da venda são conceitos separados.
-
-Por exemplo:
-
-```text
-Venda:
-CONFIRMED
-
-Pagamento:
-50% pago
-50% pendente
-```
-
-Portanto, uma venda pode ser confirmada enquanto ainda houver um saldo pendente.
-
----
-
-# 31. Regra de Pagamento para Entrega
-
-O saldo restante deve ser integralmente pago antes da entrega.
-
-Portanto:
-
-```text
-Confirmada
-    ↓
-Saldo pendente
-    ↓
-Pagamento restante
-    ↓
-100% pago
-    ↓
-Entrega
-```
-
-Uma venda não deve ser entregue enquanto houver saldo pendente.
+As regras detalhadas de pagamento e sua futura especificação pertencem ao marco correspondente.
 
 ---
 
@@ -929,37 +894,89 @@ Cada `product_id` aparece no máximo uma vez em cada composição de template ou
 
 Uma composição existente que referencia produto desativado pode manter o item, alterar sua quantidade ou removê-lo. A inclusão nova do produto inativo continua proibida.
 
-### SALE-001 — Venda Exige Cesta
+### BASKET-016 — Preço de venda manual da cesta-modelo
+
+Cada cesta-modelo pode ter preço de venda definido manualmente e persistido, com precisão de duas casas decimais. Valores negativos e valores com precisão superior a duas casas decimais são estritamente inválidos e rejeitados. O preço zero (`0.00`) é permitido para representar brindes ou cortesias e é semanticamente distinto de preço ausente (`null`). Cestas-modelo sem preço podem permanecer cadastradas e ativas no M2.
+
+### BASKET-017 — Sem cálculo automático de preço em M2
+
+M2 não calcula preço sugerido ou final automaticamente. A referência custo × 2 é apenas conceitual e não se torna regra computável. Cestas preexistentes não recebem preços fictícios ou automáticos.
+
+### BASKET-018 — Pré-requisito de preço para uso em venda
+
+Uma cesta-modelo sem preço de venda definido não pode ser adicionada a uma venda no M4 até que o preço seja definido.
+
+### BASKET-019 — Snapshot de preço ao adicionar à venda
+
+Ao adicionar uma cesta-modelo à venda, o preço vigente é copiado para o item da venda e passa a ser histórico imutável frente a mudanças futuras no preço da origem.
+
+### SALE-001 — Cliente Ativo para Nova Venda
+
+Uma nova venda só pode ser criada e salva quando vinculada a um cliente ativo.
+
+### SALE-002 — Venda Exige Cesta
 
 Uma venda deve conter pelo menos uma cesta.
 
-### SALE-002 — Várias Cestas por Venda
+### SALE-003 — Várias Cestas por Venda
 
 Uma venda pode conter várias cestas.
 
-### SALE-003 — Modificação de Venda Confirmada
+### SALE-004 — Dados Independentes por Cesta na Venda
 
-Uma venda confirmada pode ser modificada.
+Cada cesta da venda possui composição, destinatário, endereço, data de entrega, horário de entrega e preço acordado próprios.
 
-### SALE-004 — Preservação de Venda Cancelada
+### SALE-005 — Cópia Independente da Composição na Venda
 
-Uma venda cancelada deve ser preservada, não excluída.
+Ao adicionar uma cesta à venda, sua composição é copiada e passa a ser independente da origem.
 
-### SALE-005 — Diferença de Estoque Após Confirmação
+### SALE-006 — Preço Acordado por Cesta
 
-Alterações em uma venda confirmada devem ajustar o estoque de acordo com a diferença de composição.
+O preço vigente da origem é copiado quando a cesta é adicionada à venda. O preço acordado pode ser ajustado manualmente somente em `RASCUNHO` e fica bloqueado a partir de `CONFIRMADA` no fluxo normal.
 
-### PAY-001 — Métodos de Pagamento Suportados
+### SALE-007 — Total da Venda
 
-Os métodos de pagamento suportados são PIX e Cartão.
+O total da venda é a soma dos preços registrados de suas cestas e deve ser recalculado quando esses preços mudarem.
+
+### SALE-008 — Estados Operacionais da Venda
+
+Os estados operacionais oficiais da venda são `RASCUNHO`, `CONFIRMADA`, `EM PREPARAÇÃO`, `PRONTA`, `ENTREGUE` e `CANCELADA`.
+
+### SALE-009 — Alterações de Composição Após a Confirmação
+
+Uma venda em `CONFIRMADA` ou `EM PREPARAÇÃO` pode ter a composição de suas cestas alterada no fluxo normal, respeitando as restrições por estado e preservando histórico não apagável com identificador textual do operador responsável.
+
+### SALE-010 — Preparação por Cesta
+
+Cada cesta pode ser marcada individualmente como preparada, e a venda só passa para `PRONTA` quando todas as cestas estiverem preparadas.
+
+### SALE-011 — Reabertura Auditável de Venda `PRONTA`
+
+Uma venda `PRONTA` só pode ser reaberta por ação explícita, com justificativa obrigatória e registro de auditoria contendo identificador textual do operador responsável e data/hora.
+
+### SALE-012 — Entrega por Cesta
+
+Cada cesta é marcada como entregue por ação explícita do usuário com identificador textual do operador responsável, e a venda passa automaticamente para `ENTREGUE` quando todas as cestas estiverem entregues.
+
+### SALE-013 — Cancelamento da Venda
+
+O cancelamento é permitido em `RASCUNHO`, `CONFIRMADA`, `EM PREPARAÇÃO` e `PRONTA` desde que nenhuma cesta tenha sido entregue. A venda cancelada deve ser preservada, não excluída.
+
+### AUDIT-001 — Identificação Provisória do Operador Responsável
+
+Nas operações que exigem auditoria operacional em M4 (alteração de composição de cestas, reabertura de venda pronta e registro individual de entrega), o operador informará seu nome ou identificador por meio de entrada textual. Essa informação é persistida junto ao evento como declaração operacional. Não há sistema de autenticação, controle de permissões ou sessão de usuário como parte deste mecanismo.
+
+### AUDIT-002 — Rejeição de Operação Auditada sem Responsável
+
+A submissão de alterações de composição, reaberturas de venda pronta ou registros de entrega sem o preenchimento do identificador textual do operador responsável deve ser rejeitada pela validação de entrada, impedindo o salvamento da operação.
+
+### PAY-001 — Pagamentos Pertencem ao M5
+
+O registro de pagamentos e a autorização financeira da confirmação da venda pertencem ao marco de pagamentos.
 
 ### PAY-002 — Limite para Confirmação da Venda
 
-Uma venda pode ser confirmada quando pelo menos 50% de seu valor total tiver sido pago.
-
-### PAY-003 — Pagamento Integral Antes da Entrega
-
-Uma venda deve estar integralmente paga antes da entrega.
+A transição `RASCUNHO → CONFIRMADA` depende de pagamento de pelo menos 50% do valor total da venda e da validação dos dados obrigatórios de entrega de todas as cestas.
 
 ### INV-001 — Estoque Baseado em Movimentações
 
@@ -971,23 +988,23 @@ Correções de estoque devem preservar o histórico original de movimentações.
 
 ### INV-003 — Seleção Permitida com Estoque Insuficiente
 
-Um produto com estoque insuficiente pode ser selecionado para uma cesta ou venda antes da confirmação, desde que a falta seja claramente indicada.
+Um produto com estoque insuficiente pode ser selecionado para uma cesta ou venda antes da confirmação financeira, desde que a falta seja claramente indicada.
 
-### INV-004 — Dedução de Estoque na Confirmação
+### INV-004 — M4 Não Move Estoque Automaticamente
 
-Uma venda confirmada gera as deduções de estoque necessárias.
+Criar, editar, preparar, reabrir, entregar ou cancelar uma venda no M4 não deve deduzir, devolver, reservar ou ajustar estoque automaticamente.
 
-### INV-005 — Diferença de Estoque em Alterações de Venda Confirmada
+### INV-005 — Alterações de Composição em M4 Não Presumem Ajuste de Estoque
 
-Alterações em uma venda confirmada geram ajustes de estoque com base na diferença de composição.
+Alterações na composição de uma venda em M4 não presumem ajuste automático de estoque.
 
 ### INV-006 — Proibição de Estoque Físico Negativo
 
 O sistema não deve criar uma movimentação de estoque que faça o saldo de estoque físico disponível de um produto se tornar negativo. Esse invariante é absoluto e se aplica estritamente a operações de estoque concorrentes (`ADR-001`).
 
-### INV-007 — Confirmação Exige Estoque Disponível
+### INV-007 — Preparação e Entrega Não São Movimento de Estoque
 
-Uma venda não pode ser confirmada enquanto não for possível atender ao estoque necessário.
+Preparar ou entregar uma cesta no M4 não equivale, por si só, a uma movimentação automática de estoque.
 
 ### INV-008 — Produtos Inativos Não Podem Receber Operações de Estoque
 
@@ -1011,6 +1028,14 @@ A busca de produtos não diferencia maiúsculas de minúsculas e corresponde a s
 
 Os tópicos a seguir permanecem intencionalmente sem resolução e não devem ser transformados em suposições pela implementação.
 
+### Movimentação de Estoque Associada às Vendas
+
+O momento e o marco responsáveis por eventual baixa física de estoque associada às vendas permanecem em aberto. O M4 não movimenta estoque e a execução dessa baixa não deve ser atribuída por inferência ao M5 nem a nenhum outro marco. Qualquer automação de baixa de estoque exigirá decisão explícita futura do Product Owner.
+
+### Autenticação e Controle de Acesso
+
+O mecanismo aprovado para o M4 é estritamente uma declaração textual do operador no momento da operação auditada. Não há módulos de usuários, login, senhas, papéis ou sessões. A implementação de um modelo seguro de autenticação e controle de acesso permanece fora do escopo atual e exigirá decisão e especificação próprias.
+
 ### Custo do Estoque/Seleção de Lotes
 
 A estratégia provisória é preferir o lote com vencimento mais próximo ao consumir estoque.
@@ -1019,7 +1044,7 @@ A implementação exata do cálculo de custos será definida quando a gestão de
 
 ### Custo e Precificação de Cestas
 
-M1 não fornece fonte formal de custo e M2 não implementa custo nem precificação. A fonte de custo, o cálculo do custo de cesta e quaisquer regras de preço serão definidos em um marco futuro. A referência antiga de aproximadamente duas vezes o custo não é uma regra de negócio vigente.
+M1 não fornece fonte formal de custo. Como decisão já aprovada, M2 pode persistir preço de venda manual da cesta-modelo para uso em vendas, sem cálculo automático. A fonte de custo, o cálculo do custo de cesta e as regras de precificação automática continuam pendentes para marco futuro. A referência antiga de aproximadamente duas vezes o custo não é uma regra de negócio vigente.
 
 ### Gestão de Compras
 

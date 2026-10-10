@@ -28,6 +28,7 @@ const productFormVisible = ref(false)
 const productName = ref('')
 const productUnit = ref<ProductUnit>('UN')
 const entryQuantity = ref('')
+const entryUnitCost = ref('')
 const adjustmentQuantity = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -43,6 +44,13 @@ const sectionTitle = computed(() => ({
   baskets: 'Cestas',
   customers: 'Clientes',
 })[section.value])
+
+function formatCurrency(value: string | null | undefined): string {
+  if (!value) return '—'
+  const num = Number(value)
+  if (isNaN(num)) return value
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
 
 function formatQuantity(value: string): string {
   const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value)
@@ -148,8 +156,14 @@ async function recordEntry(): Promise<void> {
   const productId = selectedProductId.value
   if (productId === null) return
   await runAction(async () => {
-    await createInventoryEntry(productId, entryQuantity.value)
+    const cost = String(entryUnitCost.value ?? '').trim()
+    if (cost) {
+      await createInventoryEntry(productId, entryQuantity.value, cost)
+    } else {
+      await createInventoryEntry(productId, entryQuantity.value)
+    }
     entryQuantity.value = ''
+    entryUnitCost.value = ''
     await loadProducts()
     await loadInventory()
     notice.value = 'Entrada de estoque registrada.'
@@ -446,6 +460,9 @@ onMounted(() => {
             <div v-if="selectedProduct" class="balance-card">
               <span class="balance-label">Saldo atual</span>
               <strong>{{ formatQuantity(balance) }} <span>{{ selectedProduct.base_unit }}</span></strong>
+              <span v-if="selectedProduct.average_cost" class="field-hint">
+                Custo médio: {{ formatCurrency(selectedProduct.average_cost) }}
+              </span>
               <span :class="['status-pill', selectedProduct.active ? 'status-success' : 'status-muted']">
                 <span class="status-dot" aria-hidden="true"></span>
                 {{ selectedProduct.active ? 'Ativo' : 'Inativo' }}
@@ -472,6 +489,18 @@ onMounted(() => {
                   min="0"
                   required
                 />
+              </div>
+              <div class="form-field">
+                <label for="entry-cost">Custo unitário de aquisição (R$)</label>
+                <input
+                  id="entry-cost"
+                  v-model="entryUnitCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Opcional (ex.: 15.50)"
+                />
+                <span class="field-hint">Opcional. Usado no cálculo do custo médio ponderado.</span>
               </div>
               <div class="operation-actions">
                 <button class="button primary" type="submit" :disabled="loading || !selectedProduct.active">
@@ -518,7 +547,7 @@ onMounted(() => {
             <div class="table-scroll">
               <table>
                 <thead>
-                  <tr><th>Data e hora</th><th>Tipo</th><th class="numeric">Quantidade</th></tr>
+                  <tr><th>Data e hora</th><th>Tipo</th><th class="numeric">Quantidade</th><th>Custo un.</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="movement in movements" :key="movement.id">
@@ -529,9 +558,10 @@ onMounted(() => {
                       </span>
                     </td>
                     <td class="numeric quantity-value">{{ formatQuantity(movement.quantity) }} {{ selectedProduct.base_unit }}</td>
+                    <td>{{ movement.unit_cost ? formatCurrency(movement.unit_cost) : '—' }}</td>
                   </tr>
                   <tr v-if="movements.length === 0">
-                    <td colspan="3" class="empty-state">
+                    <td colspan="4" class="empty-state">
                       <strong>Nenhuma movimentação de estoque.</strong>
                       <span>As entradas e os ajustes aparecerão aqui.</span>
                     </td>

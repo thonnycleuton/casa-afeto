@@ -82,6 +82,12 @@ function isValidQuantity(value: string | undefined, requiresInteger: boolean): b
   return nonZero && (!requiresInteger || /^0*$/.test(fraction))
 }
 
+function formatPrice(value: string | null | undefined): string {
+  if (!value) return '—'
+  const num = Number(value)
+  return isNaN(num) ? value : num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 function formatQuantity(value: string): string {
   return value.replace('.', ',')
 }
@@ -112,8 +118,11 @@ function formatQuantity(value: string): string {
               <td>
                 <strong class="product-name">{{ item.product_name }}</strong>
                 <span v-if="!item.product_active" class="status-pill status-muted">Inativo</span>
-                <span class="field-hint">{{ item.base_unit }}</span>
+                <span class="field-hint">
+                  {{ item.base_unit }}<template v-if="item.unit_cost"> · Custo un.: {{ formatPrice(item.unit_cost) }}</template>
+                </span>
               </td>
+
               <td>
                 <div class="quantity-edit">
                   <input

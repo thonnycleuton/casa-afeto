@@ -35,10 +35,15 @@ export function deactivateProduct(id: number): Promise<Product> {
 export function createInventoryEntry(
   id: number,
   quantity: string,
+  unit_cost?: string | null,
 ): Promise<InventoryMovement> {
+  const body: Record<string, unknown> = { quantity }
+  if (unit_cost !== undefined && unit_cost !== null && unit_cost !== '') {
+    body.unit_cost = unit_cost
+  }
   return apiClient<InventoryMovement>(`/api/v1/products/${id}/inventory/entries`, {
     method: 'POST',
-    body: JSON.stringify({ quantity }),
+    body: JSON.stringify(body),
   })
 }
 

@@ -63,13 +63,57 @@ def product_balances(db: Session, products: list[Product]) -> dict[int, Decimal]
     return {product.id: balances.get(product.id, Decimal(0)) for product in products}
 
 
+def product_average_costs(
+    db: Session, products: list[Product]
+) -> dict[int, Decimal | None]:
+    if not products:
+        return {}
+    product_ids = [p.id for p in products]
+    rows = db.execute(
+        select(
+            InventoryMovement.product_id,
+            func.sum(InventoryMovement.quantity * InventoryMovement.unit_cost),
+            func.sum(InventoryMovement.quantity),
+        )
+        .where(
+            InventoryMovement.product_id.in_(product_ids),
+            InventoryMovement.type == MovementType.ENTRY.value,
+            InventoryMovement.unit_cost.is_not(None),
+        )
+        .group_by(InventoryMovement.product_id)
+    )
+    avg_costs: dict[int, Decimal] = {}
+    for product_id, total_cost, total_qty in rows:
+        if total_qty is not None and Decimal(total_qty) > 0 and total_cost is not None:
+            avg_costs[product_id] = (Decimal(total_cost) / Decimal(total_qty)).quantize(
+                Decimal("0.01")
+            )
+    return {p.id: avg_costs.get(p.id) for p in products}
+
+
+def product_average_cost(db: Session, product_id: int) -> Decimal | None:
+    product = _product_or_raise(db, product_id)
+    return product_average_costs(db, [product])[product.id]
+
+
 def create_movement(
-    db: Session, product_id: int, quantity: Decimal, movement_type: MovementType
+    db: Session,
+    product_id: int,
+    quantity: Decimal,
+    movement_type: MovementType,
+    unit_cost: Decimal | None = None,
 ) -> InventoryMovement:
     if movement_type is MovementType.ENTRY and quantity <= 0:
         raise BusinessRuleError("A quantidade da entrada deve ser maior que zero.")
     if movement_type is MovementType.ADJUSTMENT and quantity == 0:
         raise BusinessRuleError("A quantidade do ajuste não pode ser zero.")
+    if movement_type is MovementType.ENTRY and unit_cost is not None:
+        if not unit_cost.is_finite() or unit_cost < 0:
+            raise BusinessRuleError("O custo unitário não pode ser negativo.")
+        unit_cost = unit_cost.quantize(Decimal("0.01"))
+    elif movement_type is MovementType.ADJUSTMENT:
+        unit_cost = None
+
     with db.begin():
         product = _product_or_raise(db, product_id, lock=True)
         if not product.active:
@@ -87,12 +131,14 @@ def create_movement(
         movement = InventoryMovement(
             product_id=product_id,
             quantity=quantity,
+            unit_cost=unit_cost,
             type=movement_type.value,
         )
         db.add(movement)
         db.flush()
         db.refresh(movement)
     return movement
+
 
 
 def inventory_history(db: Session, product_id: int) -> list[InventoryMovement]:

@@ -28,6 +28,12 @@ const error = ref('')
 const notice = ref('')
 const selectedId = computed(() => selected.value?.id ?? null)
 
+function formatPrice(price: string | null | undefined): string {
+  if (price === null || price === undefined || price === '') return 'Sem preço'
+  const num = Number(price)
+  return isNaN(num) ? price : num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 watch(selected, (basket) => {
   selectedName.value = basket?.name ?? ''
 })
@@ -190,7 +196,15 @@ onMounted(() => {
           <div class="card-heading"><div><p class="card-eyebrow">Cesta #{{ selected.id }}</p><h2>Dados da cesta</h2></div></div>
           <div class="form-grid">
             <div class="form-field"><label for="basket-name">Nome</label><input id="basket-name" v-model="selectedName" required :disabled="loading" /></div>
-            <div class="form-field"><label>Template de origem</label><span>{{ templates.find((template) => template.id === selected?.template_id)?.name ?? (selected.template_id === null ? 'Sem template' : 'Template indisponível') }}</span></div>
+            <div class="form-field"><label>Template de origem</label><span>{{ templates.find((template) => template.id === selected?.template_id)?.name ?? (selected?.template_id === null ? 'Sem template' : 'Template indisponível') }}</span></div>
+            <div class="form-field">
+              <label>Custo estimado & Sugestão</label>
+              <div v-if="selected?.has_reliable_cost && selected?.suggested_price">
+                <span class="field-hint">Custo: {{ formatPrice(selected.estimated_cost) }} · Sugerido (2×): <strong>{{ formatPrice(selected.suggested_price) }}</strong></span>
+              </div>
+              <span v-else-if="selected?.items?.length" class="field-hint">Itens sem custo de aquisição. Sugestão indisponível.</span>
+              <span v-else class="field-hint">Sem itens cadastrados.</span>
+            </div>
           </div>
           <div class="form-actions">
             <button class="button primary" type="button" :disabled="loading" @click="saveName">Salvar nome</button>

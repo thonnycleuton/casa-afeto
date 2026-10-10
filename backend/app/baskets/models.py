@@ -20,9 +20,15 @@ from app.products.models import Product
 
 class BasketTemplate(Base):
     __tablename__ = "basket_templates"
+    __table_args__ = (
+        CheckConstraint("price IS NULL OR price >= 0", name="ck_basket_templates_price_non_negative"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    price: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2, asdecimal=True), nullable=True
+    )
     active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

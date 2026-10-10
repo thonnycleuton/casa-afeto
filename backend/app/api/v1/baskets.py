@@ -26,7 +26,9 @@ baskets_router = APIRouter(prefix="/baskets", tags=["baskets"])
 def create_template(
     payload: BasketTemplateCreate, db: Session = Depends(get_db)
 ) -> BasketTemplateRead:
-    template = service.create_template(db, payload.name, payload.items)
+    template = service.create_template(
+        db, payload.name, payload.items, price=payload.price
+    )
     return service.template_read(db, template)
 
 
@@ -51,7 +53,13 @@ def update_template(
     payload: BasketTemplateUpdate,
     db: Session = Depends(get_db),
 ) -> BasketTemplateRead:
-    template = service.update_template(db, template_id, payload.name)
+    template = service.update_template(
+        db,
+        template_id,
+        name=payload.name,
+        price=payload.price,
+        update_price="price" in payload.model_fields_set,
+    )
     return service.template_read(db, template)
 
 

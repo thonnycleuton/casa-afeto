@@ -20,7 +20,7 @@ O objetivo é implementar o conjunto mínimo de capacidades necessário para ger
 * vendas;
 * pagamentos.
 
-A fase deve resultar em um fluxo operacional coerente desde o cadastro de produtos até a confirmação da venda e a dedução de estoque.
+A fase deve resultar em um fluxo operacional coerente desde o cadastro de produtos até a criação da venda, o registro dos pagamentos e a confirmação financeira conforme as regras aprovadas para os marcos de vendas e pagamentos.
 
 A Fase 1 segue o princípio central de desenvolvimento do projeto:
 
@@ -235,7 +235,7 @@ Produto sem estoque suficiente pode ser incluído com aviso. A disponibilidade �
 
 ## Explicitamente fora de escopo
 
-M2 não implementa vendas, clientes, pagamentos, compras, fornecedores, lotes, validade, FEFO, reposição, reserva ou dedução de estoque, comunicação, notificações, dashboards, custo, preço, margem ou markup. Não existe relacionamento estrutural com Sale/Venda. Duplicação, exclusão e arquivamento de cestas ou templates não fazem parte das operações aprovadas.
+M2 não implementa vendas, clientes, pagamentos, compras, fornecedores, lotes, validade, FEFO, reposição, reserva ou dedução de estoque, comunicação, notificações, dashboards, margem ou markup comercial além da regra aprovada de sugestão. Como correções pontuais aprovadas em M2 antes de M4, são implementados: preço de venda persistido na cesta-modelo, registro de custo unitário de aquisição nas entradas de estoque, cálculo do custo médio ponderado do produto (sem tratar custos ausentes como zero), cálculo do custo estimado da cesta e sugestão de preço de venda igual a 2 × custo estimado da cesta, assegurando total autonomia do operador (que pode aceitar a sugestão ou definir outro preço) e garantia de que alterações de custos não sobrescrevem preços de venda já definidos. Não existe relacionamento estrutural com Sale/Venda. Duplicação, exclusão e arquivamento de cestas ou templates não fazem parte das operações aprovadas.
 
 ## Dependência
 
@@ -244,14 +244,13 @@ M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
 ## Status atual
 
 ```text
-Status: COMPLETED
-Implementation Gate: READY FOR IMPLEMENTATION
-Implementation: Concluída
-Validation/Review: VALIDATED
-Aprovação humana: Concluída
+Conclusão original: COMPLETED (VALIDATED / Aprovação humana concluída em 2026-10-06)
+Reabertura pontual: Custos de aquisição e sugestão de preço das cestas
+Status da correção: Concluída e aprovada (COMPLETED / Aprovação humana concluída)
+Status geral de M2: Concluído (COMPLETED)
 ```
 
-M2 foi aprovado pelo Product Owner após a Validation/Review. M3 — Clientes e Datas Importantes foi implementado, validado e concluído (COMPLETED).
+M2 foi originalmente aprovado pelo Product Owner após a Validation/Review em 2026-10-06. A reabertura pontual para registro de custo de aquisição nas entradas de estoque, cálculo de custo médio ponderado e custo estimado da cesta, e sugestão de preço (2 × custo) com preservação da autonomia do operador e dos preços já salvos foi implementada, validada e formalmente aprovada pelo Product Owner.
 
 ---
 
@@ -323,42 +322,46 @@ Status geral: COMPLETED
 
 ## Objetivo
 
-Criar e gerenciar a transação comercial conectando clientes e cestas.
+Formalizar e futuramente implementar o ciclo operacional da venda, conectando clientes e cestas sem antecipar pagamentos nem movimentações automáticas de estoque.
 
 ## Escopo
 
 M4 inclui:
 
 * criação de vendas;
-* seleção de cliente;
+* vínculo obrigatório com cliente ativo para novas vendas;
 * inclusão de uma ou mais cestas por venda;
-* seleção de cestas;
-* visualização da composição das cestas;
-* edição da composição das cestas;
-* informações do destinatário;
-* endereço de entrega;
-* data de entrega;
-* observações da venda;
-* total da venda;
-* vendas em rascunho;
-* edição de vendas.
+* cópia da composição e do preço vigente ao adicionar cada cesta;
+* informações independentes de destinatário, endereço, data e horário por cesta;
+* cálculo do total da venda a partir dos preços registrados das cestas;
+* vendas em `RASCUNHO` e sua edição;
+* alteração de composição conforme o estado operacional da venda;
+* ajuste manual de preço somente em `RASCUNHO`;
+* início explícito da preparação;
+* preparação individual por cesta;
+* reabertura auditável de venda `PRONTA` com justificativa e identificador textual do responsável;
+* entrega individual por cesta com identificador textual do responsável;
+* mecanismo provisório de identificação do responsável por declaração textual (sem autenticação de usuários);
+* cancelamento da venda nas condições aprovadas;
+* preservação de histórico operacional.
 
 ## Capacidades Esperadas
 
 O usuário deve ser capaz de:
 
 1. Criar uma venda.
-2. Selecionar um cliente.
+2. Vinculá-la a um cliente ativo.
 3. Adicionar uma ou mais cestas.
-4. Revisar a composição de cada cesta.
-5. Modificar a composição da cesta quando necessário.
-6. Definir as informações do destinatário.
-7. Definir o endereço de entrega.
-8. Definir a data de entrega.
-9. Adicionar observações.
-10. Revisar o total da venda.
-11. Salvar a venda como rascunho.
-12. Editar a venda antes da confirmação.
+4. Revisar e alterar a composição de cada cesta conforme o estado da venda, informando identificador textual do responsável.
+5. Definir destinatário, endereço, data e horário de entrega por cesta.
+6. Revisar o total da venda.
+7. Salvar a venda como `RASCUNHO`.
+8. Ajustar manualmente o preço de cada cesta enquanto a venda estiver em `RASCUNHO`.
+9. Iniciar a preparação por ação explícita.
+10. Marcar cestas individualmente como preparadas.
+11. Reabrir venda `PRONTA` com justificativa e identificador textual do responsável.
+12. Registrar a entrega de cada cesta com identificador textual do responsável.
+13. Cancelar a venda quando nenhuma cesta tiver sido entregue.
 
 ## Estrutura da Venda
 
@@ -382,7 +385,7 @@ Uma venda deve conter pelo menos uma cesta.
 
 Uma venda pode conter várias cestas.
 
-Cada cesta tem suas próprias informações de entrega/destinatário.
+Cada cesta tem suas próprias informações de entrega/destinatário, sua própria composição e seu próprio preço acordado registrado.
 
 Várias cestas podem compartilhar o mesmo endereço.
 
@@ -391,45 +394,48 @@ Várias cestas podem compartilhar o mesmo endereço.
 O ciclo operacional inicial esperado segue:
 
 ```text
-DRAFT
+RASCUNHO
    ↓
-CONFIRMED
+CONFIRMADA
    ↓
-PREPARING
+EM PREPARAÇÃO
    ↓
-READY
+PRONTA
    ↓
-DELIVERED
+ENTREGUE
 ```
 
 Também é esperada uma situação de cancelamento:
 
 ```text
-DRAFT / CONFIRMED / PREPARING / READY
-                  ↓
-               CANCELLED
+RASCUNHO / CONFIRMADA / EM PREPARAÇÃO / PRONTA
+                                   ↓
+                              CANCELADA
 ```
 
-As regras exatas de transição serão definidas na especificação do marco.
+O fluxo normal não permite pular etapas.
+
+`CONFIRMADA → EM PREPARAÇÃO` exige ação explícita do usuário.
 
 ## Comportamento Importante de Negócio
 
-M4 introduz a venda, mas ainda não confirma a venda do ponto de vista do pagamento.
+M4 define o contrato operacional da venda, inclusive o estado `CONFIRMADA`, mas não executa a autorização financeira da transição `RASCUNHO → CONFIRMADA`.
 
-O estoque não deve ser deduzido apenas porque existe uma venda em rascunho.
+Essa autorização pertence ao M5 e depende do limiar financeiro aprovado e da validação dos dados obrigatórios de entrega de todas as cestas.
 
-O processamento de pagamentos e as regras de confirmação pertencem a M5.
+M4 também não deduz, devolve, reserva ou ajusta estoque automaticamente por composição, preparação, entrega, reabertura ou cancelamento.
 
 ## Explicitamente Fora de Escopo
 
 M4 não implementa:
 
 * registro de pagamentos;
-* confirmação de pagamento;
+* cálculo de total pago;
 * comprovantes de pagamento;
-* regra de confirmação de 50%;
-* regra de pagamento integral antes da entrega;
-* dedução de estoque causada pela confirmação;
+* regra financeira paralela de confirmação;
+* renegociação excepcional de preço após `CONFIRMADA`;
+* reembolso, devolução física de itens ou ajuste automático de estoque;
+* comprovantes adicionais de entrega;
 * gateways de pagamento;
 * conciliação automática de pagamentos.
 
@@ -440,7 +446,7 @@ M1, M2 e M3.
 ## Status atual
 
 ```text
-Status: Planejado
+Status: Planejado — documentação formalizada; implementação não iniciada; início condicionado ao fechamento da correção pontual de preço de venda persistido em M2 e à resolução das decisões pendentes de negócio (como a definição do momento e marco da baixa de estoque)
 ```
 
 ---
@@ -449,7 +455,7 @@ Status: Planejado
 
 ## Objetivo
 
-Conectar informações de pagamento ao ciclo de vida de vendas e estabelecer as regras para confirmação da venda e dedução de estoque.
+Registrar pagamentos da venda e autorizar financeiramente a transição `RASCUNHO → CONFIRMADA` conforme as regras aprovadas.
 
 ## Escopo
 
@@ -459,23 +465,18 @@ M5 inclui:
 * pagamentos via PIX;
 * pagamentos com cartão;
 * valor do pagamento;
-* comprovante de pagamento;
-* status do pagamento;
+* comprovante de pagamento, quando aplicável;
 * total pago;
-* valor restante;
-* confirmação da venda;
-* dedução de estoque na confirmação;
-* alterações na venda após a confirmação;
-* ajustes da diferença de estoque;
-* exigência de pagamento para entrega.
+* valor restante, quando aplicável ao fluxo financeiro aprovado;
+* autorização financeira da transição `RASCUNHO → CONFIRMADA`.
 
 ## Regras de Pagamento
 
-O sistema deve oferecer suporte às seguintes regras de negócio:
+O sistema deve oferecer suporte, no mínimo, às seguintes regras de negócio aprovadas para este estágio documental:
 
 ### Limite de Confirmação
 
-Uma venda é confirmada quando pelo menos 50% de seu valor total tiver sido pago.
+Uma venda só pode ser autorizada financeiramente para `CONFIRMADA` quando pelo menos 50% de seu valor total tiver sido pago.
 
 Exemplo:
 
@@ -483,74 +484,14 @@ Exemplo:
 Total = R$ 200
 Pago  = R$ 100
        ↓
-A venda pode ser confirmada
+M5 pode autorizar a confirmação financeira
 ```
 
-### Exigência para Entrega
+### Dados Operacionais Obrigatórios
 
-O saldo restante deve ser integralmente pago antes da entrega.
+Mesmo quando o limiar financeiro tiver sido atingido, a autorização financeira da transição também exige que todas as cestas tenham destinatário, endereço, data e horário de entrega preenchidos.
 
-```text
-Confirmada
-    ↓
-Saldo restante
-    ↓
-Pagamento concluído
-    ↓
-Entrega permitida
-```
-
-O status do pagamento e o status da venda são conceitos separados.
-
-Uma venda pode ser confirmada mesmo que ainda tenha saldo pendente.
-
-## Comportamento do Estoque
-
-Quando uma venda é confirmada, o sistema deduz o estoque necessário.
-
-Exemplo:
-
-```text
-Antes da confirmação
-
-Chocolate: 20
-Suco:       8
-
-Venda:
-Chocolate × 2
-Suco × 1
-
-Após a confirmação
-
-Chocolate: 18
-Suco:      7
-```
-
-## Alterações após confirmação
-
-Uma venda confirmada pode ser modificada.
-
-O estoque deve ser ajustado de acordo com a diferença entre a composição anterior e a nova.
-
-Exemplo:
-
-```text
-Original:
-2 × Chocolate
-1 × Suco
-
-Novo:
-2 × Biscoito
-1 × Suco
-
-Ajuste de estoque:
-+2 Chocolate
--2 Biscoito
-```
-
-A movimentação original de estoque permanece no histórico.
-
-O sistema não deve reescrever a movimentação original para dar a impressão de que a venda original nunca aconteceu.
+O status do pagamento e o estado operacional da venda são conceitos separados.
 
 ## Cancelamento
 
@@ -606,9 +547,9 @@ Venda
    ↓
 Pagamento
    ↓
-Confirmação da Venda
+Autorização financeira da confirmação
    ↓
-Dedução de Estoque
+Venda confirmada
 ```
 
 O sistema deve oferecer suporte ao seguinte cenário real:
@@ -625,10 +566,10 @@ O sistema deve oferecer suporte ao seguinte cenário real:
 9. Definir as informações do destinatário e da entrega
 10. Registrar o pagamento
 11. Atingir o limite de pagamento de 50%
-12. Confirmar a venda
-13. Deduzir o estoque
-14. Registrar o pagamento restante
-15. Permitir a entrega somente após o pagamento integral
+12. Validar que todas as cestas possuem dados obrigatórios de entrega
+13. Autorizar financeiramente a confirmação da venda
+14. Confirmar a venda
+15. Seguir o ciclo operacional até a entrega
 ```
 
 ---
@@ -669,6 +610,8 @@ A Fase 1 só é considerada concluída quando todas as condições a seguir fore
 * As informações de entrega das cestas funcionam.
 * Vendas em rascunho podem ser salvas e editadas.
 * Os totais das vendas são calculados.
+* A preparação por cesta e a entrega por cesta funcionam.
+* Reabertura e cancelamento preservam histórico.
 
 ## Pagamentos
 
@@ -676,10 +619,7 @@ A Fase 1 só é considerada concluída quando todas as condições a seguir fore
 * Os valores dos pagamentos são acompanhados.
 * Um comprovante de pagamento pode ser associado.
 * O total pago e o saldo restante ficam visíveis.
-* A confirmação da venda segue a regra de pagamento de 50%.
-* O estoque é deduzido quando a venda é confirmada.
-* Alterações em vendas confirmadas ajustam o estoque pela diferença.
-* O pagamento integral é exigido antes da entrega.
+* A autorização financeira da confirmação da venda segue a regra de pagamento de 50% e valida os dados obrigatórios de entrega.
 * Vendas canceladas preservam seu histórico.
 
 ## Qualidade
@@ -854,26 +794,26 @@ Não crie especificações detalhadas para todos os marcos antecipadamente.
 | Marco                           | Status                       | Observações                                                                 |
 | ------------------------------- | ---------------------------- | -------------------------------------------------------------------------- |
 | M1 — Produtos e Estoque          | Concluído                    | Implementação, refinamento visual, validação e aceitação humana concluídos |
-| M2 — Cestas e Templates de Cesta | Concluído (COMPLETED)         | Gate READY FOR IMPLEMENTATION; implementação concluída; Validation/Review VALIDATED; aprovação humana concluída |
+| M2 — Cestas e Templates de Cesta | Concluído (COMPLETED)        | Conclusão original mantida no histórico; correção pontual de custos de aquisição e sugestão de preços concluída, validada e aceita pelo Product Owner |
 | M3 — Clientes e Datas Importantes | Concluído (COMPLETED) | Implementação e validação aceitas pelo Product Owner                         |
-| M4 — Vendas                      | Planejado                    | Depende de M1, M2 e M3                                                     |
+| M4 — Vendas                      | Planejado                    | Documentação formalizada; implementação não iniciada; início condicionado às decisões pendentes de negócio (como a baixa de estoque) |
 | M5 — Pagamentos                  | Planejado                    | Depende de M1–M4                                                           |
 
 ### Dependências dos Marcos
 
 ```text
 M1 — Produtos e Estoque (Products & Inventory)
-├── pré-requisito para M2 (cestas referenciam produtos e estoque)
-└── pré-requisito para M4 (vendas referenciam estoque para dedução)
+├── pré-requisito para M2 (cestas referenciam produtos, custos de entrada e estoque)
+└── pré-requisito para M4 (vendas reutilizam produtos e informação de disponibilidade sem mover estoque automaticamente)
 
 M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
-└── pré-requisito para M4 (vendas contêm cestas)
+└── pré-requisito para M4 (vendas contêm cestas e dependem de preço de venda persistido na cesta-modelo)
 
 M3 — Clientes (Customers)
 └── pré-requisito para M4 (vendas pertencem a clientes)
 
 M4 — Vendas (Sales)
-└── pré-requisito para M5 (pagamentos confirmam vendas e acionam dedução de estoque)
+└── pré-requisito para M5 (pagamentos autorizam financeiramente a transição `RASCUNHO → CONFIRMADA`)
 ```
 
 O M1 — Produtos e Estoque — foi concluído após a aceitação humana pelo Product Owner.
@@ -888,7 +828,7 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-M2 — Cestas e Templates de Cesta — está **COMPLETED** após Implementation Gate `READY FOR IMPLEMENTATION`, implementação concluída, Validation/Review `VALIDATED` e aprovação humana concluída. M3 — Clientes e Datas Importantes está **COMPLETED** após implementação, Validation/Review `VALIDATED` e aceitação humana concluída.
+O marco **M2 — Cestas e Templates de Cesta** foi originalmente concluído (COMPLETED) com Validation/Review VALIDATED e aprovação humana em 2026-10-06. A reabertura pontual para persistência de preços, registro de custo unitário de aquisição em entradas de estoque e sugestão de preço de venda (2 × custo estimado) com autonomia do operador foi integralmente implementada, validada e aceita pelo Product Owner (COMPLETED). O marco **M3 — Clientes e Datas Importantes** está COMPLETED após implementação, Validation/Review VALIDATED e aceitação humana concluída. A implementação de M4 permanece não iniciada e condicionada à resolução das decisões de negócio pendentes (em particular o momento e marco responsáveis pela eventual baixa de estoque).
 
 Decisões fundamentais de negócio para M1 foram resolvidas:
 

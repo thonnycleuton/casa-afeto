@@ -134,7 +134,9 @@ Venda
     ↓
 Pagamento
     ↓
-Dedução de estoque
+Autorização financeira da confirmação
+    ↓
+Venda confirmada
 ```
 
 ---
@@ -328,25 +330,24 @@ As composições referenciam produtos por `product_id`. Renomear um produto não
 
 ## Fora do escopo
 
-M2 não implementa custo, custo de cesta, preço sugerido ou final, margem, markup, vendas, clientes, pagamentos, destinatários, entrega, compras, fornecedores, lotes, validade, FEFO, reposição, reserva ou dedução de estoque, comunicação, notificações ou dashboards. A ideia histórica de preço em torno de duas vezes o custo não é uma regra vigente. Custo e precificação serão definidos em marco futuro; M1 não fornece fonte formal de custo.
+M2 não implementa vendas, clientes, pagamentos, destinatários, entrega, compras, fornecedores, lotes, validade, FEFO, reposição, reserva ou dedução de estoque, comunicação, notificações ou dashboards. Como correções pontuais aprovadas em M2 antes de M4, são implementados: preço de venda persistido na cesta-modelo, registro de custo unitário de aquisição nas entradas de estoque, cálculo do custo médio ponderado do produto (sem tratar custos desconhecidos como zero), cálculo do custo estimado da cesta e sugestão de preço de venda (2 × custo estimado da cesta), garantindo que o operador pode aceitar a sugestão ou informar outro preço e que alterações nos custos não sobrescrevem preços de venda já definidos. Se não houver dados suficientes, a sugestão permanece indisponível.
 
 Duplicação, exclusão e arquivamento de templates ou cestas não fazem parte das operações aprovadas para M2.
 
 ## Dependência
 
-M2 depende de M1, pois cestas e templates dependem de produtos e estoque.
+M2 depende de M1, pois cestas e templates dependem de produtos, custos de entrada e estoque.
 
 ## Status atual
 
 ```text
-Status: COMPLETED
-Implementation Gate: READY FOR IMPLEMENTATION
-Implementation: Concluída
-Validation/Review: VALIDATED
-Aprovação humana: Concluída
+Conclusão original: COMPLETED (VALIDATED / Aprovação humana concluída em 2026-10-06)
+Reabertura pontual: Custos de aquisição e sugestão de preço das cestas
+Status da correção: Concluída e aprovada (COMPLETED / Aprovação humana concluída)
+Status geral de M2: Concluído (COMPLETED)
 ```
 
-M2 foi aprovado pelo Product Owner após a Validation/Review. M3 — Clientes e Datas Importantes foi implementado, validado e concluído (COMPLETED).
+M2 foi originalmente aprovado pelo Product Owner após a Validation/Review em 2026-10-06. A reabertura pontual para registro de custo de aquisição em entradas de estoque, cálculo de custos médios e estimados e sugestão de preço (2 × custo) com preservação da autonomia do operador e dos preços já definidos foi implementada, validada e formalmente aprovada pelo Product Owner.
 
 ---
 
@@ -397,7 +398,7 @@ Status geral: COMPLETED
 
 ## Objetivo
 
-Criar e gerenciar a transação comercial conectando clientes e cestas.
+Definir e futuramente implementar o ciclo operacional da venda, conectando clientes e cestas sem antecipar pagamentos nem movimentações automáticas de estoque.
 
 ## Capacidades planejadas
 
@@ -405,52 +406,58 @@ Uma venda deve permitir ao usuário:
 
 * selecionar um cliente;
 * adicionar uma ou mais cestas;
+* copiar composição e preço vigente ao adicionar cada cesta;
 * visualizar composições da cesta;
-* modificar composição da cesta;
+* modificar composição da cesta conforme o estado da venda;
 * definir informações do destinatário;
 * definir endereço de entrega;
 * definir data de entrega;
-* adicionar observações relevantes;
+* definir horário de entrega;
 * calcular totais da venda;
 * salvar a venda como rascunho;
-* modificar uma venda em rascunho.
+* modificar uma venda em rascunho;
+* iniciar a preparação por ação explícita;
+* marcar cestas individualmente como preparadas;
+* reabrir venda `PRONTA` com justificativa;
+* registrar entrega por cesta;
+* cancelar a venda nas condições aprovadas.
 
 ## Ciclo de vida da venda
 
 O ciclo operacional inicial esperado segue:
 
 ```text
-DRAFT
+RASCUNHO
    ↓
-CONFIRMED
+CONFIRMADA
    ↓
-PREPARING
+EM PREPARAÇÃO
    ↓
-READY
+PRONTA
    ↓
-DELIVERED
+ENTREGUE
 ```
 
 Também é esperada uma situação de cancelamento:
 
 ```text
-DRAFT / CONFIRMED / PREPARING / READY
-                  ↓
-              CANCELLED
+RASCUNHO / CONFIRMADA / EM PREPARAÇÃO / PRONTA
+                                   ↓
+                              CANCELADA
 ```
 
-As regras exatas de transição serão definidas na especificação do marco.
+O fluxo normal não permite pular etapas. A transição `CONFIRMADA → EM PREPARAÇÃO` exige ação explícita do usuário. A transição `RASCUNHO → CONFIRMADA` pertence ao contrato de estados, mas sua autorização financeira pertence ao M5.
 
 ## Importante fronteira de escopo
 
-M4 cria a estrutura de vendas, mas não introduz o fluxo completo de confirmação de pagamento.
+M4 cria a estrutura e o ciclo operacional da venda, mas não registra pagamentos nem implementa uma regra financeira paralela de confirmação.
 
-O comportamento de pagamento pertence a M5.
+O comportamento financeiro de confirmação pertence a M5. M4 também não presume deduções, devoluções ou ajustes automáticos de estoque por composição, preparação, entrega ou cancelamento.
 
 ## Status atual
 
 ```text
-Status: Planejado
+Status: Planejado — documentação formalizada; implementação não iniciada; início condicionado ao fechamento da correção pontual de preço de venda persistido em M2 e à resolução das decisões pendentes de negócio (como a definição do momento e marco da baixa de estoque)
 ```
 
 ---
@@ -459,7 +466,7 @@ Status: Planejado
 
 ## Objetivo
 
-Conectar informações de pagamento ao ciclo de vida de vendas e estabelecer as regras para confirmação da venda e dedução de estoque.
+Registrar pagamentos da venda e autorizar financeiramente a transição `RASCUNHO → CONFIRMADA` conforme as regras aprovadas.
 
 ## Capacidades planejadas
 
@@ -469,55 +476,24 @@ Conectar informações de pagamento ao ciclo de vida de vendas e estabelecer as 
 * registrar comprovante de pagamento;
 * acompanhar o total pago;
 * calcular saldo restante;
-* determinar se o limite de confirmação foi alcançado.
+* determinar se o limite de confirmação foi alcançado;
+* autorizar financeiramente a transição `RASCUNHO → CONFIRMADA`.
 
 ## Regra de confirmação
 
 A regra atual de negócio é:
 
-> Uma venda é confirmada quando pelo menos 50% do seu valor total foi pago.
-
-Uma vez confirmada, a venda gera a dedução correspondente de estoque.
+> Uma venda só pode ser autorizada financeiramente para `CONFIRMADA` quando pelo menos 50% do seu valor total foi pago.
 
 ```text
 Pagamento >= 50%
        ↓
-Venda confirmada
-       ↓
-Estoque deduzido
+Autorização financeira da confirmação
 ```
 
-## Pagamento restante
+## Condição operacional adicional
 
-O saldo restante deve ser pago antes da entrega.
-
-A regra atual de negócio é:
-
-> 100% da venda deve ser pago antes da entrega.
-
-## Alterações após confirmação
-
-Uma venda confirmada pode ser modificada.
-
-Quando a composição da cesta muda, o estoque deve ser ajustado de acordo com a diferença entre as composições anterior e nova.
-
-Exemplo:
-
-```text
-Original:
-2 × Chocolate
-1 × Suco
-
-Novo:
-2 × Biscoito
-1 × Suco
-
-Ajuste de estoque:
-+2 Chocolate
--2 Biscoito
-```
-
-A movimentação original de estoque permanece parte do registro histórico.
+Mesmo quando o limiar financeiro tiver sido atingido, a autorização financeira da transição também exige que todas as cestas tenham destinatário, endereço, data e horário de entrega preenchidos.
 
 ## Status atual
 
@@ -539,9 +515,9 @@ M1 — Produtos e Estoque
      Aceitação humana    Concluída
      Status geral        Concluído (COMPLETED)
 
-M2 — Cestas e Templates de Cesta  Concluído (COMPLETED)
+M2 — Cestas e Templates de Cesta  Concluído (COMPLETED) — Conclusão original mantida no histórico; correção de custos de aquisição e sugestão de preços concluída e aceita pelo Product Owner
 M3 — Clientes e Datas Importantes  Concluído (COMPLETED)
-M4 — Vendas                       Planejado
+M4 — Vendas                       Planejado (documentação formalizada; implementação não iniciada; início condicionado às decisões pendentes de negócio)
 M5 — Pagamentos                   Planejado
 ```
 
@@ -556,16 +532,16 @@ As dependências conhecidas são:
 ```text
 M1 — Produtos e Estoque (Products & Inventory)
 ├── pré-requisito para M2 (cestas referenciam produtos e estoque)
-└── pré-requisito para M4 (vendas referenciam estoque para dedução)
+└── pré-requisito para M4 (vendas reutilizam produtos e informação de disponibilidade sem mover estoque automaticamente)
 
 M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
-└── pré-requisito para M4 (vendas contêm cestas)
+└── pré-requisito para M4 (vendas contêm cestas e dependem de preço de venda persistido na cesta-modelo)
 
 M3 — Clientes (Customers)
 └── pré-requisito para M4 (vendas pertencem a clientes)
 
 M4 — Vendas (Sales)
-└── pré-requisito para M5 (pagamentos confirmam vendas e acionam dedução de estoque)
+└── pré-requisito para M5 (pagamentos autorizam financeiramente a transição `RASCUNHO → CONFIRMADA`)
 ```
 
 ---
@@ -591,9 +567,11 @@ Registrar Pagamento
       ↓
 Atingir Limite de Confirmação
       ↓
-Confirmar Venda
+Validar dados obrigatórios de entrega
       ↓
-Deduzir Estoque
+Autorizar financeiramente a confirmação
+      ↓
+Confirmar Venda
       ↓
 Concluir Fluxo de Entrega
 ```
@@ -952,14 +930,13 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-O **M2 — Cestas e Templates de Cesta** passou pelo ciclo aprovado:
+O **M2 — Cestas e Templates de Cesta** passou originalmente pelo ciclo aprovado e foi aceito pelo Product Owner em 2026-10-06. A reabertura pontual de escopo para implementação e validação da persistência de preços, custos de aquisição em entradas de estoque e sugestão de preço (2 × custo) foi implementada, validada e aceita:
 
 ```text
-Implementation Gate: READY FOR IMPLEMENTATION
-Implementation:      Concluída
-Validation/Review:   VALIDATED
-Aprovação humana:    Concluída
-Status geral:       COMPLETED
+Conclusão original:  COMPLETED (VALIDATED / Aprovação humana concluída em 2026-10-06)
+Reabertura pontual:  Custos de aquisição e sugestão de preço das cestas
+Status da correção:  Concluída e aprovada (COMPLETED / Aprovação humana concluída)
+Status geral de M2:  Concluído (COMPLETED)
 ```
 
 M3 — Clientes e Datas Importantes está concluído (COMPLETED) após Validation/Review e aceitação humana pelo Product Owner.
@@ -971,7 +948,7 @@ As decisões fundamentais de negócio da especificação M1 foram resolvidas:
   * Operações que produziriam um saldo negativo são rejeitadas.
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
 
-M2 e M3 estão concluídos. M4 e os marcos posteriores permanecem planejados.
+A documentação de M4 está formalizada, mas sua implementação permanece não iniciada e condicionada ao encerramento da correção de M2 e à resolução das decisões de negócio pendentes (em particular o momento e marco responsáveis pela eventual baixa de estoque).
 
 ---
 

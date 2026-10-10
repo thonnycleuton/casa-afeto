@@ -1,19 +1,29 @@
 # M2 — Especificação de Cestas e Templates de Cesta
 
-**Versão do documento:** 0.1  
-**Status:** COMPLETED  
-**Implementation Gate:** READY FOR IMPLEMENTATION  
-**Implementation:** Concluída  
-**Validation/Review:** VALIDATED  
-**Aprovação humana:** Concluída  
-**Marco:** M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)  
+**Versão do documento:** 0.3
+**Status geral:** Concluído (COMPLETED)
+**Histórico da conclusão original de M2:** Concluída e aprovada (COMPLETED / VALIDATED / Aprovação humana concluída em 2026-10-06)
+**Status da correção pontual:** Concluída e aprovada (COMPLETED)
+**Validação da correção pontual:** Validada (testes automatizados e aceitação humana concluídos)
+**Fechamento da reabertura:** Concluído (implementação, testes automatizados e aprovação humana concluídos)
+**Marco:** M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
 **Fase:** 1 — Operações Centrais (Core Operations)
 
 ---
 
 ## 1. Objetivo
 
-M2 permite cadastrar templates reutilizáveis e manter cestas concretas como composições persistidas de produtos. O marco prepara composições para uso futuro, sem implementar o domínio de vendas nem alterar produtos ou estoque do M1.
+M2 permite cadastrar templates reutilizáveis e manter cestas concretas como composições persistidas de produtos. O marco prepara composições para uso futuro, sem implementar o domínio de vendas nem alterar regras de produtos ou integridade física de estoque do M1.
+
+Como correções pontuais aprovadas em M2 antes de M4:
+* Permite registrar o custo unitário de aquisição nas entradas de estoque (`ENTRY`).
+* Calcula o custo médio ponderado do produto considerando as entradas com custo conhecido, sem tratar custos desconhecidos como zero.
+* Calcula o custo estimado da cesta somando o custo médio ponderado dos produtos multiplicado pelas respectivas quantidades.
+* Fornece sugestão de preço de venda igual a **2 × custo estimado da cesta**.
+* Assegura total autonomia ao operador, permitindo aceitar a sugestão ou informar outro preço manualmente.
+* Garante que alterações nos custos não sobrescrevem automaticamente preços de venda já definidos.
+* Disponibiliza a persistência do preço de venda na cesta-modelo usada como origem comercial em vendas.
+* Quando não houver dados suficientes de custo para algum item ou a composição estiver vazia, a sugestão de preço permanece indisponível.
 
 Esta especificação registra o comportamento aprovado para M2. As decisões formalizadas pelo Product Owner prevalecem sobre descrições antigas em outros documentos.
 
@@ -29,7 +39,14 @@ M2 inclui:
 * adicionar, remover e substituir produtos, e alterar quantidades;
 * salvar uma cesta sem itens;
 * identificar produtos inativos presentes em composições;
-* consultar disponibilidade de estoque apenas para exibir aviso.
+* consultar disponibilidade de estoque apenas para exibir aviso;
+* definir e persistir manualmente o preço de venda da cesta-modelo;
+* registrar custo unitário de aquisição opcional em entradas de estoque (`ENTRY`);
+* calcular o custo médio ponderado de produtos com entradas de custo conhecido;
+* calcular o custo estimado da composição da cesta;
+* calcular e apresentar sugestão de preço de venda igual a duas vezes o custo estimado;
+* aceitar a sugestão de preço ou definir outro preço com preservação de valores salvos;
+* apresentar a sugestão como indisponível quando houver dados insuficientes de custo.
 
 Exclusão, arquivamento e duplicação de templates ou cestas não são operações definidas para M2.
 
@@ -46,18 +63,48 @@ M2 reutiliza Produto e as informações de unidade, estado ativo/inativo e dispo
 
 ## 4. Entidades e dados
 
-### 4.1 Template de Cesta
+### 4.1 Template de Cesta (Cesta-Modelo)
 
-Um template é uma composição reutilizável, identificada e nomeada, com estado ativo/inativo. Um template novo nasce ativo por padrão; não existe estado DRAFT em M2.
+Um template é uma composição reutilizável, identificada e nomeada, com estado ativo/inativo e preço de venda opcional. Um template novo nasce ativo por padrão; não existe estado DRAFT em M2.
 
-Dados de negócio:
+Campos mínimos:
 
-* identificador do template;
-* nome;
-* estado ativo/inativo;
-* composição de produtos e quantidades.
+| Campo | Significado | Restrições |
+|---|---|---|
+| `id` | Identificador do template | Chave primária |
+| `name` | Nome do template | Texto obrigatório |
+| `active` | Estado ativo/inativo | Booleano, padrão `true` |
+| `price` | Preço de venda da cesta-modelo | Definição manual, persistido, precisão de duas casas decimais, anulável (opcional no cadastro), aceita zero (`0.00`), rejeita valores negativos e rejeita precisão superior a duas casas decimais |
+| `created_at` | Data/hora de criação | Preenchido automaticamente |
+| `updated_at` | Data/hora da última atualização | Preenchido automaticamente |
 
-Cada item da composição contém `product_id` e `quantity`. Um template pode ser salvo e editado sem itens. Um template vazio permanece ativo, mas não pode ser usado para criar uma cesta até possuir ao menos um item. A forma persistida exata e os metadados técnicos pertencem à implementação e não ampliam o modelo de negócio.
+Cada item da composição contém:
+
+| Campo | Significado | Restrições |
+|---|---|---|
+| `template_id` | Identificador do template ao qual o item pertence | Chave estrangeira, cascata na exclusão |
+| `product_id` | Identidade do produto em M1 | Chave estrangeira, restrição de integridade |
+| `quantity` | Quantidade na unidade base atual do produto | Maior que zero, respeitando regras de unidade de M1 |
+
+Regras de diferenciação do preço de venda:
+
+* **Preço ausente (`null` ou não informado):** a cesta-modelo pode ser cadastrada, consultada e editada no M2, mas não pode ser adicionada a uma venda até que o preço seja definido manualmente.
+* **Preço zero (`0.00`):** valor explicitamente atribuído para brindes, cortesias e itens promocionais. É um preço válido e definido, categoricamente diferente de preço ausente.
+* **Preço positivo (`> 0.00`):** valor monetário normal com precisão de duas casas decimais.
+* **Rejeição de negativos:** valores monetários menores que zero são estritamente inválidos e devem ser rejeitados pela validação.
+* **Validação de precisão decimal:** o campo exige precisão de exatamente duas casas decimais. Entradas com mais de duas casas decimais devem ser rejeitadas pela validação, sem aplicação arbitrária de arredondamento ou truncamento automático.
+
+Compatibilidade com dados existentes e futura migration Alembic:
+
+* A tabela física atual de cestas-modelo (`basket_templates`) não possui coluna de preço.
+* A futura etapa técnica de implementação precisará criar uma migration Alembic para adicionar um campo monetário anulável (nullable) na tabela de templates de cesta, preservando integralmente os registros existentes.
+* Registros existentes não receberão preços fictícios, estimados ou calculados automaticamente.
+* Registros existentes sem preço continuarão sem preço após a migration, exigindo definição manual de preço caso venham a ser selecionados para vendas em M4.
+* O preço zero jamais será atribuído automaticamente ou utilizado como fallback para registros sem preço.
+* A migration não é criada nem executada nesta tarefa de alinhamento documental.
+* Não se impõe tipo SQL rígido nesta especificação documental além da exigência de precisão monetária de duas casas decimais, cabendo à etapa técnica a escolha conforme os padrões arquiteturais do backend (como `Numeric(asdecimal=True)`).
+
+Um template pode ser salvo e editado sem itens. Um template vazio permanece ativo, mas não pode ser usado para criar uma cesta até possuir ao menos um item. A forma persistida exata e os metadados técnicos pertencem à implementação e não ampliam o modelo de negócio.
 
 ### 4.2 Cesta concreta
 
@@ -81,7 +128,9 @@ Cada item da composição contém:
 | `product_id` | Identidade do produto |
 | `quantity` | Quantidade na unidade base atual do produto |
 
-Não fazem parte da cesta M2: cliente, venda, destinatário, endereço ou data de entrega, pagamento, preço, custo, estado comercial, reserva ou dedução de estoque.
+Não fazem parte da cesta M2: cliente, venda, destinatário, endereço ou data de entrega, pagamento, custo, estado comercial, reserva ou dedução de estoque.
+
+O preço de venda é atributo da cesta-modelo (template), servindo de origem comercial para integração com M4. A cesta concreta do M2 não cria vínculo estrutural com Sale/Venda.
 
 ### 4.3 Composição e quantidades
 
@@ -140,7 +189,19 @@ Não é introduzida nova regra de concorrência nem novo ADR. O ADR-001 permanec
 
 ## 9. Custo e preço
 
-Custo de produto, custo de cesta, custo médio, custo por lote, preço sugerido, preço final, margem, markup e cálculo de preço estão fora do M2. M1 não possui fonte formal de custo. A ideia antiga de preço em torno de duas vezes o custo não é regra de negócio vigente. Fonte de custo e regras de precificação serão especificadas em marco futuro.
+Decisões de negócio aprovadas para a correção de M2:
+
+1. **Custo unitário de aquisição na entrada de estoque:** nas movimentações de estoque do tipo entrada (`ENTRY`), pode ser registrado o custo unitário de aquisição do produto (`unit_cost`) com precisão de duas casas decimais. O campo é opcional, anulável (`nullable`) e rejeita valores negativos.
+2. **Custo médio ponderado do produto:** o custo médio unitário é calculado considerando as quantidades e custos das entradas de estoque com custo conhecido. Entradas sem custo registrado são ignoradas no cálculo da média e não são tratadas como zero. Produtos sem entradas com custo conhecido permanecem sem custo médio confiável.
+3. **Custo estimado da cesta:** obtido pela soma do custo médio ponderado de cada produto multiplicado pela sua quantidade na composição. Se algum item da composição não possuir custo de aquisição conhecido, o custo estimado da cesta é considerado indisponível / não confiável (`has_reliable_cost = false`).
+4. **Preço sugerido:** calculado automaticamente como **2 × custo estimado da cesta** quando todos os itens possuem custo de aquisição conhecido e a composição não está vazia. Se houver dados insuficientes de custo ou a composição estiver vazia, o preço sugerido permanece indisponível e nunca é apresentado como confiável.
+5. **Autonomia do operador e aceitação da sugestão:** a sugestão é exibida como auxílio operacional. O operador tem total autonomia para aceitar a sugestão com um clique ou informar manualmente outro preço de venda.
+6. **Não sobrescrita de preços salvos:** alterações posteriores nos custos de aquisição ou nas entradas de estoque **não sobrescrevem** automaticamente preços de venda já definidos e persistidos.
+7. **Recálculo sob demanda:** ao editar a composição da cesta ou solicitar nova sugestão, o sistema recalcula dinamicamente o custo estimado e a sugestão atualizada, sem substituir automaticamente o preço de venda já fixado.
+8. **Definição manual e persistência de preço na cesta-modelo:** o preço de venda da cesta-modelo é persistido no banco de dados com precisão de exatamente duas casas decimais. Valores com mais de duas casas decimais ou valores negativos são estritamente rejeitados na validação (sem arredondamento ou truncamento automático).
+9. **Preço zero:** o preço zero (`0.00`) é permitido para representar brindes, cortesias e itens promocionais, sendo categoricamente distinto de ausência de preço (`null`).
+10. **Snapshot histórico em vendas (M4):** ao adicionar uma cesta-modelo a uma venda (em M4), o preço vigente é copiado como snapshot histórico imutável. Alterações futuras no preço da cesta-modelo não alteram vendas preexistentes.
+11. **Preservação de registros preexistentes:** registros de movimentações e composições criados antes da implementação não recebem custos ou preços retroativos fictícios.
 
 ## 10. Consultas e operações
 
@@ -148,7 +209,7 @@ As operações previstas são:
 
 | Entidade | Operações M2 |
 |---|---|
-| Template | Criar, listar/consultar, visualizar, editar, ativar/desativar |
+| Template | Criar (com preço opcional), listar/consultar, visualizar, editar (inclusive preço), ativar/desativar |
 | Cesta | Criar com/sem template, listar/consultar, visualizar, editar composição, adicionar/remover/substituir produto e alterar quantidade |
 
 Não se presume operação de exclusão, arquivamento ou duplicação.
@@ -157,7 +218,12 @@ Não se presume operação de exclusão, arquivamento ou duplicação.
 
 M2 não cria entidade Sale/Venda nem relacionamento estrutural entre cesta e venda. Não adiciona `sale_id`, cliente, pagamento, entrega ou estado de venda.
 
-O M4 definirá como uma venda utiliza uma cesta e se a composição é copiada/congelada naquele contexto. M2 não antecipa essa decisão.
+O M4 definirá como uma venda utiliza uma cesta e se a composição é copiada/congelada naquele contexto.
+
+Para suportar o comportamento aprovado de M4:
+* M2 disponibiliza preço de venda persistido na cesta-modelo.
+* Se a cesta-modelo estiver sem preço definido, M4 bloqueará a sua adição à venda.
+* Ao adicionar à venda, M4 copia o preço como snapshot histórico imutável, desacoplando-o de eventuais alterações futuras no template do M2.
 
 ## 12. Fora do escopo
 
@@ -169,12 +235,18 @@ Além dos itens explicitamente excluídos acima, estão fora do M2:
 * lotes, validade, FEFO e reposição;
 * reserva e dedução de estoque;
 * comunicação, notificações e dashboards;
-* custo e precificação.
+* regras de margem ou markup além da regra aprovada de sugestão (2 × custo estimado).
 
 ## 13. Regras relacionadas
 
-Consultar `docs/domain/business-contract.md`, regras `BASKET-001` a `BASKET-012`, e `docs/milestones/m1-products-inventory/specification.md` para Produto, unidade base, atividade e disponibilidade.
+Consultar `docs/domain/business-contract.md`, regras `BASKET-001` a `BASKET-019` e Seção 19, e `docs/milestones/m1-products-inventory/specification.md` para Produto, unidade base, atividade e disponibilidade.
 
-## 14. Estado das decisões
+## 14. Estado das decisões e governança
 
-As quatro decisões anteriormente pendentes foram fechadas pelo Product Owner e estão incorporadas nesta especificação. Não há Open Questions de negócio registradas para M2.
+As decisões de negócio sobre templates, composições, persistência de preços de venda, registro de custos de aquisição em entradas de estoque e cálculo de preço sugerido (2 × custo) estão formalizadas e aprovadas pelo Product Owner.
+
+Governança do marco:
+* Conclusão original de M2: mantida no histórico (aprovada em 2026-10-06).
+* Reabertura pontual: Custos de aquisição nas entradas de estoque e sugestão de preço das cestas.
+* Estado da implementação: Concluída (migration técnica aplicada, modelos SQLAlchemy, schemas Pydantic, serviços FastAPI, componentes Vue e testes de regressão aprovados).
+* Validação e Aceitação Humana: Aprovadas formalmente pelo Product Owner. Reabertura encerrada e marco M2 concluído (COMPLETED).

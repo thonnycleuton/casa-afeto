@@ -47,6 +47,7 @@ export interface Product extends ProductInput {
   id: number
   active: boolean
   inventory_balance: string
+  average_cost?: string | null
   created_at: string
   updated_at: string
 }
@@ -56,6 +57,7 @@ export interface InventoryMovement {
   product_id: number
   quantity: string
   type: 'ENTRY' | 'ADJUSTMENT'
+  unit_cost?: string | null
   created_at: string
 }
 
@@ -68,12 +70,18 @@ export interface CompositionItem {
   inventory_balance: string
   stock_available: boolean
   stock_shortage: string
+  unit_cost?: string | null
+  total_cost?: string | null
 }
 
 export interface BasketTemplate {
   id: number
   name: string
   active: boolean
+  price: string | null
+  estimated_cost?: string | null
+  suggested_price?: string | null
+  has_reliable_cost?: boolean
   created_at: string
   updated_at: string
   items: CompositionItem[]
@@ -83,6 +91,9 @@ export interface Basket {
   id: number
   name: string
   template_id: number | null
+  estimated_cost?: string | null
+  suggested_price?: string | null
+  has_reliable_cost?: boolean
   created_at: string
   updated_at: string
   items: CompositionItem[]

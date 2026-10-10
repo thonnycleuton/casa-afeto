@@ -2,15 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import CompositionEditor from './CompositionEditor.vue'
 import {
-  addTemplateItem,
-  createTemplate,
-  fetchTemplate,
-  fetchTemplates,
-  removeTemplateItem,
-  replaceTemplateItem,
-  setTemplateActive,
-  updateTemplate,
-  updateTemplateItem,
+  addTemplateItem, createTemplate, fetchTemplate, fetchTemplates,
+  removeTemplateItem, replaceTemplateItem, setTemplateActive,
+  updateTemplate, updateTemplateItem,
 } from '../api/baskets'
 import { fetchProducts } from '../api/products'
 import type { BasketTemplate, Product } from '../api/types'
@@ -19,65 +13,55 @@ const templates = ref<BasketTemplate[]>([])
 const selected = ref<BasketTemplate | null>(null)
 const products = ref<Product[]>([])
 const selectedName = ref('')
+const selectedPrice = ref('')
 const newName = ref('')
+const newPrice = ref('')
 const creating = ref(false)
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 const selectedId = computed(() => selected.value?.id ?? null)
 const selectedItems = computed(() => selected.value?.items ?? [])
-const containsInactiveProduct = computed(
-  () => selectedItems.value.some((item) => !item.product_active),
-)
+const containsInactiveProduct = computed(() => selectedItems.value.some((item) => !item.product_active))
+
+function formatPrice(price: string | null | undefined): string {
+  if (price === null || price === undefined || price === '') return 'Sem preço'
+  const num = Number(price)
+  return isNaN(num) ? price : num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
 
 watch(selected, (template) => {
   selectedName.value = template?.name ?? ''
+  selectedPrice.value = template?.price ?? ''
 })
 
 async function run(action: () => Promise<void>): Promise<void> {
-  loading.value = true
-  error.value = ''
-  notice.value = ''
-  try {
-    await action()
-  } catch (cause: unknown) {
-    error.value = cause instanceof Error ? cause.message : 'Não foi possível concluir a operação.'
-  } finally {
-    loading.value = false
-  }
+  loading.value = true; error.value = ''; notice.value = ''
+  try { await action() }
+  catch (cause: unknown) { error.value = cause instanceof Error ? cause.message : 'Não foi possível concluir a operação.' }
+  finally { loading.value = false }
 }
 
 async function reload(): Promise<void> {
-  const [nextTemplates, nextProducts] = await Promise.all([
-    fetchTemplates(),
-    fetchProducts(),
-  ])
-  templates.value = nextTemplates
-  products.value = nextProducts
-  if (selectedId.value !== null) {
-    selected.value = await fetchTemplate(selectedId.value)
-  }
+  const [nextTemplates, nextProducts] = await Promise.all([fetchTemplates(), fetchProducts()])
+  templates.value = nextTemplates; products.value = nextProducts
+  if (selectedId.value !== null) selected.value = await fetchTemplate(selectedId.value)
 }
 
-async function load(): Promise<void> {
-  await run(reload)
-}
+async function load(): Promise<void> { await run(reload) }
 
 async function selectTemplate(id: number): Promise<void> {
   await run(async () => {
-    selected.value = await fetchTemplate(id)
-    products.value = await fetchProducts()
-    creating.value = false
+    selected.value = await fetchTemplate(id); products.value = await fetchProducts(); creating.value = false
   })
 }
 
 async function saveNewTemplate(): Promise<void> {
   await run(async () => {
-    const template = await createTemplate(newName.value)
-    newName.value = ''
-    creating.value = false
+    const trimmed = String(newPrice.value ?? '').trim()
+    const template = trimmed ? await createTemplate(newName.value, [], trimmed) : await createTemplate(newName.value)
+    newName.value = ''; newPrice.value = ''; creating.value = false
     await reload()
-    selected.value = template
     selected.value = await fetchTemplate(template.id)
     notice.value = 'Template criado.'
   })
@@ -86,7 +70,8 @@ async function saveNewTemplate(): Promise<void> {
 async function saveName(): Promise<void> {
   if (!selected.value) return
   await run(async () => {
-    await updateTemplate(selected.value!.id, selectedName.value)
+    const trimmed = String(selectedPrice.value ?? '').trim()
+    await updateTemplate(selected.value!.id, { name: selectedName.value, price: trimmed === '' ? null : trimmed })
     await reload()
     notice.value = 'Template atualizado.'
   })
@@ -101,22 +86,20 @@ async function changeActive(): Promise<void> {
   })
 }
 
-async function mutateComposition(
-  action: (templateId: number) => Promise<BasketTemplate>,
-  message: string,
-): Promise<void> {
+async function mutateComposition(action: (templateId: number) => Promise<BasketTemplate>, message: string): Promise<void> {
   if (!selected.value) return
   await run(async () => {
     selected.value = await action(selected.value!.id)
-    templates.value = await fetchTemplates()
-    products.value = await fetchProducts()
+    templates.value = await fetchTemplates(); products.value = await fetchProducts()
     notice.value = message
   })
 }
 
-onMounted(() => {
-  void load()
-})
+function applySuggested(): void {
+  if (selected.value?.suggested_price) selectedPrice.value = selected.value.suggested_price
+}
+
+onMounted(() => { void load() })
 </script>
 
 <template>
@@ -137,21 +120,18 @@ onMounted(() => {
         <h1 id="templates-heading">Templates de cesta</h1>
         <p class="page-description">Crie e mantenha modelos independentes para novas cestas.</p>
       </div>
-      <button
-        class="button primary"
-        type="button"
-        :disabled="loading"
-        @click="creating = !creating; selected = null"
-      >
+      <button class="button primary" type="button" :disabled="loading" @click="creating = !creating; selected = null">
         Criar template
       </button>
     </div>
 
     <form v-if="creating" class="card product-form" @submit.prevent="saveNewTemplate">
       <div class="card-heading"><div><h2>Novo template</h2><p>O template será criado ativo. A composição pode começar vazia.</p></div></div>
+      <div class="form-field"><label for="new-template-name">Nome</label><input id="new-template-name" v-model="newName" required /></div>
       <div class="form-field">
-        <label for="new-template-name">Nome</label>
-        <input id="new-template-name" v-model="newName" required />
+        <label for="new-template-price">Preço de venda (R$)</label>
+        <input id="new-template-price" v-model="newPrice" type="text" placeholder="Opcional (ex.: 150.00 ou 0.00)" />
+        <small class="field-hint">Opcional. Deixe em branco se ainda não definido. Use 0.00 para brindes/cortesias.</small>
       </div>
       <div class="form-actions">
         <button class="button primary" type="submit" :disabled="loading">Salvar template</button>
@@ -164,20 +144,19 @@ onMounted(() => {
         <div class="table-heading"><div><h2>Templates cadastrados</h2><p>Ativos e inativos permanecem consultáveis.</p></div></div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Nome</th><th>Estado</th><th>Itens</th></tr></thead>
+            <thead><tr><th>Nome</th><th>Estado</th><th>Preço</th><th>Itens</th></tr></thead>
             <tbody>
-              <tr
-                v-for="template in templates"
-                :key="template.id"
-                class="selectable-row"
-                :class="{ 'selected-row': selected?.id === template.id }"
-                @click="selectTemplate(template.id)"
-              >
-                <td><button class="table-link" type="button" @click.stop="selectTemplate(template.id)">{{ template.name }}</button></td>
-                <td><span :class="['status-pill', template.active ? 'status-success' : 'status-muted']">{{ template.active ? 'Ativo' : 'Inativo' }}</span></td>
-                <td>{{ template.items.length }}</td>
+              <tr v-for="t in templates" :key="t.id" class="selectable-row" :class="{ 'selected-row': selected?.id === t.id }" @click="selectTemplate(t.id)">
+                <td><button class="table-link" type="button" @click.stop="selectTemplate(t.id)">{{ t.name }}</button></td>
+                <td><span :class="['status-pill', t.active ? 'status-success' : 'status-muted']">{{ t.active ? 'Ativo' : 'Inativo' }}</span></td>
+                <td>
+                  <span v-if="t.price === null || t.price === undefined || t.price === ''" class="status-pill status-muted">Sem preço</span>
+                  <span v-else-if="Number(t.price) === 0" class="status-pill status-muted">R$ 0,00 (Cortesia)</span>
+                  <span v-else>{{ formatPrice(t.price) }}</span>
+                </td>
+                <td>{{ t.items.length }}</td>
               </tr>
-              <tr v-if="templates.length === 0"><td colspan="3" class="empty-state"><strong>Nenhum template cadastrado.</strong><span>Crie um template para reutilizar composições.</span></td></tr>
+              <tr v-if="templates.length === 0"><td colspan="4" class="empty-state"><strong>Nenhum template cadastrado.</strong><span>Crie um template para reutilizar composições.</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -189,9 +168,28 @@ onMounted(() => {
           <div class="form-grid">
             <div class="form-field"><label for="template-name">Nome</label><input id="template-name" v-model="selectedName" required :disabled="loading" /></div>
             <div class="form-field"><label>Estado</label><span :class="['status-pill', selected?.active ? 'status-success' : 'status-muted']">{{ selected?.active ? 'Ativo' : 'Inativo' }}</span></div>
+            <div class="form-field">
+              <label for="template-price">Preço de venda (R$)</label>
+              <input id="template-price" v-model="selectedPrice" placeholder="Ex.: 150.00 (ou vazio)" :disabled="loading" />
+            </div>
+            <div class="form-field">
+              <label>Situação do preço</label>
+              <span v-if="selected?.price === null || selected?.price === undefined || selected?.price === ''" class="status-pill status-muted">Sem preço cadastrado</span>
+              <span v-else-if="Number(selected?.price) === 0" class="status-pill status-muted">R$ 0,00 (Gratuita / Cortesia)</span>
+              <span v-else class="status-pill status-success">{{ formatPrice(selected?.price) }}</span>
+            </div>
+            <div class="form-field">
+              <label>Custo estimado & Sugestão</label>
+              <div v-if="selected?.has_reliable_cost && selected?.suggested_price" class="suggestion-info">
+                <span class="field-hint">Custo: {{ formatPrice(selected.estimated_cost) }} · Sugerido (2×): <strong>{{ formatPrice(selected.suggested_price) }}</strong></span>
+                <button class="button secondary compact" type="button" :disabled="loading" @click="applySuggested">Usar sugestão</button>
+              </div>
+              <span v-else-if="selectedItems.length" class="field-hint">Itens sem custo de aquisição. Sugestão indisponível.</span>
+              <span v-else class="field-hint">Sem itens cadastrados.</span>
+            </div>
           </div>
           <div class="form-actions">
-            <button class="button primary" type="button" :disabled="loading" @click="saveName">Salvar nome</button>
+            <button class="button primary" type="button" :disabled="loading" @click="saveName">Salvar dados</button>
             <button class="button secondary" type="button" :disabled="loading" @click="changeActive">{{ selected.active ? 'Desativar' : 'Ativar' }}</button>
           </div>
           <p v-if="selectedItems.length === 0" class="field-hint">Template vazio pode ser mantido e editado, mas não pode originar cesta.</p>

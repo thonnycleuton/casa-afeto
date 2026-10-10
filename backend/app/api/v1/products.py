@@ -10,6 +10,7 @@ from app.products.schemas import (
     AdjustmentRequest,
     AvailabilityRead,
     BalanceRead,
+    InventoryEntryRequest,
     MovementRead,
     ProductCreate,
     ProductRead,
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/products", tags=["products", "inventory"])
 
 def _product_response(db: Session, product: Product) -> ProductRead:
     balances = inventory_service.product_balances(db, [product])
+    avg_costs = inventory_service.product_average_costs(db, [product])
     return ProductRead(
         id=product.id,
         name=product.name,
@@ -31,6 +33,7 @@ def _product_response(db: Session, product: Product) -> ProductRead:
         created_at=product.created_at,
         updated_at=product.updated_at,
         inventory_balance=balances[product.id],
+        average_cost=avg_costs.get(product.id),
     )
 
 
@@ -48,6 +51,7 @@ def list_products(
 ) -> list[ProductRead]:
     products = product_service.list_products(db, search)
     balances = inventory_service.product_balances(db, products)
+    avg_costs = inventory_service.product_average_costs(db, products)
     return [
         ProductRead(
             id=product.id,
@@ -57,9 +61,11 @@ def list_products(
             created_at=product.created_at,
             updated_at=product.updated_at,
             inventory_balance=balances[product.id],
+            average_cost=avg_costs.get(product.id),
         )
         for product in products
     ]
+
 
 
 @router.patch("/{product_id}", response_model=ProductRead)
@@ -98,11 +104,16 @@ def get_inventory_balance(
     status_code=status.HTTP_201_CREATED,
 )
 def add_inventory_entry(
-    product_id: int, payload: QuantityRequest, db: Session = Depends(get_db)
+    product_id: int, payload: InventoryEntryRequest, db: Session = Depends(get_db)
 ) -> MovementRead:
     return inventory_service.create_movement(
-        db, product_id, payload.quantity, MovementType.ENTRY
+        db,
+        product_id,
+        payload.quantity,
+        MovementType.ENTRY,
+        unit_cost=payload.unit_cost,
     )
+
 
 
 @router.post(
