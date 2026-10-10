@@ -14,6 +14,7 @@ import app.products.models
 import app.baskets.models
 import app.customers.models
 import app.important_dates.models
+import app.sales.models
 
 config = context.config
 

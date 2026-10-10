@@ -103,3 +103,100 @@ export interface CompositionInput {
   product_id: number
   quantity: string
 }
+
+export type SaleStatus =
+  | 'RASCUNHO'
+  | 'CONFIRMADA'
+  | 'EM PREPARAÇÃO'
+  | 'PRONTA'
+  | 'ENTREGUE'
+  | 'CANCELADA'
+
+export interface SaleBasketItem {
+  id: number
+  product_id: number
+  product_name: string
+  product_unit: ProductUnit
+  quantity: string
+}
+
+export interface SaleCompositionHistory {
+  id: number
+  sale_basket_id: number
+  previous_items: Array<{
+    product_id: number
+    product_name: string
+    quantity: string
+    unit: string
+  }>
+  new_items: Array<{
+    product_id: number
+    product_name: string
+    quantity: string
+    unit: string
+  }>
+  operator_name: string
+  created_at: string
+}
+
+export interface SaleDeliveryHistory {
+  id: number
+  sale_basket_id: number
+  operator_name: string
+  delivered_at: string
+}
+
+export interface SaleReopenHistory {
+  id: number
+  sale_id: number
+  reason: string
+  operator_name: string
+  created_at: string
+}
+
+export interface SaleBasket {
+  id: number
+  sale_id: number
+  name: string
+  origin_template_id: number | null
+  price: string
+  recipient_name: string | null
+  delivery_address: string | null
+  delivery_date: string | null
+  delivery_time: string | null
+  is_prepared: boolean
+  is_delivered: boolean
+  created_at: string
+  updated_at: string
+  items: SaleBasketItem[]
+  composition_histories: SaleCompositionHistory[]
+  delivery_histories: SaleDeliveryHistory[]
+}
+
+export interface Sale {
+  id: number
+  customer_id: number
+  customer_name: string
+  customer_phone: string
+  status: SaleStatus
+  total: string
+  created_at: string
+  updated_at: string
+  baskets: SaleBasket[]
+  reopen_histories: SaleReopenHistory[]
+}
+
+export interface SaleBasketAddInput {
+  template_id: number
+  recipient_name?: string | null
+  delivery_address?: string | null
+  delivery_date?: string | null
+  delivery_time?: string | null
+  price?: string | null
+}
+
+export interface SaleCreateInput {
+  customer_id: number
+  baskets: SaleBasketAddInput[]
+}
+

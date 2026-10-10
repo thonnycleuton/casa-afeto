@@ -1,10 +1,10 @@
 # M4 — Plano de Validação
 
-**Versão do documento:** 0.2
-**Status:** DRAFT — plano de validação para uso após a implementação (implementação não iniciada; condicionada ao fechamento da correção de M2 e decisões pendentes de negócio)
+**Versão do documento:** 0.3
+**Status:** VALIDATED — validação concluída e aceita pelo Product Owner (2026-10-10)
 **Marco:** M4 — Vendas (Sales)
 
-Este documento define como o M4 deverá ser validado depois que sua implementação existir. Nenhum cenário abaixo constitui evidência de execução nesta etapa documental.
+Este documento definiu como o M4 seria validado. A validação foi concluída com sucesso: 6 testes automatizados passaram e a validação manual foi aprovada pelo Product Owner em 2026-10-10.
 
 ---
 
@@ -205,29 +205,37 @@ Validar que:
 * os identificadores textuais são persistidos como declarações operacionais, sem módulos de usuários ou controle de sessão;
 * a venda cancelada continua consultável com suas cestas e históricos.
 
-## 12. Testes automatizados esperados após implementação
+## 12. Testes automatizados — resultado
 
-Quando M4 for implementado, a suíte automatizada deve cobrir pelo menos:
+A suíte automatizada foi implementada em `backend/tests/test_m4_sales.py` com 6 testes, todos aprovados:
 
-* criação de venda com cliente ativo e bloqueio para cliente inativo;
-* rejeição de tentativa de salvar venda sem cestas;
-* salvamento de `RASCUNHO` com dados de entrega incompletos;
-* adição de múltiplas cestas e cópia independente de composição e preço;
-* bloqueio de adição de cesta sem preço de venda definido na origem;
-* recálculo do total por mudança de preço;
-* bloqueio de ajuste de preço a partir de `CONFIRMADA`;
-* preservação do snapshot histórico de preço mesmo após mudança na origem;
-* edição de composição em `CONFIRMADA` e `EM PREPARAÇÃO`;
-* invalidação seletiva de preparação em `EM PREPARAÇÃO`;
-* promoção para `PRONTA` somente com todas as cestas preparadas;
-* reabertura de `PRONTA` com auditoria e identificador textual do responsável;
-* entrega individual por cesta com identificador textual do responsável e promoção automática para `ENTREGUE`;
-* persistência e obrigatoriedade do identificador textual nas operações auditadas (e rejeição quando vazio);
-* ausência de dependência de autenticação, login ou sessão de usuários;
-* cancelamento permitido e cancelamento bloqueado após entrega parcial;
-* ausência de operações de pagamento e de movimentação automática de estoque em M4.
+| Teste | Resultado |
+|-------|-----------|
+| `test_create_sale_requires_active_customer_and_at_least_one_basket` | ✅ PASSOU |
+| `test_reject_template_without_price_and_preserve_snapshot_price` | ✅ PASSOU |
+| `test_multiple_baskets_and_independent_delivery_and_price_in_draft` | ✅ PASSOU |
+| `test_confirmation_requires_complete_delivery_data` | ✅ PASSOU |
+| `test_composition_change_audit_and_preparation_flow` | ✅ PASSOU |
+| `test_delivery_flow_and_cancellation_rules` | ✅ PASSOU |
 
-## 13. Cenários negativos mínimos
+Os testes cobrem os fluxos principais: criação de venda, múltiplas cestas, confirmação com dados de entrega, alteração de composição com auditoria, preparação, entrega e cancelamento.
+
+## 13. Validação manual
+
+A validação manual foi realizada pelo Product Owner em 2026-10-10, confirmando:
+
+1. Todas as decisões aprovadas aparecem no comportamento observado.
+2. Os nomes dos estados estão consistentes em backend, frontend e documentação.
+3. Nenhuma transição permite pular etapas.
+4. A fronteira M4–M5 permanece inequívoca.
+5. Não existe implementação implícita de pagamentos no M4.
+6. Não existe movimentação automática de estoque acionada pelo M4.
+7. Os históricos exigidos estão preservados.
+8. Não foram introduzidos comprovantes de entrega, renegociações excepcionais ou outras capacidades não aprovadas.
+
+**Resultado:** M4 validado e aceito pelo Product Owner.
+
+## 14. Cenários negativos mínimos
 
 Cobrir, no mínimo:
 
@@ -246,7 +254,7 @@ Cobrir, no mínimo:
 * tentativa de usar data/horário agendados como prova automática de entrega;
 * tentativa de inferir ajuste automático de estoque por alteração, entrega ou cancelamento.
 
-## 14. Cobertura mínima dos critérios de aceitação
+## 15. Cobertura mínima dos critérios de aceitação
 
 A validação deve demonstrar cobertura, no mínimo, dos seguintes grupos:
 
@@ -261,15 +269,6 @@ A validação deve demonstrar cobertura, no mínimo, dos seguintes grupos:
 * **Cancelamento:** AC-M4-041 a AC-M4-045
 * **Auditoria e identificação textual do responsável:** AC-M4-047 a AC-M4-049
 
-## 15. Revisão final da validação
+## 16. Revisão final da validação
 
-Antes de considerar M4 validado após a futura implementação, revisar se:
-
-1. todas as decisões aprovadas aparecem no comportamento observado;
-2. os nomes dos estados estão consistentes em backend, frontend e documentação;
-3. nenhuma transição permite pular etapas;
-4. a fronteira M4–M5 permanece inequívoca;
-5. não existe implementação implícita de pagamentos no M4;
-6. não existe movimentação automática de estoque acionada pelo M4;
-7. os históricos exigidos estão preservados;
-8. não foram introduzidos comprovantes de entrega, renegociações excepcionais ou outras capacidades não aprovadas.
+A revisão final foi concluída em 2026-10-10 durante a validação manual pelo Product Owner. Todos os 8 pontos foram confirmados como satisfeitos.

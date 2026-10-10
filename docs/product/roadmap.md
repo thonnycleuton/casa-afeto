@@ -457,12 +457,12 @@ O comportamento financeiro de confirmação pertence a M5. M4 também não presu
 ## Status atual
 
 ```text
-Status: Planejado — documentação formalizada; implementação não iniciada; início condicionado ao fechamento da correção pontual de preço de venda persistido em M2 e à resolução das decisões pendentes de negócio (como a definição do momento e marco da baixa de estoque)
+Status: Concluído (COMPLETED)
+Implementação:       Concluída
+Refinamento visual:  Concluído
+Validação:           Concluída (6/6 testes automatizados + validação manual)
+Aceitação humana:    Concluída (2026-10-10)
 ```
-
----
-
-# 10. M5 — Pagamentos (Payments)
 
 ## Objetivo
 
@@ -517,7 +517,7 @@ M1 — Produtos e Estoque
 
 M2 — Cestas e Templates de Cesta  Concluído (COMPLETED) — Conclusão original mantida no histórico; correção de custos de aquisição e sugestão de preços concluída e aceita pelo Product Owner
 M3 — Clientes e Datas Importantes  Concluído (COMPLETED)
-M4 — Vendas                       Planejado (documentação formalizada; implementação não iniciada; início condicionado às decisões pendentes de negócio)
+M4 — Vendas                       Concluído (COMPLETED) — Implementação, refinamento visual, validação e aceitação humana concluídos
 M5 — Pagamentos                   Planejado
 ```
 
@@ -948,7 +948,7 @@ As decisões fundamentais de negócio da especificação M1 foram resolvidas:
   * Operações que produziriam um saldo negativo são rejeitadas.
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
 
-A documentação de M4 está formalizada, mas sua implementação permanece não iniciada e condicionada ao encerramento da correção de M2 e à resolução das decisões de negócio pendentes (em particular o momento e marco responsáveis pela eventual baixa de estoque).
+M4 — Vendas está concluído (COMPLETED) após implementação, refinamento visual, validação automatizada (6 testes) e aceitação humana pelo Product Owner em 2026-10-10.
 
 ---
 
