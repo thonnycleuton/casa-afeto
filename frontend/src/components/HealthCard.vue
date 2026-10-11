@@ -64,65 +64,65 @@ const emit = defineEmits<{
 
 <style scoped>
 .health-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  background: var(--color-health-card-bg);
+  border: 1px solid var(--color-health-card-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--color-health-card-shadow);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-5);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .health-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-health-card-hover-border);
+  box-shadow: var(--color-health-card-hover-shadow);
 }
 
 .health-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .header-info h3 {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text-primary);
 }
 
 .subtitle {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.875rem;
-  color: #64748b;
+  margin: var(--space-1) 0 0 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
 }
 
 .card-state {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 0.875rem;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-health-card-state-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
 }
 
 .error-state {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--color-health-card-error-bg);
+  color: var(--color-health-card-error-text);
+  border: 1px solid var(--color-health-card-error-border);
 }
 
 .error-icon {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #ef4444;
-  color: #fff;
+  background: var(--color-health-card-error-icon-bg);
+  color: var(--color-health-card-error-icon-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,8 +136,8 @@ const emit = defineEmits<{
 }
 
 .error-detail {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.8125rem;
+  margin: var(--space-1) 0 0 0;
+  font-size: var(--font-size-sm);
   opacity: 0.9;
 }
 
@@ -145,39 +145,39 @@ const emit = defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #f1f5f9;
+  background: var(--color-health-card-details-bg);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-health-card-details-border);
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.875rem;
+  font-size: var(--font-size-base);
 }
 
 .detail-label {
-  color: #64748b;
+  color: var(--color-health-card-label-text);
   font-weight: 500;
 }
 
 .detail-value {
-  color: #1e293b;
+  color: var(--color-health-card-value-text);
   font-weight: 600;
 }
 
 .status-ok {
-  color: #059669;
+  color: var(--color-health-card-status-ok);
 }
 
 .badge-env {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--color-health-card-env-bg);
+  color: var(--color-health-card-env-text);
   padding: 0.15rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
 }
 
@@ -187,19 +187,19 @@ const emit = defineEmits<{
 }
 
 .btn-refresh {
-  background: #4f46e5;
-  color: #ffffff;
+  background: var(--color-health-card-btn-bg);
+  color: var(--color-health-card-btn-text);
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .btn-refresh:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--color-health-card-btn-hover-bg);
   transform: translateY(-1px);
 }
 
@@ -211,8 +211,8 @@ const emit = defineEmits<{
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #cbd5e1;
-  border-top-color: #4f46e5;
+  border: 2px solid var(--color-health-card-spinner-border);
+  border-top-color: var(--color-health-card-spinner-top);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

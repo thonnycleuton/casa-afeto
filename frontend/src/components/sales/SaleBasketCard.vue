@@ -239,9 +239,9 @@ function formatCurrency(val: string): string {
   border: 1px solid transparent;
 }
 .badge-ok {
-  background: rgb(16 185 129 / 9%);
+  background: var(--color-mini-badge-ok-bg);
   color: var(--color-success);
-  border-color: rgb(16 185 129 / 24%);
+  border-color: var(--color-mini-badge-ok-border);
 }
 .badge-pending {
   background: var(--color-surface-elevated);
@@ -327,8 +327,8 @@ function formatCurrency(val: string): string {
 .inline-modal {
   margin-top: var(--space-2);
   padding: var(--space-3);
-  background: rgb(16 185 129 / 6%);
-  border: 1px solid rgb(16 185 129 / 20%);
+  background: var(--color-inline-modal-bg);
+  border: 1px solid var(--color-inline-modal-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);

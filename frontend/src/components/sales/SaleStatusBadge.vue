@@ -63,45 +63,45 @@ const statusClass = computed(() => {
 }
 
 .badge-confirmada {
-  background: rgb(99 102 241 / 9%);
+  background: var(--color-sale-badge-primary-bg);
   color: var(--color-primary);
-  border-color: rgb(99 102 241 / 24%);
+  border-color: var(--color-sale-badge-primary-border);
 }
 .badge-confirmada .badge-dot {
   background: var(--color-primary);
 }
 
 .badge-preparacao {
-  background: rgb(245 158 11 / 9%);
+  background: var(--color-sale-badge-warning-bg);
   color: var(--color-warning);
-  border-color: rgb(245 158 11 / 24%);
+  border-color: var(--color-sale-badge-warning-border);
 }
 .badge-preparacao .badge-dot {
   background: var(--color-warning);
 }
 
 .badge-pronta {
-  background: rgb(99 102 241 / 9%);
+  background: var(--color-sale-badge-primary-bg);
   color: var(--color-primary);
-  border-color: rgb(99 102 241 / 24%);
+  border-color: var(--color-sale-badge-primary-border);
 }
 .badge-pronta .badge-dot {
   background: var(--color-primary);
 }
 
 .badge-entregue {
-  background: rgb(16 185 129 / 9%);
+  background: var(--color-sale-badge-success-bg);
   color: var(--color-success);
-  border-color: rgb(16 185 129 / 24%);
+  border-color: var(--color-sale-badge-success-border);
 }
 .badge-entregue .badge-dot {
   background: var(--color-success);
 }
 
 .badge-cancelada {
-  background: rgb(239 68 68 / 9%);
+  background: var(--color-sale-badge-error-bg);
   color: var(--color-error);
-  border-color: rgb(239 68 68 / 24%);
+  border-color: var(--color-sale-badge-error-border);
 }
 .badge-cancelada .badge-dot {
   background: var(--color-error);

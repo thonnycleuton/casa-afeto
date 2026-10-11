@@ -71,7 +71,7 @@ function submit(): void {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgb(0 0 0 / 60%);
+  background: var(--color-modal-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
