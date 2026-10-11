@@ -156,7 +156,7 @@ Os critérios abaixo descrevem resultados observáveis para as decisões de neg�
 ### AC-M2-018 — Preservação de escopo: sem regras comerciais além do aprovado
 
 **Dado** qualquer criação, consulta ou edição de template/cesta no M2,
-**então** não são calculadas regras de margem ou markup comercial além da regra aprovada de sugestão (2 × custo estimado da cesta);
+**então** não são calculadas regras de margem ou markup comercial além da regra aprovada de sugestão (2 × custo de referência da cesta);
 **e** não são executadas reservas ou deduções de estoque nem criados fluxos de vendas.
 
 ### AC-M2-019 — Sem dados ou estados de venda
@@ -221,11 +221,11 @@ Os critérios abaixo descrevem resultados observáveis para as decisões de neg�
 **então** todos os registros antigos continuam com preço ausente (`null`);
 **e** o sistema não atribui valores padrão, fictícios ou estimados a nenhum registro preexistente.
 
-### AC-M2-029 — Cálculo de preço sugerido como 2 × custo estimado da cesta
+### AC-M2-029 — Cálculo de preço sugerido como 2 × custo de referência da cesta
 
-**Dado** uma cesta ou template com composição não vazia onde todos os produtos possuem custo médio ponderado conhecido,
+**Dado** uma cesta ou template com composição não vazia onde todos os produtos possuem `reference_price` definido,
 **quando** a composição for consultada ou editada,
-**então** o sistema calcula e apresenta o custo estimado da cesta (somatório dos custos unitários ponderados multiplicados pelas respectivas quantidades) e a sugestão de preço igual a **2 × custo estimado da cesta**, com indicação de confiabilidade do custo (`has_reliable_cost = true`).
+**então** o sistema calcula e apresenta o custo de referência da cesta (somatório de `quantidade × reference_price` de cada item) e a sugestão de preço igual a **2 × custo de referência da cesta**.
 
 ### AC-M2-030 — Registro de custo de aquisição na entrada de estoque
 
@@ -241,15 +241,15 @@ Os critérios abaixo descrevem resultados observáveis para as decisões de neg�
 **então** o sistema pondera as quantidades e custos apenas das entradas que possuem custo de aquisição registrado;
 **e** entradas sem custo informado são ignoradas no cálculo, não sendo tratadas como custo zero.
 
-### AC-M2-032 — Custo estimado da composição da cesta
+### AC-M2-032 — Custo de referência da composição da cesta
 
 **Dado** uma composição de cesta ou template com um ou mais itens,
-**quando** o custo estimado for calculado,
-**então** ele corresponde à soma exata do custo médio ponderado de cada produto multiplicado pela quantidade do respectivo item na composição.
+**quando** o custo de referência for calculado,
+**então** ele corresponde à soma exata de `quantidade × reference_price` de cada item na composição.
 
 ### AC-M2-033 — Autonomia do operador na precificação
 
-**Dado** uma sugestão de preço calculada pelo sistema (2 × custo estimado),
+**Dado** uma sugestão de preço calculada pelo sistema (2 × custo de referência),
 **quando** o operador visualizar a sugestão na interface de criação ou edição da cesta-modelo,
 **então** o operador pode aceitar a sugestão com um clique ou informar manualmente qualquer outro preço válido;
 **e** o sistema persiste o preço escolhido pelo operador.
@@ -257,22 +257,29 @@ Os critérios abaixo descrevem resultados observáveis para as decisões de neg�
 ### AC-M2-034 — Não sobrescrita automática de preço já definido
 
 **Dado** uma cesta-modelo que já possui um preço de venda definido e salvo,
-**quando** novas entradas de estoque alterarem o custo médio dos produtos componentes ou novos custos forem registrados,
+**quando** o preço de referência dos produtos componentes for alterado,
 **então** o preço de venda previamente salvo permanece inalterado e não é sobrescrito automaticamente pelo sistema.
 
 ### AC-M2-035 — Recálculo de sugestão sem alterar preço salvo
 
 **Dado** uma cesta ou template com preço de venda já salvo,
 **quando** o usuário editar a composição ou solicitar uma nova sugestão de preço,
-**então** o custo estimado e a sugestão são recalculados com base nos dados atuais,
+**então** o custo de referência e a sugestão são recalculados com base nos dados atuais,
 **mas** o preço de venda já salvo permanece inalterado até que o usuário decida explicitamente aceitar a nova sugestão ou salvar um novo valor.
 
-### AC-M2-036 — Indisponibilidade de sugestão por dados insuficientes
+### AC-M2-036 — Indisponibilidade de sugestão por `reference_price` ausente
 
-**Dado** uma composição onde pelo menos um produto não possui entradas com custo conhecido, ou uma composição vazia sem itens,
+**Dado** uma composição onde pelo menos um produto não possui `reference_price` definido, ou uma composição vazia sem itens,
 **quando** a composição for consultada ou editada,
-**então** o sistema indica que o custo estimado e o preço sugerido estão indisponíveis / não confiáveis (`has_reliable_cost = false`);
+**então** o sistema indica que o custo de referência e o preço sugerido estão indisponíveis;
 **e** a interface apresenta aviso claro de dados insuficientes, sem exibir sugestão como valor confiável e permitindo ao operador definir o preço manualmente.
+
+### AC-M2-037 — Indisponibilidade de sugestão quando `reference_price` ausente
+
+**Dado** uma composição onde pelo menos um produto não possui `reference_price` definido,
+**quando** a composição for consultada ou editada,
+**então** o custo de referência e o preço sugerido estão indisponíveis;
+**e** o operador pode definir o preço manualmente.
 
 ## Open Questions
 

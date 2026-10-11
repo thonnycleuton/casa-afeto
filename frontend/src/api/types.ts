@@ -41,11 +41,13 @@ export interface ImportantDate extends ImportantDateInput {
 export interface ProductInput {
   name: string
   base_unit: ProductUnit
+  reference_price?: string | null
 }
 
 export interface Product extends ProductInput {
   id: number
   active: boolean
+  reference_price?: string | null
   inventory_balance: string
   average_cost?: string | null
   created_at: string

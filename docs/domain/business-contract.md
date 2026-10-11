@@ -153,6 +153,10 @@ O custo do produto, portanto, pertence ao contexto de aquisição/estoque e não
 
 O modelo futuro de lote de estoque permitirá que diferentes quantidades do mesmo produto tenham custos de aquisição diferentes.
 
+### 6.1 Preço de Referência
+
+Um produto pode ter um **preço de referência** (`reference_price`), que é uma propriedade comercial definida deliberadamente pelo Casa Afeto. O preço de referência não varia automaticamente conforme o preço pago em uma compra. Ele pode ser definido antes do produto existir fisicamente no estoque. Quando ausente, o produto não pode participar de um cálculo confiável de precificação de cestas até que o valor seja definido.
+
 ---
 
 ## 7. Compra
@@ -531,10 +535,10 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 # 19. Custo e precificação
 
 1. **Custo de aquisição nas entradas:** nas entradas de estoque (tipo ENTRY), é registrado opcionalmente o custo unitário de aquisição do produto com precisão de duas casas decimais. Valores negativos são rejeitados.
-2. **Custo médio ponderado:** o custo médio unitário do produto é calculado ponderando quantidades e custos das entradas com custo registrado. Custos desconhecidos (ausentes) são ignorados no cálculo da média e não são tratados como zero.
-3. **Custo estimado da cesta:** obtido somando o custo médio ponderado dos produtos multiplicado pelas respectivas quantidades na composição. Se algum produto da composição não possuir custo de aquisição conhecido, o custo estimado da cesta é considerado indisponível / não confiável.
-4. **Preço sugerido:** calculado como 2 × custo estimado da cesta quando todos os itens possuem custo de aquisição conhecido e a composição não está vazia. Se houver dados insuficientes, a sugestão não é apresentada como confiável.
-5. **Autonomia de precificação e persistência:** o preço de venda da cesta é definido ou aceito pelo operador. O preço salvo não é sobrescrito automaticamente quando custos de aquisição mudam. Ao editar a composição ou solicitar nova sugestão, o custo estimado e a sugestão são recalculados dinamicamente sem alterar o preço já fixado.
+2. **Custo médio ponderado (controle interno):** o custo médio unitário do produto é calculado ponderando quantidades e custos das entradas com custo registrado. Custos desconhecidos (ausentes) são ignorados no cálculo da média e não são tratados como zero. Este valor é mantido para controle interno de custos e não é usado para precificação de cestas.
+3. **Custo de referência da cesta:** obtido pela soma de `quantidade × reference_price` de cada produto na composição. Se algum produto não possuir `reference_price` definido, o custo de referência da cesta é considerado indisponível / não confiável.
+4. **Preço sugerido:** calculado como 2 × custo de referência da cesta quando todos os itens possuem `reference_price` definido e a composição não está vazia.
+5. **Autonomia de precificação e persistência:** o preço de venda da cesta é definido ou aceito pelo operador. O preço salvo não é sobrescrito automaticamente quando o preço de referência muda. Ao editar a composição ou solicitar nova sugestão, o custo de referência e a sugestão são recalculados dinamicamente sem alterar o preço já fixado.
 6. **Precisão monetária:** o preço possui precisão de duas casas decimais. Valores negativos são estritamente rejeitados. O preço zero (`0.00`) é permitido para brindes/cortesias e é semanticamente distinto de preço não informado (`null`).
 7. **Preservação de registros preexistentes:** registros históricos existentes de movimentações e composições são preservados sem custos retroativos fictícios.
 
@@ -1044,7 +1048,7 @@ A implementação exata do cálculo de custos será definida quando a gestão de
 
 ### Custo e Precificação de Cestas
 
-M1 não fornece fonte formal de custo. Como decisão já aprovada, M2 pode persistir preço de venda manual da cesta-modelo para uso em vendas, sem cálculo automático. A fonte de custo, o cálculo do custo de cesta e as regras de precificação automática continuam pendentes para marco futuro. A referência antiga de aproximadamente duas vezes o custo não é uma regra de negócio vigente.
+M1 fornece `reference_price` como propriedade comercial do produto. M2 calcula o custo de referência da cesta a partir de `reference_price × quantidade` e sugere preço igual a 2 × custo de referência. O `unit_cost` em entradas de estoque permanece para controle interno de custos.
 
 ### Gestão de Compras
 

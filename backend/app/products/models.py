@@ -37,11 +37,18 @@ class Product(Base):
             "base_unit IN ('UN', 'KG', 'G', 'L', 'ML')",
             name="ck_products_base_unit",
         ),
+        CheckConstraint(
+            "reference_price IS NULL OR reference_price >= 0",
+            name="ck_products_reference_price_non_negative",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     base_unit: Mapped[str] = mapped_column(String(2), nullable=False)
+    reference_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2, asdecimal=True), nullable=True
+    )
     active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

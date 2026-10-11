@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import BusinessRuleError, ResourceNotFoundError
-from app.inventory.service import product_average_costs, product_balances
+from app.inventory.service import product_balances
 from app.products.models import BaseUnit, Product
 from app.baskets.models import (
     Basket,
@@ -433,23 +433,22 @@ def _calculate_composition_metrics(
         return [], None, None, False
     products = [item.product for item in items]
     balances = product_balances(db, products)
-    avg_costs = product_average_costs(db, products)
 
     comp_items: list[ProductCompositionRead] = []
     has_reliable_cost = True
-    total_estimated_cost = Decimal("0.00")
+    total_reference_cost = Decimal("0.00")
 
     for item in items:
         product = item.product
-        unit_cost = avg_costs.get(product.id)
-        if unit_cost is None:
+        reference_price = product.reference_price
+        if reference_price is None:
             has_reliable_cost = False
             item_total_cost = None
         else:
-            item_total_cost = (item.quantity * unit_cost).quantize(
+            item_total_cost = (item.quantity * reference_price).quantize(
                 Decimal("0.01")
             )
-            total_estimated_cost += item.quantity * unit_cost
+            total_reference_cost += item.quantity * reference_price
 
         comp_items.append(
             ProductCompositionRead(
@@ -457,24 +456,24 @@ def _calculate_composition_metrics(
                     product=product,
                     quantity=item.quantity,
                     balance=balances[product.id],
-                    unit_cost=unit_cost,
+                    unit_cost=reference_price,
                     total_cost=item_total_cost,
                 )
             )
         )
 
     if has_reliable_cost:
-        estimated_cost = total_estimated_cost.quantize(Decimal("0.01"))
-        suggested_price = (estimated_cost * Decimal(2)).quantize(Decimal("0.01"))
+        reference_cost = total_reference_cost.quantize(Decimal("0.01"))
+        suggested_price = (reference_cost * Decimal(2)).quantize(Decimal("0.01"))
     else:
-        estimated_cost = None
+        reference_cost = None
         suggested_price = None
 
-    return comp_items, estimated_cost, suggested_price, has_reliable_cost
+    return comp_items, reference_cost, suggested_price, has_reliable_cost
 
 
 def template_read(db: Session, template: BasketTemplate) -> BasketTemplateRead:
-    comp_items, estimated_cost, suggested_price, has_reliable_cost = (
+    comp_items, reference_cost, suggested_price, has_reliable_cost = (
         _calculate_composition_metrics(db, template.items)
     )
     return BasketTemplateRead(
@@ -482,7 +481,7 @@ def template_read(db: Session, template: BasketTemplate) -> BasketTemplateRead:
         name=template.name,
         active=template.active,
         price=template.price,
-        estimated_cost=estimated_cost,
+        estimated_cost=reference_cost,
         suggested_price=suggested_price,
         has_reliable_cost=has_reliable_cost,
         created_at=template.created_at,
@@ -492,14 +491,14 @@ def template_read(db: Session, template: BasketTemplate) -> BasketTemplateRead:
 
 
 def basket_read(db: Session, basket: Basket) -> BasketRead:
-    comp_items, estimated_cost, suggested_price, has_reliable_cost = (
+    comp_items, reference_cost, suggested_price, has_reliable_cost = (
         _calculate_composition_metrics(db, basket.items)
     )
     return BasketRead(
         id=basket.id,
         name=basket.name,
         template_id=basket.template_id,
-        estimated_cost=estimated_cost,
+        estimated_cost=reference_cost,
         suggested_price=suggested_price,
         has_reliable_cost=has_reliable_cost,
         created_at=basket.created_at,

@@ -16,14 +16,14 @@
 M2 permite cadastrar templates reutilizáveis e manter cestas concretas como composições persistidas de produtos. O marco prepara composições para uso futuro, sem implementar o domínio de vendas nem alterar regras de produtos ou integridade física de estoque do M1.
 
 Como correções pontuais aprovadas em M2 antes de M4:
-* Permite registrar o custo unitário de aquisição nas entradas de estoque (`ENTRY`).
-* Calcula o custo médio ponderado do produto considerando as entradas com custo conhecido, sem tratar custos desconhecidos como zero.
-* Calcula o custo estimado da cesta somando o custo médio ponderado dos produtos multiplicado pelas respectivas quantidades.
-* Fornece sugestão de preço de venda igual a **2 × custo estimado da cesta**.
+* Permite registrar o custo unitário de aquisição nas entradas de estoque (`ENTRY`) para controle interno de custos.
+* Calcula o custo médio ponderado do produto para controle interno, sem usar na precificação de cestas.
+* Calcula o custo de referência da cesta somando `quantidade × reference_price` de cada produto na composição.
+* Fornece sugestão de preço de venda igual a **2 × custo de referência da cesta**.
 * Assegura total autonomia ao operador, permitindo aceitar a sugestão ou informar outro preço manualmente.
-* Garante que alterações nos custos não sobrescrevem automaticamente preços de venda já definidos.
+* Garante que alterações no preço de referência não sobrescrevem automaticamente preços de venda já definidos.
 * Disponibiliza a persistência do preço de venda na cesta-modelo usada como origem comercial em vendas.
-* Quando não houver dados suficientes de custo para algum item ou a composição estiver vazia, a sugestão de preço permanece indisponível.
+* Quando algum produto não possuir `reference_price` definido ou a composição estiver vazia, a sugestão de preço permanece indisponível.
 
 Esta especificação registra o comportamento aprovado para M2. As decisões formalizadas pelo Product Owner prevalecem sobre descrições antigas em outros documentos.
 
@@ -41,12 +41,12 @@ M2 inclui:
 * identificar produtos inativos presentes em composições;
 * consultar disponibilidade de estoque apenas para exibir aviso;
 * definir e persistir manualmente o preço de venda da cesta-modelo;
-* registrar custo unitário de aquisição opcional em entradas de estoque (`ENTRY`);
-* calcular o custo médio ponderado de produtos com entradas de custo conhecido;
-* calcular o custo estimado da composição da cesta;
-* calcular e apresentar sugestão de preço de venda igual a duas vezes o custo estimado;
+* registrar custo unitário de aquisição opcional em entradas de estoque (`ENTRY`) para controle interno;
+* calcular o custo médio ponderado para controle interno de custos;
+* calcular o custo de referência da composição da cesta a partir de `quantidade × reference_price`;
+* calcular e apresentar sugestão de preço de venda igual a duas vezes o custo de referência;
 * aceitar a sugestão de preço ou definir outro preço com preservação de valores salvos;
-* apresentar a sugestão como indisponível quando houver dados insuficientes de custo.
+* apresentar a sugestão como indisponível quando algum produto não possuir `reference_price` definido.
 
 Exclusão, arquivamento e duplicação de templates ou cestas não são operações definidas para M2.
 
@@ -191,13 +191,13 @@ Não é introduzida nova regra de concorrência nem novo ADR. O ADR-001 permanec
 
 Decisões de negócio aprovadas para a correção de M2:
 
-1. **Custo unitário de aquisição na entrada de estoque:** nas movimentações de estoque do tipo entrada (`ENTRY`), pode ser registrado o custo unitário de aquisição do produto (`unit_cost`) com precisão de duas casas decimais. O campo é opcional, anulável (`nullable`) e rejeita valores negativos.
-2. **Custo médio ponderado do produto:** o custo médio unitário é calculado considerando as quantidades e custos das entradas de estoque com custo conhecido. Entradas sem custo registrado são ignoradas no cálculo da média e não são tratadas como zero. Produtos sem entradas com custo conhecido permanecem sem custo médio confiável.
-3. **Custo estimado da cesta:** obtido pela soma do custo médio ponderado de cada produto multiplicado pela sua quantidade na composição. Se algum item da composição não possuir custo de aquisição conhecido, o custo estimado da cesta é considerado indisponível / não confiável (`has_reliable_cost = false`).
-4. **Preço sugerido:** calculado automaticamente como **2 × custo estimado da cesta** quando todos os itens possuem custo de aquisição conhecido e a composição não está vazia. Se houver dados insuficientes de custo ou a composição estiver vazia, o preço sugerido permanece indisponível e nunca é apresentado como confiável.
+1. **Custo unitário de aquisição na entrada de estoque:** nas movimentações de estoque do tipo entrada (`ENTRY`), pode ser registrado o custo unitário de aquisição do produto (`unit_cost`) com precisão de duas casas decimais. O campo é opcional, anulável (`nullable`) e rejeita valores negativos. Este valor é mantido para controle interno de custos.
+2. **Custo médio ponderado (controle interno):** o custo médio unitário é calculado considerando as quantidades e custos das entradas de estoque com custo conhecido. Entradas sem custo registrado são ignoradas no cálculo da média e não são tratadas como zero. Este valor é mantido para controle interno de custos e não é usado para precificação de cestas.
+3. **Custo de referência da cesta:** obtido pela soma de `quantidade × reference_price` de cada produto na composição. Se algum produto não possuir `reference_price` definido, o custo de referência da cesta é considerado indisponível / não confiável.
+4. **Preço sugerido:** calculado automaticamente como **2 × custo de referência da cesta** quando todos os itens possuem `reference_price` definido e a composição não está vazia. Se algum produto não possuir `reference_price` ou a composição estiver vazia, o preço sugerido permanece indisponível e nunca é apresentado como confiável.
 5. **Autonomia do operador e aceitação da sugestão:** a sugestão é exibida como auxílio operacional. O operador tem total autonomia para aceitar a sugestão com um clique ou informar manualmente outro preço de venda.
-6. **Não sobrescrita de preços salvos:** alterações posteriores nos custos de aquisição ou nas entradas de estoque **não sobrescrevem** automaticamente preços de venda já definidos e persistidos.
-7. **Recálculo sob demanda:** ao editar a composição da cesta ou solicitar nova sugestão, o sistema recalcula dinamicamente o custo estimado e a sugestão atualizada, sem substituir automaticamente o preço de venda já fixado.
+6. **Não sobrescrita de preços salvos:** alterações posteriores no preço de referência ou nas entradas de estoque **não sobrescrevem** automaticamente preços de venda já definidos e persistidos.
+7. **Recálculo sob demanda:** ao editar a composição da cesta ou solicitar nova sugestão, o sistema recalcula dinamicamente o custo de referência e a sugestão atualizada, sem substituir automaticamente o preço de venda já fixado.
 8. **Definição manual e persistência de preço na cesta-modelo:** o preço de venda da cesta-modelo é persistido no banco de dados com precisão de exatamente duas casas decimais. Valores com mais de duas casas decimais ou valores negativos são estritamente rejeitados na validação (sem arredondamento ou truncamento automático).
 9. **Preço zero:** o preço zero (`0.00`) é permitido para representar brindes, cortesias e itens promocionais, sendo categoricamente distinto de ausência de preço (`null`).
 10. **Snapshot histórico em vendas (M4):** ao adicionar uma cesta-modelo a uma venda (em M4), o preço vigente é copiado como snapshot histórico imutável. Alterações futuras no preço da cesta-modelo não alteram vendas preexistentes.

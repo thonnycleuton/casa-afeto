@@ -179,11 +179,12 @@ onMounted(() => { void load() })
               <span v-else class="status-pill status-success">{{ formatPrice(selected?.price) }}</span>
             </div>
             <div class="form-field">
-              <label>Custo estimado & Sugestão</label>
+              <label>Custo de referência & Sugestão</label>
               <div v-if="selected?.has_reliable_cost && selected?.suggested_price" class="suggestion-info">
-                <span class="field-hint">Custo: {{ formatPrice(selected.estimated_cost) }} · Sugerido (2×): <strong>{{ formatPrice(selected.suggested_price) }}</strong></span>
+                <span class="field-hint">Custo de referência: {{ formatPrice(selected.estimated_cost) }} · Sugerido (2×): <strong>{{ formatPrice(selected.suggested_price) }}</strong></span>
                 <button class="button secondary compact" type="button" :disabled="loading" @click="applySuggested">Usar sugestão</button>
               </div>
+              <span v-else-if="selected?.items?.length" class="field-hint">Preço de referência não definido para todos os itens. Sugestão indisponível.</span>
               <span v-else-if="selectedItems.length" class="field-hint">Itens sem custo de aquisição. Sugestão indisponível.</span>
               <span v-else class="field-hint">Sem itens cadastrados.</span>
             </div>

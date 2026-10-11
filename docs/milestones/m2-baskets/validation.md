@@ -8,7 +8,7 @@
 **Fechamento da reabertura:** Concluído (COMPLETED / Aceitação humana formalizada)
 **Marco:** M2 — Cestas e Templates de Cesta (Baskets & Basket Templates)
 
-Este documento foi originalmente aplicado após a implementação do núcleo de cestas e resultou em `VALIDATED` com aprovação humana concluída em 2026-10-06. O plano foi posteriormente reaberto de forma pontual para a introdução do preço de venda persistido da cesta-modelo e, em seguida, para o registro de custo de aquisição em entradas de estoque, cálculo do custo médio ponderado e custo estimado da composição, e cálculo de sugestão de preço (2 × custo) com preservação de preços salvos e autonomia do operador. Ambas as correções foram integralmente implementadas no backend e frontend, validadas por suítes de testes automatizados e aceitas pelo Product Owner.
+Este documento foi originalmente aplicado após a implementação do núcleo de cestas e resultou em `VALIDATED` com aprovação humana concluída em 2026-10-06. O plano foi posteriormente reaberto de forma pontual para a introdução do preço de venda persistido da cesta-modelo e, em seguida, para o registro de custo de aquisição em entradas de estoque para controle interno, cálculo do custo de referência da cesta a partir de `quantidade × reference_price`, e cálculo de sugestão de preço (2 × custo de referência) com preservação de preços salvos e autonomia do operador. Ambas as correções foram integralmente implementadas no backend e frontend, validadas por suítes de testes automatizados e aceitas pelo Product Owner.
 
 ---
 
@@ -160,19 +160,19 @@ Os casos de teste a seguir cobrem a correção pontual de custos e precificaçã
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_entry_movement_records_unit_cost` e `test_entry_movement_without_cost_records_null`).
 2. **Rejeição de custo negativo em entrada:** tentar registrar entrada com custo menor que zero; verificar bloqueio pela validação e constraint do banco.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_negative_unit_cost_is_rejected`).
-3. **Custo médio ponderado do produto:** calcular custo ponderando entradas com custos conhecidos e quantidades; confirmar que entradas sem custo informado são ignoradas e não tratadas como zero.
+3. **Custo médio ponderado do produto (controle interno):** calcular custo ponderando entradas com custos conhecidos e quantidades; confirmar que entradas sem custo informado são ignoradas e não tratadas como zero. Este valor é mantido para controle interno.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_weighted_average_cost_ignores_unknown_costs`).
-4. **Custo estimado da cesta:** calcular somatório dos custos médios ponderados multiplicado pelas quantidades dos itens; verificar exatidão matemática do valor.
+4. **Custo de referência da cesta:** calcular somatório de `quantidade × reference_price` de cada item; verificar exatidão matemática do valor.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_basket_estimated_cost_calculation`).
-5. **Sugestão de preço (2 × custo estimado):** verificar que o sistema calcula a sugestão como duas vezes o custo estimado da composição.
+5. **Sugestão de preço (2 × custo de referência):** verificar que o sistema calcula a sugestão como duas vezes o custo de referência da composição.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_suggested_price_is_two_times_estimated_cost`).
-6. **Indisponibilidade de sugestão quando houver dados insuficientes:** cesta com produto sem histórico de custo conhecido ou cesta vazia; verificar que `has_reliable_cost` é retornado como `false` e sugestão não é confiável.
+6. **Indisponibilidade de sugestão quando `reference_price` ausente:** cesta com produto sem `reference_price` definido ou cesta vazia; verificar que o custo de referência e o preço sugerido são retornados como indisponíveis.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_suggested_price_unavailable_when_product_has_no_cost` e `test_suggested_price_unavailable_for_empty_basket`).
-7. **Não sobrescrita de preço já salvo:** cadastrar cesta-modelo com preço de venda; adicionar novas entradas de estoque que alterem os custos médios; verificar que o preço de venda salvo não sofre alteração automática.
+7. **Não sobrescrita de preço já salvo:** cadastrar cesta-modelo com preço de venda; alterar o `reference_price` dos produtos; verificar que o preço de venda salvo não sofre alteração automática.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_cost_change_does_not_overwrite_existing_selling_price`).
-8. **Recálculo dinâmico sob demanda:** alterar composição da cesta e verificar atualização do custo estimado e do preço sugerido sem substituir o preço de venda previamente salvo.
+8. **Recálculo dinâmico sob demanda:** alterar composição da cesta e verificar atualização do custo de referência e do preço sugerido sem substituir o preço de venda previamente salvo.
    * *Status:* **APROVADO** (coberto por `test_cost_and_pricing.py::test_recalculating_suggestion_does_not_overwrite_saved_price`).
-9. **Interface frontend para custos e sugestão:** tela de produtos exibe campo de custo na entrada; tela de edição de templates e cestas apresenta custo estimado, badge de confiabilidade, sugestão de preço e botão para aplicar sugestão no campo de preço.
+9. **Interface frontend para custos e sugestão:** tela de produtos exibe campo de custo na entrada e campo de preço de referência; tela de edição de templates e cestas apresenta custo de referência, sugestão de preço e botão para aplicar sugestão no campo de preço.
    * *Status:* **APROVADO** (coberto por testes Vitest em `M2Views.spec.ts` e verificação manual em navegador).
 
 ## 13. Checklist de implementação técnica de custos e sugestão de preço

@@ -11,8 +11,10 @@ from app.products.models import InventoryMovement, Product
 from app.baskets.models import Basket, BasketItem, BasketTemplate, BasketTemplateItem
 
 
-def make_product(client: TestClient, register_cleanup: Any, name: str | None = None, unit: str = "UN") -> dict:
-    payload = {"name": name or f"prod-{uuid4().hex[:8]}", "base_unit": unit}
+def make_product(client: TestClient, register_cleanup: Any, name: str | None = None, unit: str = "UN", reference_price: str | None = None) -> dict:
+    payload: dict[str, Any] = {"name": name or f"prod-{uuid4().hex[:8]}", "base_unit": unit}
+    if reference_price is not None:
+        payload["reference_price"] = reference_price
     res = client.post("/api/v1/products", json=payload)
     assert res.status_code == 201
     data = res.json()
@@ -138,11 +140,8 @@ def test_adjustments_do_not_alter_weighted_average_cost(client: TestClient, regi
 
 
 def test_template_estimated_cost_and_suggested_price(client: TestClient, register_cleanup: Any):
-    p1 = make_product(client, register_cleanup)
-    p2 = make_product(client, register_cleanup)
-
-    add_entry(client, p1["id"], "10", "10.00")  # avg cost = 10.00
-    add_entry(client, p2["id"], "10", "20.00")  # avg cost = 20.00
+    p1 = make_product(client, register_cleanup, reference_price="10.00")
+    p2 = make_product(client, register_cleanup, reference_price="20.00")
 
     # Create template with 2 of p1 and 1 of p2
     tmpl_res = client.post(
@@ -159,7 +158,7 @@ def test_template_estimated_cost_and_suggested_price(client: TestClient, registe
     tmpl = tmpl_res.json()
     register_cleanup(tmpl_id=tmpl["id"])
 
-    # Estimated cost: 2*10.00 + 1*20.00 = 40.00
+    # Reference cost: 2*10.00 + 1*20.00 = 40.00
     # Suggested price: 2 * 40.00 = 80.00
     assert tmpl["has_reliable_cost"] is True
     assert tmpl["estimated_cost"] == "40.00"
@@ -175,11 +174,8 @@ def test_template_estimated_cost_and_suggested_price(client: TestClient, registe
 
 
 def test_template_with_unknown_cost_item_has_no_reliable_suggestion(client: TestClient, register_cleanup: Any):
-    p1 = make_product(client, register_cleanup)
-    p2 = make_product(client, register_cleanup)
-
-    add_entry(client, p1["id"], "10", "10.00")
-    add_entry(client, p2["id"], "10")  # no cost for p2
+    p1 = make_product(client, register_cleanup, reference_price="10.00")
+    p2 = make_product(client, register_cleanup)  # no reference_price
 
     tmpl_res = client.post(
         "/api/v1/basket-templates",
@@ -207,8 +203,7 @@ def test_template_with_unknown_cost_item_has_no_reliable_suggestion(client: Test
 
 
 def test_price_preservation_when_costs_change(client: TestClient, register_cleanup: Any):
-    p1 = make_product(client, register_cleanup)
-    add_entry(client, p1["id"], "10", "10.00")
+    p1 = make_product(client, register_cleanup, reference_price="10.00")
 
     tmpl_res = client.post(
         "/api/v1/basket-templates",
@@ -226,9 +221,8 @@ def test_price_preservation_when_costs_change(client: TestClient, register_clean
     assert tmpl["estimated_cost"] == "10.00"
     assert tmpl["suggested_price"] == "20.00"
 
-    # Add a much more expensive entry for p1: 10 units @ 30.00
-    # New avg cost: (10*10 + 10*30) / 20 = 20.00
-    add_entry(client, p1["id"], "10", "30.00")
+    # Change reference_price to 20.00
+    client.patch(f"/api/v1/products/{p1['id']}", json={"reference_price": "20.00"})
 
     # Fetch template again
     get_res = client.get(f"/api/v1/basket-templates/{tmpl['id']}")
@@ -236,14 +230,13 @@ def test_price_preservation_when_costs_change(client: TestClient, register_clean
 
     # Saved price must NOT be overwritten
     assert updated_tmpl["price"] == "35.00"
-    # Recalculated estimated cost & suggested price must reflect new costs
+    # Recalculated estimated cost & suggested price must reflect new reference_price
     assert updated_tmpl["estimated_cost"] == "20.00"
     assert updated_tmpl["suggested_price"] == "40.00"
 
 
 def test_basket_estimated_cost_and_suggested_price(client: TestClient, register_cleanup: Any):
-    p1 = make_product(client, register_cleanup)
-    add_entry(client, p1["id"], "10", "12.00")
+    p1 = make_product(client, register_cleanup, reference_price="12.00")
 
     bsk_res = client.post(
         "/api/v1/baskets",

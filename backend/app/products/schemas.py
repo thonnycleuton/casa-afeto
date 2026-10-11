@@ -13,11 +13,24 @@ from pydantic import (
 from app.products.models import BaseUnit, MovementType
 
 
+def _validate_reference_price(value: Decimal | None) -> Decimal | None:
+    if value is None:
+        return None
+    if not value.is_finite():
+        raise ValueError("O preço de referência deve ser um valor numérico válido.")
+    if value < 0:
+        raise ValueError("O preço de referência não pode ser negativo.")
+    if value.as_tuple().exponent < -2:
+        raise ValueError("O preço de referência deve ter no máximo duas casas decimais.")
+    return value.quantize(Decimal("0.01"))
+
+
 class ProductCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
     base_unit: BaseUnit
+    reference_price: Decimal | None = None
 
     @field_validator("name")
     @classmethod
@@ -27,12 +40,18 @@ class ProductCreate(BaseModel):
             raise ValueError("O nome do produto é obrigatório.")
         return value
 
+    @field_validator("reference_price")
+    @classmethod
+    def validate_reference_price(cls, value: Decimal | None) -> Decimal | None:
+        return _validate_reference_price(value)
+
 
 class ProductUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: Optional[str] = None
     base_unit: Optional[BaseUnit] = None
+    reference_price: Optional[Decimal] = None
 
     @field_validator("name")
     @classmethod
@@ -44,9 +63,14 @@ class ProductUpdate(BaseModel):
             raise ValueError("O nome do produto é obrigatório.")
         return value
 
+    @field_validator("reference_price")
+    @classmethod
+    def validate_reference_price(cls, value: Decimal | None) -> Decimal | None:
+        return _validate_reference_price(value)
+
     @model_validator(mode="after")
     def require_editable_field(self) -> "ProductUpdate":
-        if self.name is None and self.base_unit is None:
+        if not self.model_fields_set:
             raise ValueError("Informe ao menos um campo do produto.")
         return self
 
@@ -57,6 +81,7 @@ class ProductRead(BaseModel):
     id: int
     name: str
     base_unit: BaseUnit
+    reference_price: Optional[Decimal] = None
     active: bool
     created_at: datetime
     updated_at: datetime

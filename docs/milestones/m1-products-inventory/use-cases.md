@@ -94,11 +94,13 @@ Nenhuma.
 3. O sistema solicita as informações do produto.
 4. O operador informa o nome do produto.
 5. O operador seleciona ou informa a unidade base de estoque (`base_unit`: `UN`, `KG`, `G`, `L`, `ML`).
-6. O operador envia o produto.
-7. O sistema valida as informações obrigatórias:
+6. O operador pode informar opcionalmente o preço de referência (`reference_price`) com duas casas decimais.
+7. O operador envia o produto.
+8. O sistema valida as informações:
    - O nome do produto deve ser não vazio;
-   - A unidade base deve ser uma de `UN`, `KG`, `G`, `L`, `ML` (`BD-01`).
-8. O sistema cria o produto.
+   - A unidade base deve ser uma de `UN`, `KG`, `G`, `L`, `ML` (`BD-01`);
+   - Se `reference_price` for informado, não pode ser negativo e deve ter no máximo duas casas decimais.
+9. O sistema cria o produto.
 9. O produto fica inicialmente ativo.
 10. O sistema confirma a criação com sucesso.
 
@@ -109,6 +111,7 @@ Nomes de produtos não são **obrigatórios como únicos** em M1 (`PROD-002`). D
 ```text
 Nome: Chocolate
 Unidade base: UN
+Preço de referência: 5.00
 ```
 
 Resultado:
@@ -118,6 +121,7 @@ Produto: Chocolate
 Unidade: UN
 Ativo: Sim
 Saldo de estoque: 0
+Preço de referência: 5.00
 ```
 
 ## Fluxos alternativos
@@ -136,6 +140,22 @@ Se a unidade base informada não estiver entre `UN`, `KG`, `G`, `L`, `ML`:
 
 1. O sistema rejeita a operação.
 2. O sistema informa ao operador que apenas `UN`, `KG`, `G`, `L` e `ML` são unidades válidas.
+3. Nenhum produto é criado.
+
+### A3 — Preço de referência negativo
+
+Se o operador informar `reference_price` com valor negativo:
+
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador que o preço de referência não pode ser negativo.
+3. Nenhum produto é criado.
+
+### A4 — Preço de referência com mais de duas casas decimais
+
+Se o operador informar `reference_price` com mais de duas casas decimais:
+
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador que o preço de referência deve ter no máximo duas casas decimais.
 3. Nenhum produto é criado.
 
 ## Pós-condições
@@ -160,12 +180,13 @@ Permitir que o operador atualize as informações do produto.
 
 1. O operador abre o produto.
 2. O sistema exibe suas informações atuais.
-3. O operador altera informações editáveis (por exemplo, nome ou `base_unit`, se permitido).
+3. O operador altera informações editáveis (por exemplo, nome, `base_unit` se permitido, ou `reference_price`).
 4. O operador salva as alterações.
 5. O sistema valida as alterações:
    - O nome deve ser não vazio;
    - Se `base_unit` foi alterada, o produto deve ter **zero movimentações de estoque** (`BD-02`);
-   - Se `base_unit` foi alterada, o novo valor deve ser um de `UN`, `KG`, `G`, `L`, `ML`.
+   - Se `base_unit` foi alterada, o novo valor deve ser um de `UN`, `KG`, `G`, `L`, `ML`;
+   - Se `reference_price` foi alterado, não pode ser negativo e deve ter no máximo duas casas decimais.
 6. O sistema persiste o produto atualizado.
 7. O sistema confirma a atualização.
 
@@ -173,10 +194,10 @@ Permitir que o operador atualize as informações do produto.
 
 ```text
 Antes:
-Chocolate (UN, movimentações: 0)
+Chocolate (UN, reference_price: 5.00)
 
 Depois:
-Premium Chocolate (KG)
+Chocolate (UN, reference_price: 7.50)
 ```
 
 ## Fluxos alternativos
@@ -200,6 +221,14 @@ Se o operador tentar alterar `base_unit` em um produto que tenha pelo menos uma 
 1. O sistema rejeita a alteração de `base_unit`.
 2. O sistema informa ao operador que `base_unit` não pode ser alterada após o registro de movimentações de estoque (`BD-02`).
 3. A `base_unit` existente permanece inalterada.
+
+### A4 — Preço de referência inválido
+
+Se o operador tentar definir `reference_price` com valor negativo ou mais de duas casas decimais:
+
+1. O sistema rejeita a alteração de `reference_price`.
+2. O sistema informa ao operador a regra de validação violada.
+3. O `reference_price` existente permanece inalterado.
 
 ## Comportamento importante
 

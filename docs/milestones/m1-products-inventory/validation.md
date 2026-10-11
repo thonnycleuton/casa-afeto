@@ -212,6 +212,125 @@ Observações:
 
 ---
 
+## VAL-M1-06 — Criar produto com preço de referência
+
+### Etapas
+
+1. Abra a área de gestão de produtos.
+2. Crie um produto chamado `Chocolate Test`.
+3. Defina a unidade base como `UN`.
+4. Defina o preço de referência como `5.00`.
+5. Salve o produto.
+
+### Resultado esperado
+
+* O produto é criado com sucesso.
+* O preço de referência `5.00` é persistido e visível.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-07 — Criar produto sem preço de referência
+
+### Etapas
+
+1. Abra a área de gestão de produtos.
+2. Crie um produto chamado `Suco Test`.
+3. Defina a unidade base como `UN`.
+4. Não informe preço de referência.
+5. Salve o produto.
+
+### Resultado esperado
+
+* O produto é criado com sucesso.
+* O preço de referência é `null` (não informado).
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-08 — Editar preço de referência
+
+### Etapas
+
+1. Abra `Chocolate Test`.
+2. Altere o preço de referência de `5.00` para `7.50`.
+3. Salve.
+4. Reabra o produto.
+
+### Resultado esperado
+
+* O novo preço de referência `7.50` é persistido.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-09 — Rejeitar preço de referência negativo
+
+### Etapas
+
+1. Abra `Chocolate Test`.
+2. Tente definir o preço de referência como `-1.00`.
+3. Envie a operação.
+
+### Resultado esperado
+
+* O sistema rejeita a operação.
+* O preço de referência existente permanece inalterado.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-10 — Rejeitar preço de referência com mais de duas casas decimais
+
+### Etapas
+
+1. Abra `Chocolate Test`.
+2. Tente definir o preço de referência como `5.123`.
+3. Envie a operação.
+
+### Resultado esperado
+
+* O sistema rejeita a operação.
+* O preço de referência existente permanece inalterado.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
 # 6. Entrada de estoque
 
 ## VAL-M1-06 — Adicionar estoque inicial
@@ -731,6 +850,11 @@ Antes de aceitar M1, confirme:
 
 * [ ] Produtos podem ser criados.
 * [ ] As informações obrigatórias do produto são validadas.
+* [ ] O preço de referência pode ser definido na criação do produto.
+* [ ] Um produto pode ser criado sem preço de referência.
+* [ ] O preço de referência pode ser editado.
+* [ ] Preço de referência negativo é rejeitado.
+* [ ] Preço de referência com mais de duas casas decimais é rejeitado.
 * [ ] Produtos podem ser editados.
 * [ ] Produtos podem ser ativados/desativados.
 * [ ] A desativação não exclui informações históricas.

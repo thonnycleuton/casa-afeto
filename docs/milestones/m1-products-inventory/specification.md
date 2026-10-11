@@ -153,12 +153,13 @@ Essa distinção pertence a funcionalidade futura.
 
 Um produto deve conter, no mínimo:
 
-| Campo       | Obrigatório | Descrição                                                           |
-| ----------- | ----------: | ------------------------------------------------------------------- |
-| `id`        |         Sim | Identificador único do produto                                      |
-| `name`      |         Sim | Nome do produto                                                     |
-| `base_unit` |         Sim | Unidade controlada usada no estoque (`UN`, `KG`, `G`, `L`, `ML`)     |
-| `active`    |         Sim | Se o produto está disponível para novas operações (inicialmente true) |
+| Campo             | Obrigatório | Descrição                                                           |
+| ----------------- | ----------: | ------------------------------------------------------------------- |
+| `id`              |         Sim | Identificador único do produto                                      |
+| `name`            |         Sim | Nome do produto                                                     |
+| `base_unit`       |         Sim | Unidade controlada usada no estoque (`UN`, `KG`, `G`, `L`, `ML`)     |
+| `active`          |         Sim | Se o produto está disponível para novas operações (inicialmente true) |
+| `reference_price` |          Não | Preço de referência comercial do produto (Decimal, 2 casas, ≥ 0, anulável) |
 
 A implementação pode conter metadados técnicos, como:
 
@@ -242,7 +243,23 @@ A `base_unit` de um produto só pode ser atualizada enquanto o produto não poss
 
 ---
 
-# 12. Listagem de produtos
+# 12. Preço de referência do produto
+
+O preço de referência (`reference_price`) é uma propriedade comercial do produto, definida e atualizada deliberadamente pelo operador.
+
+Regras:
+
+1. `reference_price` é opcional. Quando ausente (`null`), o produto não pode participar de cálculo confiável de precificação de cestas.
+2. `reference_price` é definido e atualizado deliberadamente pelo operador.
+3. `reference_price` não varia automaticamente conforme o preço pago em compras.
+4. `reference_price` pode ser definido antes do produto existir fisicamente no estoque.
+5. Valores negativos são rejeitados.
+6. Precisão de exatamente duas casas decimais. Valores com mais de duas casas são rejeitados.
+7. O valor zero (`0.00`) é permitido e distinto de ausência de preço (`null`).
+
+---
+
+# 13. Listagem de produtos
 
 O sistema deve fornecer uma listagem de produtos.
 
@@ -694,7 +711,9 @@ No mínimo:
 * nome do produto ausente;
 * unidade base inválida (não está entre `UN`, `KG`, `G`, `L`, `ML`);
 * tentativa de modificar `base_unit` após a existência de movimentações de estoque;
-* tentativa de usar um produto inativo quando um produto ativo é exigido.
+* tentativa de usar um produto inativo quando um produto ativo é exigido;
+* `reference_price` negativo;
+* `reference_price` com mais de duas casas decimais.
 
 ### Estoque
 

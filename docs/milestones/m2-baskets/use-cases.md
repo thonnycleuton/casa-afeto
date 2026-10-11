@@ -10,7 +10,7 @@
 
 Os casos de uso abaixo não definem exclusão, arquivamento ou duplicação. As decisões de negócio aplicáveis estão formalizadas na especificação do marco.
 
-Correções pontuais aprovadas em M2 antes de M4: incluir definição e persistência de preço de venda da cesta-modelo, registro de custo unitário de aquisição nas entradas de estoque, cálculo de custo médio ponderado e custo estimado da cesta, e sugestão de preço igual a 2 × custo estimado, com total autonomia do operador e garantia de não sobrescrita de preços salvos.
+Correções pontuais aprovadas em M2 antes de M4: incluir definição e persistência de preço de venda da cesta-modelo, registro de custo unitário de aquisição nas entradas de estoque para controle interno, cálculo de custo de referência da cesta a partir de `quantidade × reference_price`, e sugestão de preço igual a 2 × custo de referência, com total autonomia do operador e garantia de não sobrescrita de preços salvos.
 
 ---
 
@@ -289,49 +289,48 @@ Correções pontuais aprovadas em M2 antes de M4: incluir definição e persist�
 
 **Resultado esperado:** A movimentação de entrada é gravada no histórico de estoque com seu respectivo custo unitário de aquisição.
 
-## UC-M2-14 — Obter sugestão de preço (2 × custo estimado) e aceitar ou personalizar
+## UC-M2-14 — Obter sugestão de preço (2 × custo de referência) e aceitar ou personalizar
 
-**Objetivo:** Auxiliar o operador apresentando o custo estimado da composição e uma sugestão de preço de venda calculada como 2 × custo estimado, preservando a autonomia de precificação.
+**Objetivo:** Auxiliar o operador apresentando o custo de referência da composição e uma sugestão de preço de venda calculada como 2 × custo de referência, preservando a autonomia de precificação.
 
-**Pré-condições:** A composição possui um ou mais itens e todos os itens possuem entradas com custo conhecido.
+**Pré-condições:** A composição possui um ou mais itens e todos os itens possuem `reference_price` definido.
 
 **Fluxo principal:**
-1. Ao abrir ou editar uma cesta ou template, o sistema calcula o custo médio ponderado de cada produto com base em suas entradas com custo conhecido.
-2. O sistema calcula o custo estimado da cesta (somatório de `custo médio × quantidade`).
-3. O sistema calcula a sugestão de preço igual a **2 × custo estimado**.
-4. A interface apresenta o custo estimado, a sugestão de preço e um botão para "Usar sugestão".
-5. O operador clica em "Usar sugestão" (o valor sugerido é preenchido no campo de preço) ou digita um preço próprio.
-6. O operador salva a cesta-modelo.
-7. O sistema persiste o preço escolhido.
+1. Ao abrir ou editar uma cesta ou template, o sistema calcula o custo de referência da cesta (somatório de `quantidade × reference_price` de cada item).
+2. O sistema calcula a sugestão de preço igual a **2 × custo de referência**.
+3. A interface apresenta o custo de referência, a sugestão de preço e um botão para "Usar sugestão".
+4. O operador clica em "Usar sugestão" (o valor sugerido é preenchido no campo de preço) ou digita um preço próprio.
+5. O operador salva a cesta-modelo.
+6. O sistema persiste o preço escolhido.
 
 **Alternativas:**
 * O operador já havia salvo um preço anteriormente: o sistema exibe a sugestão calculada, mas **não altera nem sobrescreve** o preço já salvo no formulário ou no banco.
-* O operador edita a composição (alterando produtos ou quantidades): o custo estimado e o preço sugerido são recalculados dinamicamente, mantendo o preço salvo inalterado até ação explícita do operador.
+* O operador edita a composição (alterando produtos ou quantidades): o custo de referência e o preço sugerido são recalculados dinamicamente, mantendo o preço salvo inalterado até ação explícita do operador.
 
 **Regras aplicáveis:**
-* A sugestão é meramente um auxílio operacional (2 × custo estimado);
+* A sugestão é meramente um auxílio operacional (2 × custo de referência);
 * O operador tem plena autonomia para aceitar a sugestão ou definir outro valor;
-* Preços já salvos nunca são sobrescritos automaticamente por recálculos de custo.
+* Preços já salvos nunca são sobrescritos automaticamente por mudanças no preço de referência.
 
-**Resultado esperado:** Custo estimado e preço sugerido são exibidos dinamicamente, e o preço escolhido pelo operador é persistido.
+**Resultado esperado:** Custo de referência e preço sugerido são exibidos dinamicamente, e o preço escolhido pelo operador é persistido.
 
-## UC-M2-15 — Indisponibilidade de sugestão de preço por dados insuficientes
+## UC-M2-15 — Indisponibilidade de sugestão de preço por `reference_price` ausente
 
-**Objetivo:** Informar claramente ao operador quando o cálculo de custo estimado e de preço sugerido não for possível ou confiável.
+**Objetivo:** Informar claramente ao operador quando o cálculo de custo de referência e de preço sugerido não for possível ou confiável.
 
-**Pré-condições:** A composição está vazia ou pelo menos um dos produtos componentes não possui histórico de entrada com custo conhecido.
+**Pré-condições:** A composição está vazia ou pelo menos um dos produtos componentes não possui `reference_price` definido.
 
 **Fluxo principal:**
 1. O usuário consulta ou edita a cesta/template.
-2. O sistema identifica que ao menos um produto da composição não possui entradas com custo conhecido (ou que a composição não tem itens).
-3. O sistema sinaliza que o custo é indisponível (`has_reliable_cost = false`).
-4. A interface exibe aviso informativo indicando que não há dados de custo suficientes para todos os itens.
+2. O sistema identifica que ao menos um produto da composição não possui `reference_price` definido (ou que a composição não tem itens).
+3. O sistema sinaliza que o custo de referência é indisponível.
+4. A interface exibe aviso informativo indicando que não há preço de referência definido para todos os itens.
 5. A sugestão de preço não é apresentada como confiável e o botão de usar sugestão fica desabilitado/indisponível.
 6. O operador pode definir manualmente o preço de venda desejado e salvar a cesta-modelo.
 
 **Regras aplicáveis:**
-* Custos ausentes não são tratados como zero;
+* `reference_price` ausente não é tratado como zero;
 * Sugestão incompleta nunca é apresentada como valor confiável;
 * A ausência de sugestão não impede a composição da cesta nem a definição manual de preço de venda.
 
-**Resultado esperado:** O operador é devidamente informado da indisponibilidade de custos confiáveis sem ter seu fluxo de precificação manual bloqueado.
+**Resultado esperado:** O operador é devidamente informado da indisponibilidade de preço de referência confiável sem ter seu fluxo de precificação manual bloqueado.

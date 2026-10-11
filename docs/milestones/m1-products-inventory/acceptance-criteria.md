@@ -492,6 +492,48 @@ Esses recursos são explicitamente fora do escopo de M1.
 
 ---
 
+# 11.1. Preço de referência do produto
+
+## AC-41 — Criar produto com preço de referência
+
+**Dado** que o operador cria um produto com `reference_price` positivo e duas casas decimais
+**Então** o valor é persistido
+**E** o produto é criado com sucesso.
+
+---
+
+## AC-42 — Criar produto sem preço de referência
+
+**Dado** que o operador cria um produto sem `reference_price`
+**Então** o produto é criado com `reference_price = null`
+**E** o produto é criado com sucesso.
+
+---
+
+## AC-43 — Editar preço de referência
+
+**Dado** um produto existente
+**Quando** o operador define ou altera `reference_price` para um valor válido
+**Então** o novo valor é persistido.
+
+---
+
+## AC-44 — Rejeitar preço de referência negativo
+
+**Dado** que o operador tenta definir `reference_price` com valor negativo
+**Então** a operação é rejeitada
+**E** o `reference_price` não é alterado.
+
+---
+
+## AC-45 — Rejeitar preço de referência com mais de duas casas decimais
+
+**Dado** que o operador tenta definir `reference_price` com precisão superior a duas casas
+**Então** a operação é rejeitada
+**E** o `reference_price` não é alterado.
+
+---
+
 # 12. Expectativas de testes automatizados
 
 Cada critério de aceitação envolvendo comportamento de negócio determinístico deve ser coberto por testes automatizados quando tecnicamente apropriado.

@@ -21,7 +21,10 @@ def _product_or_raise(db: Session, product_id: int, *, lock: bool = False) -> Pr
 def create_product(db: Session, payload: ProductCreate) -> Product:
     with db.begin():
         product = Product(
-            name=payload.name, base_unit=payload.base_unit.value, active=True
+            name=payload.name,
+            base_unit=payload.base_unit.value,
+            reference_price=payload.reference_price,
+            active=True,
         )
         db.add(product)
         db.flush()
@@ -47,6 +50,8 @@ def update_product(
                     "A unidade base não pode ser alterada após o registro de movimentações de estoque."
                 )
             product.base_unit = payload.base_unit.value
+        if "reference_price" in payload.model_fields_set:
+            product.reference_price = payload.reference_price
         db.flush()
         db.refresh(product)
     return product

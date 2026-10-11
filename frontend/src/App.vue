@@ -71,6 +71,7 @@ const editingProductId = ref<number | null>(null)
 const productFormVisible = ref(false)
 const productName = ref('')
 const productUnit = ref<ProductUnit>('UN')
+const productReferencePrice = ref('')
 const entryQuantity = ref('')
 const entryUnitCost = ref('')
 const adjustmentQuantity = ref('')
@@ -140,6 +141,7 @@ function beginCreate(): void {
   productFormVisible.value = true
   productName.value = ''
   productUnit.value = 'UN'
+  productReferencePrice.value = ''
 }
 
 function beginEdit(product: Product): void {
@@ -147,11 +149,19 @@ function beginEdit(product: Product): void {
   productFormVisible.value = true
   productName.value = product.name
   productUnit.value = product.base_unit
+  productReferencePrice.value = product.reference_price ?? ''
 }
 
 async function saveProduct(): Promise<void> {
   await runAction(async () => {
-    const payload = { name: productName.value, base_unit: productUnit.value }
+    const payload: { name: string; base_unit: ProductUnit; reference_price?: string | null } = {
+      name: productName.value,
+      base_unit: productUnit.value,
+    }
+    const priceStr = String(productReferencePrice.value ?? '').trim()
+    if (priceStr) {
+      payload.reference_price = priceStr
+    }
     if (editingProductId.value === null) {
       await createProduct(payload)
       notice.value = 'Produto criado.'
@@ -162,6 +172,7 @@ async function saveProduct(): Promise<void> {
     editingProductId.value = null
     productFormVisible.value = false
     productName.value = ''
+    productReferencePrice.value = ''
     await loadProducts()
     if (search.value.trim()) {
       searchResults.value = await fetchProducts(search.value.trim())
@@ -436,6 +447,17 @@ onMounted(() => {
                 </select>
                 <span class="field-hint">Selecione a unidade usada para controlar o estoque deste produto.</span>
               </div>
+              <div class="form-field">
+                <label for="product-reference-price">Preço de referência</label>
+                <input
+                  id="product-reference-price"
+                  v-model="productReferencePrice"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 12.50"
+                />
+                <span class="field-hint">Preço comercial do produto. Deixe vazio se ainda não definido.</span>
+              </div>
             </div>
             <div class="form-actions">
               <button class="button primary" type="submit" :disabled="loading">
@@ -466,6 +488,7 @@ onMounted(() => {
                   <tr>
                     <th>Nome</th>
                     <th>Unidade</th>
+                    <th class="numeric">Preço ref.</th>
                     <th class="numeric">Saldo</th>
                     <th>Situação</th>
                     <th>Ações</th>
@@ -475,6 +498,7 @@ onMounted(() => {
                   <tr v-for="product in searchResults" :key="product.id">
                     <td class="product-name">{{ product.name }}</td>
                     <td><span class="unit-value">{{ product.base_unit }}</span></td>
+                    <td class="numeric">{{ product.reference_price ? formatCurrency(product.reference_price) : '—' }}</td>
                     <td class="numeric quantity-value">{{ formatQuantity(product.inventory_balance) }} {{ product.base_unit }}</td>
                     <td>
                       <span :class="['status-pill', product.active ? 'status-success' : 'status-muted']">
@@ -499,7 +523,7 @@ onMounted(() => {
                     </td>
                   </tr>
                   <tr v-if="searchResults.length === 0">
-                    <td colspan="5" class="empty-state">
+                    <td colspan="6" class="empty-state">
                       <strong>Nenhum produto encontrado.</strong>
                       <span>Tente outra busca ou crie um produto para começar.</span>
                     </td>
