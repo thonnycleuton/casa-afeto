@@ -276,13 +276,18 @@ This Design System is applied to the existing M1 Products & Inventory screen: pr
 
 Visual refactoring does not authorize changes to API contracts, endpoints, database models, inventory calculations, business rules, validation semantics, quantity rules, product lifecycle, or transaction/concurrency behavior. It must not add future modules, dashboard charts, or any other M1 capability. If a requested visual treatment appears to require a behavior change, stop and request a product-owner decision.
 
-## Light Theme — Implemented (Phase 3)
+## Light Theme — Implemented (Phases 3–4)
 
-**Status:** Implemented. Light theme token values added to `frontend/src/style.css` via `html.light-theme` selector.
-**Implementation status:** Token values are in place. Theme toggle, `localStorage` persistence, and `prefers-color-scheme` detection are **not yet implemented** — reserved for a future phase.
+**Status:** Fully implemented. Light theme tokens, toggle, persistence, and OS detection are all in place.
+**Implementation status:**
+- Token values (`html.light-theme` selector) in `frontend/src/style.css`.
+- Theme toggle button in the topbar (`App.vue`).
+- `localStorage` persistence of explicit user choice.
+- `prefers-color-scheme` OS detection on first visit.
+- Inline script in `index.html` applies theme before render to prevent flash.
 **Direction:** Cold white, discreet, sober, and professional.
 
-The light theme palette below is **implemented** in `frontend/src/style.css` as the `html.light-theme` selector. Adding the class `light-theme` to the `<html>` element activates the light theme. No toggle, persistence, or OS detection is currently in place.
+The light theme is activated by adding the class `light-theme` to the `<html>` element. The toggle button in the topbar allows the user to switch between dark and light themes. The choice is saved in `localStorage`. On first visit, the system detects the OS preference via `prefers-color-scheme`. Dark theme is the fallback.
 
 ### Visual direction and principles
 
@@ -546,14 +551,16 @@ The following tokens require visual confirmation in a real browser, as contrast 
 
 ### Implementation status
 
-The `html.light-theme` selector **has been implemented** in `frontend/src/style.css` with all token values from this specification. The following are **not yet implemented** and reserved for a future phase:
+All light theme features **have been implemented**:
 
-- Theme toggle component.
-- `localStorage` or `sessionStorage` persistence.
-- `prefers-color-scheme` OS detection.
-- Dynamic `color-scheme` switching.
+- `html.light-theme` selector in `frontend/src/style.css` with all token values.
+- Theme toggle button in the topbar (`App.vue`) with sun/moon icons and accessible labels.
+- `localStorage` persistence (`casa-afeto-theme` key: `'light'` or `'dark'`).
+- `prefers-color-scheme` OS detection on first visit (no stored preference).
+- Inline script in `index.html` applies the theme before Vue renders, preventing flash.
+- Dark theme is the fallback when no preference is stored and the OS does not prefer light.
 
-The dark theme remains unchanged. No Vue components were modified — all components consume tokens via CSS custom properties.
+The dark theme remains unchanged. All Vue components consume tokens via CSS custom properties — no component-specific color changes were needed for the toggle mechanism.
 
 ---
 

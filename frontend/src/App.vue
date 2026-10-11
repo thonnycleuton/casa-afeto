@@ -18,6 +18,49 @@ import type { InventoryMovement, Product, ProductUnit } from './api/types'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
 const section = ref<'products' | 'inventory' | 'templates' | 'baskets' | 'customers' | 'sales'>('products')
+
+// Theme management
+const isLightTheme = ref(false)
+
+function applyTheme(light: boolean): void {
+  isLightTheme.value = light
+  if (light) {
+    document.documentElement.classList.add('light-theme')
+  } else {
+    document.documentElement.classList.remove('light-theme')
+  }
+  try {
+    localStorage.setItem('casa-afeto-theme', light ? 'light' : 'dark')
+  } catch (e) {
+    // localStorage may be unavailable
+  }
+}
+
+function toggleTheme(): void {
+  applyTheme(!isLightTheme.value)
+}
+
+function initTheme(): void {
+  try {
+    const stored = localStorage.getItem('casa-afeto-theme')
+    if (stored === 'light') {
+      applyTheme(true)
+      return
+    }
+    if (stored === 'dark') {
+      applyTheme(false)
+      return
+    }
+  } catch (e) {
+    // localStorage may be unavailable
+  }
+  // Fallback: detect OS preference
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    applyTheme(true)
+  } else {
+    applyTheme(false)
+  }
+}
 const products = ref<Product[]>([])
 const searchResults = ref<Product[]>([])
 const selectedProductId = ref<number | null>(null)
@@ -189,6 +232,7 @@ async function selectProduct(): Promise<void> {
 }
 
 onMounted(() => {
+  initTheme()
   void runAction(loadProducts)
 })
 </script>
@@ -297,7 +341,24 @@ onMounted(() => {
           <span class="breadcrumb-separator" aria-hidden="true">/</span>
           <strong>{{ sectionTitle }}</strong>
         </div>
-        <span class="milestone-label">{{ section === 'sales' ? 'M4 · Vendas' : section === 'customers' ? 'M3 · Clientes' : section === 'templates' || section === 'baskets' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
+        <div class="topbar-actions">
+          <span class="milestone-label">{{ section === 'sales' ? 'M4 · Vendas' : section === 'customers' ? 'M3 · Clientes' : section === 'templates' || section === 'baskets' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
+          <button
+            type="button"
+            class="theme-toggle"
+            :aria-label="isLightTheme ? 'Mudar para tema escuro' : 'Mudar para tema claro'"
+            @click="toggleTheme"
+          >
+            <svg v-if="isLightTheme" aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2a7.5 7.5 0 0 0 0 16 7.5 7.5 0 0 1 0-16z" />
+            </svg>
+            <svg v-else aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="4" />
+              <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" />
+            </svg>
+            <span class="theme-toggle-label">{{ isLightTheme ? 'Escuro' : 'Claro' }}</span>
+          </button>
+        </div>
       </header>
 
       <main class="page-content">
