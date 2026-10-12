@@ -35,6 +35,9 @@ env/
 *.swp
 *.swo
 
+# AI config files
+.junie/
+
 # Environment variables
 .env
 .env.local
