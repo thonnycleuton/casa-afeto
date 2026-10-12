@@ -18,6 +18,12 @@ import {
   updateBasketDelivery,
   updateBasketPrice,
 } from '../../api/sales'
+import {
+  recordPayment,
+  fetchPayments,
+  fetchPaymentTotal,
+} from '../../api/payments'
+import type { Payment, PaymentTotal } from '../../api/payments'
 import SaleDetailView from './SaleDetailView.vue'
 import SaleFormModal from './SaleFormModal.vue'
 import SaleStatusBadge from './SaleStatusBadge.vue'
@@ -52,6 +58,12 @@ const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 
+const paymentTotal = ref<PaymentTotal | null>(null)
+const payments = ref<Payment[]>([])
+const paymentLoading = ref(false)
+const paymentError = ref('')
+const confirmErrorType = ref<'payment' | 'stock' | 'delivery' | null>(null)
+
 const statusOptions = [
   { label: 'Todos os status', value: 'ALL' },
   { label: 'Rascunho', value: 'RASCUNHO' },
@@ -74,16 +86,47 @@ async function loadSales(): Promise<void> {
   }
 }
 
+async function loadPaymentData(saleId: number): Promise<void> {
+  paymentLoading.value = true
+  paymentError.value = ''
+  confirmErrorType.value = null
+  try {
+    const [total, list] = await Promise.all([
+      fetchPaymentTotal(saleId),
+      fetchPayments(saleId),
+    ])
+    paymentTotal.value = total
+    payments.value = list
+  } catch (err: unknown) {
+    paymentError.value = err instanceof Error ? err.message : 'Falha ao carregar dados de pagamento.'
+    paymentTotal.value = null
+    payments.value = []
+  } finally {
+    paymentLoading.value = false
+  }
+}
+
 async function selectSale(id: number): Promise<void> {
   loading.value = true
   error.value = ''
+  confirmErrorType.value = null
+  paymentTotal.value = null
+  payments.value = []
+  paymentError.value = ''
   try {
     selectedSale.value = await fetchSale(id)
     selectedSaleId.value = id
+    await loadPaymentData(id)
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Falha ao carregar venda.'
   } finally {
     loading.value = false
+  }
+}
+
+async function retryPayments(): Promise<void> {
+  if (selectedSaleId.value) {
+    await loadPaymentData(selectedSaleId.value)
   }
 }
 
@@ -104,20 +147,41 @@ async function handleCreateSale(payload: SaleCreateInput): Promise<void> {
   }
 }
 
+function detectConfirmErrorType(message: string): 'payment' | 'stock' | 'delivery' | null {
+  if (message.includes('Pagamento insuficiente')) return 'payment'
+  if (message.includes('Estoque insuficiente')) return 'stock'
+  if (message.includes('Todas as cestas devem possuir')) return 'delivery'
+  return null
+}
+
 async function runAction(action: () => Promise<unknown>, successMessage?: string): Promise<void> {
   loading.value = true
   error.value = ''
   notice.value = ''
+  confirmErrorType.value = null
   try {
     await action()
     if (successMessage) notice.value = successMessage
     if (selectedSaleId.value) await selectSale(selectedSaleId.value)
     await loadSales()
   } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Operação falhou.'
+    const msg = err instanceof Error ? err.message : 'Operação falhou.'
+    error.value = msg
+    const type = detectConfirmErrorType(msg)
+    if (type) confirmErrorType.value = type
   } finally {
     loading.value = false
   }
+}
+
+async function handleRecordPayment(
+  saleId: number,
+  payload: { amount: string; method: string; idempotency_key: string },
+): Promise<void> {
+  await runAction(
+    () => recordPayment(saleId, payload as { amount: string; method: 'PIX' | 'CARTAO'; idempotency_key: string }),
+    'Pagamento registrado com sucesso.',
+  )
 }
 
 function formatCurrency(val: string): string {
@@ -157,6 +221,11 @@ onMounted(async () => {
       <SaleDetailView
         :sale="selectedSale"
         :templates="availableTemplates"
+        :payment-total="paymentTotal"
+        :payments="payments"
+        :payment-loading="paymentLoading"
+        :payment-error="paymentError"
+        :confirm-error-type="confirmErrorType"
         @back="selectedSale = null; selectedSaleId = null"
         @confirm="(id) => runAction(() => confirmSale(id), 'Venda confirmada.')"
         @start-prep="(id) => runAction(() => startPreparation(id), 'Preparação iniciada.')"
@@ -168,6 +237,8 @@ onMounted(async () => {
         @update-delivery="(id, bId, d) => runAction(() => updateBasketDelivery(id, bId, d), 'Dados de entrega atualizados.')"
         @prepare-basket="(id, bId) => runAction(() => markBasketPrepared(id, bId), 'Cesta marcada como preparada.')"
         @deliver-basket="(id, bId, op) => runAction(() => deliverBasket(id, bId, op), 'Entrega registrada.')"
+        @record-payment="handleRecordPayment"
+        @retry-payments="retryPayments"
       />
     </div>
 

@@ -1,14 +1,30 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { BasketTemplate, Sale, SaleBasketAddInput } from '../../api/types'
+import type { Payment, PaymentTotal } from '../../api/payments'
 import SaleBasketCard from './SaleBasketCard.vue'
+import PaymentModal from './PaymentModal.vue'
 import SaleReopenModal from './SaleReopenModal.vue'
 import SaleStatusBadge from './SaleStatusBadge.vue'
 
-const props = defineProps<{
-  sale: Sale
-  templates: BasketTemplate[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    sale: Sale
+    templates: BasketTemplate[]
+    paymentTotal?: PaymentTotal | null
+    payments?: Payment[]
+    paymentLoading?: boolean
+    paymentError?: string
+    confirmErrorType?: 'payment' | 'stock' | 'delivery' | null
+  }>(),
+  {
+    paymentTotal: null,
+    payments: () => [],
+    paymentLoading: false,
+    paymentError: '',
+    confirmErrorType: null,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'back'): void
@@ -22,9 +38,12 @@ const emit = defineEmits<{
   (e: 'update-delivery', saleId: number, basketId: number, delivery: { recipient_name: string; delivery_address: string; delivery_date: string; delivery_time: string }): void
   (e: 'prepare-basket', saleId: number, basketId: number): void
   (e: 'deliver-basket', saleId: number, basketId: number, operatorName: string): void
+  (e: 'record-payment', saleId: number, payload: { amount: string; method: string; idempotency_key: string }): void
+  (e: 'retry-payments'): void
 }>()
 
 const showReopenModal = ref(false)
+const showPaymentModal = ref(false)
 const addingBasket = ref(false)
 const selectedTemplateId = ref<number | ''>('')
 
@@ -39,6 +58,32 @@ const hasAnyDelivery = computed(() =>
 function formatCurrency(val: string): string {
   const n = Number(val)
   return isNaN(n) ? val : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+const paymentPercentage = computed(() => {
+  if (!props.paymentTotal) return 0
+  const pct = Number(props.paymentTotal.payment_percentage)
+  return Math.min(100, Math.max(0, pct))
+})
+
+const paymentProgressColor = computed(() => {
+  const pct = paymentPercentage.value
+  if (pct === 0) return 'var(--color-border)'
+  if (pct < 50) return 'var(--color-warning)'
+  if (pct < 100) return 'var(--color-primary)'
+  return 'var(--color-success)'
+})
+
+const canRegisterPayment = computed(() => {
+  return (
+    (props.sale.status === 'RASCUNHO' || props.sale.status === 'CONFIRMADA') &&
+    paymentPercentage.value < 100
+  )
+})
+
+function handleRecordPayment(payload: { amount: string; method: string; idempotency_key: string }): void {
+  emit('record-payment', props.sale.id, payload)
+  showPaymentModal.value = false
 }
 
 function handleAddBasket(): void {
@@ -124,6 +169,82 @@ function handleAddBasket(): void {
       </div>
     </div>
 
+    <!-- Payments section -->
+    <section class="payments-section">
+      <div class="payments-header">
+        <h3>Pagamentos</h3>
+        <button
+          v-if="canRegisterPayment"
+          type="button"
+          class="button primary compact"
+          @click="showPaymentModal = true"
+        >
+          Registrar Pagamento
+        </button>
+      </div>
+
+      <!-- Payment summary -->
+      <div v-if="paymentTotal" class="payment-summary">
+        <div class="summary-row">
+          <span class="summary-label">Total da venda:</span>
+          <span class="summary-value">{{ formatCurrency(paymentTotal.sale_total) }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Total pago:</span>
+          <span class="summary-value paid">{{ formatCurrency(paymentTotal.total_paid) }} ({{ paymentPercentage }}%)</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Valor restante:</span>
+          <span class="summary-value remaining">{{ formatCurrency(String(Number(paymentTotal.sale_total) - Number(paymentTotal.total_paid))) }}</span>
+        </div>
+        <div class="progress-bar-container">
+          <div
+            class="progress-bar"
+            :style="{ width: paymentPercentage + '%', backgroundColor: paymentProgressColor }"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Payment loading state -->
+      <div v-if="paymentLoading" class="payment-loading">
+        Carregando dados de pagamento...
+      </div>
+
+      <!-- Payment error state -->
+      <div v-if="paymentError" class="feedback feedback-error" role="alert">
+        <span>{{ paymentError }}</span>
+        <button type="button" class="button ghost compact retry-btn" @click="emit('retry-payments')">
+          Tentar novamente
+        </button>
+      </div>
+
+      <!-- Confirmation error feedback -->
+      <div v-if="confirmErrorType === 'payment'" class="feedback feedback-error" role="alert">
+        <span>É necessário pagar pelo menos 50% do total para confirmar a venda.</span>
+      </div>
+      <div v-if="confirmErrorType === 'stock'" class="feedback feedback-warning" role="alert">
+        <span>A venda permanece em RASCUNHO devido à indisponibilidade de estoque.</span>
+      </div>
+      <div v-if="confirmErrorType === 'delivery'" class="feedback feedback-error" role="alert">
+        <span>Todas as cestas devem possuir dados de entrega completos para confirmação.</span>
+      </div>
+
+      <!-- Payment history -->
+      <div v-if="payments && payments.length > 0" class="payment-history">
+        <h4>Histórico de Pagamentos</h4>
+        <div class="payment-list">
+          <div v-for="p in payments" :key="p.id" class="payment-item">
+            <span class="payment-method">{{ p.method === 'PIX' ? 'PIX' : 'Cartão' }}</span>
+            <span class="payment-amount">{{ formatCurrency(p.amount) }}</span>
+            <span class="payment-date">{{ new Date(p.created_at).toLocaleString('pt-BR') }}</span>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="!paymentLoading && !paymentError && payments && payments.length === 0" class="payment-empty">
+        Nenhum pagamento registrado.
+      </div>
+    </section>
+
     <!-- Quick add basket in draft -->
     <div v-if="addingBasket && sale.status === 'RASCUNHO'" class="add-basket-box">
       <select v-model="selectedTemplateId" class="select-tpl">
@@ -172,6 +293,14 @@ function handleAddBasket(): void {
       v-if="showReopenModal"
       @close="showReopenModal = false"
       @confirm="(payload) => { showReopenModal = false; emit('reopen', sale.id, payload) }"
+    />
+
+    <PaymentModal
+      v-if="showPaymentModal && paymentTotal"
+      :sale-total="paymentTotal.sale_total"
+      :total-paid="paymentTotal.total_paid"
+      @close="showPaymentModal = false"
+      @record="handleRecordPayment"
     />
   </div>
 </template>
@@ -289,5 +418,131 @@ function handleAddBasket(): void {
 }
 .reopen-log li {
   color: var(--color-text-secondary);
+}
+/* Payments section */
+.payments-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.payments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.payments-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+.payment-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+.summary-label {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+.summary-value {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.summary-value.paid {
+  color: var(--color-primary);
+}
+.summary-value.remaining {
+  color: var(--color-text-secondary);
+}
+.progress-bar-container {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: var(--space-1);
+}
+.progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+.payment-loading {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-3);
+}
+.payment-empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-3);
+}
+.feedback {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.feedback-error {
+  background: var(--color-error-bg, #fef2f2);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+.feedback-warning {
+  background: var(--color-warning-bg, #fffbeb);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+}
+.retry-btn {
+  margin-left: auto;
+}
+.payment-history h4 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.payment-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+.payment-method {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  min-width: 60px;
+}
+.payment-amount {
+  font-weight: 600;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+}
+.payment-date {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 </style>
