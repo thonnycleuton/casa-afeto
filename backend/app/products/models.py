@@ -28,6 +28,7 @@ class BaseUnit(StrEnum):
 class MovementType(StrEnum):
     ENTRY = "ENTRY"
     ADJUSTMENT = "ADJUSTMENT"
+    OUTPUT = "OUTPUT"
 
 
 class Product(Base):
@@ -71,12 +72,13 @@ class InventoryMovement(Base):
     __tablename__ = "inventory_movements"
     __table_args__ = (
         CheckConstraint(
-            "type IN ('ENTRY', 'ADJUSTMENT')",
+            "type IN ('ENTRY', 'ADJUSTMENT', 'OUTPUT')",
             name="ck_inventory_movements_type",
         ),
         CheckConstraint(
             "(type = 'ENTRY' AND quantity > 0) OR "
-            "(type = 'ADJUSTMENT' AND quantity <> 0)",
+            "(type = 'ADJUSTMENT' AND quantity <> 0) OR "
+            "(type = 'OUTPUT' AND quantity < 0)",
             name="ck_inventory_movements_quantity",
         ),
         CheckConstraint(
@@ -94,6 +96,9 @@ class InventoryMovement(Base):
         Numeric(10, 2, asdecimal=True), nullable=True
     )
     type: Mapped[str] = mapped_column(String(10), nullable=False)
+    sale_id: Mapped[int | None] = mapped_column(
+        ForeignKey("sales.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

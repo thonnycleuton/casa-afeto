@@ -11,9 +11,11 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
@@ -207,3 +209,86 @@ class SaleDeliveryHistory(Base):
     )
 
     sale_basket: Mapped[SaleBasket] = relationship(back_populates="delivery_histories")
+
+
+class SaleStockReservation(Base):
+    __tablename__ = "sale_stock_reservations"
+    __table_args__ = (
+        CheckConstraint("current_quantity >= 0", name="ck_reservations_current_quantity_non_negative"),
+        CheckConstraint("reserved_quantity >= 0", name="ck_reservations_reserved_quantity_non_negative"),
+        CheckConstraint("consumed_quantity >= 0", name="ck_reservations_consumed_quantity_non_negative"),
+        CheckConstraint("consumed_quantity <= reserved_quantity", name="ck_reservations_consumed_le_reserved"),
+        CheckConstraint(
+            "status IN ('ACTIVE', 'RELEASED', 'CONSUMED')",
+            name="ck_reservations_status",
+        ),
+        UniqueConstraint("sale_id", "product_id", name="uq_reservations_sale_product"),
+        Index("ix_sale_stock_reservations_sale_id", "sale_id"),
+        Index("ix_sale_stock_reservations_product_id", "product_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sale_id: Mapped[int] = mapped_column(
+        ForeignKey("sales.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), nullable=False
+    )
+    current_quantity: Mapped[Decimal] = mapped_column(Numeric(asdecimal=True), nullable=False)
+    reserved_quantity: Mapped[Decimal] = mapped_column(Numeric(asdecimal=True), nullable=False)
+    consumed_quantity: Mapped[Decimal] = mapped_column(Numeric(asdecimal=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(15), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class SaleCancellationInspection(Base):
+    __tablename__ = "sale_cancellation_inspection"
+    __table_args__ = (
+        CheckConstraint("consumed_quantity > 0", name="ck_inspection_consumed_positive"),
+        CheckConstraint("inspected_quantity >= 0", name="ck_inspection_inspected_non_negative"),
+        CheckConstraint("inspected_quantity <= consumed_quantity", name="ck_inspection_inspected_le_consumed"),
+        CheckConstraint("reusable_quantity >= 0", name="ck_inspection_reusable_non_negative"),
+        CheckConstraint("reusable_quantity <= inspected_quantity", name="ck_inspection_reusable_le_inspected"),
+        CheckConstraint("reintegrated_quantity >= 0", name="ck_inspection_reintegrated_non_negative"),
+        CheckConstraint("reintegrated_quantity <= reusable_quantity", name="ck_inspection_reintegrated_le_reusable"),
+        CheckConstraint(
+            "status IN ('PENDING', 'INSPECTED', 'REINTEGRATED', 'DISCARDED')",
+            name="ck_inspection_status",
+        ),
+        UniqueConstraint("sale_id", "product_id", name="uq_inspection_sale_product"),
+        Index("ix_sale_cancellation_inspection_sale_id", "sale_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sale_id: Mapped[int] = mapped_column(
+        ForeignKey("sales.id", ondelete="RESTRICT"), nullable=False
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), nullable=False
+    )
+    consumed_quantity: Mapped[Decimal] = mapped_column(Numeric(asdecimal=True), nullable=False)
+    inspected_quantity: Mapped[Decimal] = mapped_column(
+        Numeric(asdecimal=True), nullable=False, server_default="0"
+    )
+    reusable_quantity: Mapped[Decimal] = mapped_column(
+        Numeric(asdecimal=True), nullable=False, server_default="0"
+    )
+    operator_name: Mapped[str] = mapped_column(String, nullable=False)
+    inspected_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reintegrated_quantity: Mapped[Decimal] = mapped_column(
+        Numeric(asdecimal=True), nullable=False, server_default="0"
+    )
+    reintegrated_movement_id: Mapped[int | None] = mapped_column(
+        ForeignKey("inventory_movements.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False)

@@ -19,7 +19,10 @@ from app.sales.models import (
     SaleDeliveryHistory,
     SaleReopenHistory,
     SaleStatus,
+    SaleStockReservation,
+    SaleCancellationInspection,
 )
+from app.payments.models import Payment
 
 
 @pytest.fixture
@@ -32,8 +35,20 @@ def register_sales_cleanup() -> Iterator[Callable[[int], None]]:
     yield register
 
     with SessionLocal() as db:
+        # Clean up dependent tables first (RESTRICT FKs)
+        from app.payments.models import Payment
         for sid in sale_ids:
-            db.query(Sale).filter(Sale.id == sid).delete(synchronize_session=False)
+            db.query(Payment).filter(Payment.sale_id == sid).delete(synchronize_session=False)
+        db.query(SaleCancellationInspection).filter(
+            SaleCancellationInspection.sale_id.in_(sale_ids)
+        ).delete(synchronize_session=False)
+        db.query(SaleStockReservation).filter(
+            SaleStockReservation.sale_id.in_(sale_ids)
+        ).delete(synchronize_session=False)
+        db.query(InventoryMovement).filter(
+            InventoryMovement.sale_id.in_(sale_ids)
+        ).delete(synchronize_session=False)
+        db.query(Sale).filter(Sale.id.in_(sale_ids)).delete(synchronize_session=False)
         db.commit()
 
 
@@ -75,10 +90,23 @@ def sample_customer_and_template(
     assert tpl_res.status_code == 201, tpl_res.text
     template = tpl_res.json()
 
+    # Add stock for products so confirmation works
+    client.post(
+        f"/api/v1/products/{p1['id']}/inventory/entries",
+        json={"quantity": "100"},
+    )
+    client.post(
+        f"/api/v1/products/{p2['id']}/inventory/entries",
+        json={"quantity": "100"},
+    )
+
     yield customer, template, {"p1": p1, "p2": p2}
 
     # Cleanup
     with SessionLocal() as db:
+        db.query(InventoryMovement).filter(
+            InventoryMovement.product_id.in_([p1["id"], p2["id"]])
+        ).delete(synchronize_session=False)
         db.query(BasketTemplateItem).filter(BasketTemplateItem.template_id == template["id"]).delete(synchronize_session=False)
         db.query(BasketTemplate).filter(BasketTemplate.id == template["id"]).delete(synchronize_session=False)
         db.query(Customer).filter(Customer.id == customer["id"]).delete(synchronize_session=False)
@@ -259,6 +287,17 @@ def test_confirmation_requires_complete_delivery_data(
         },
     )
 
+    # Record payment (≥ 50% required for confirmation)
+    payment_res = client.post(
+        f"/api/v1/sales/{sale['id']}/payments",
+        json={
+            "amount": "100.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
+    assert payment_res.status_code == 201
+
     # Now confirmation succeeds
     confirmed_res = client.post(f"/api/v1/sales/{sale['id']}/confirm")
     assert confirmed_res.status_code == 200
@@ -307,7 +346,15 @@ def test_composition_change_audit_and_preparation_flow(
     b1_id = sale["baskets"][0]["id"]
     b2_id = sale["baskets"][1]["id"]
 
-    # Confirm sale
+    # Record payment and confirm sale
+    client.post(
+        f"/api/v1/sales/{sale['id']}/payments",
+        json={
+            "amount": "200.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
     client.post(f"/api/v1/sales/{sale['id']}/confirm")
 
     # AC-M4-024, AC-M4-047, AC-M4-048: Composition change in CONFIRMADA requires operator name
@@ -441,6 +488,15 @@ def test_delivery_flow_and_cancellation_rules(
     b1_id = sale["baskets"][0]["id"]
     b2_id = sale["baskets"][1]["id"]
 
+    # Record payment and confirm
+    client.post(
+        f"/api/v1/sales/{sale['id']}/payments",
+        json={
+            "amount": "300.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
     client.post(f"/api/v1/sales/{sale['id']}/confirm")
     client.post(f"/api/v1/sales/{sale['id']}/start-preparation")
     client.post(f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/prepare")
@@ -464,6 +520,14 @@ def test_delivery_flow_and_cancellation_rules(
         },
     ).json()
     register_sales_cleanup(test_cancel_sale["id"])
+    client.post(
+        f"/api/v1/sales/{test_cancel_sale['id']}/payments",
+        json={
+            "amount": "100.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
     client.post(f"/api/v1/sales/{test_cancel_sale['id']}/confirm")
     client.post(f"/api/v1/sales/{test_cancel_sale['id']}/start-preparation")
     client.post(f"/api/v1/sales/{test_cancel_sale['id']}/baskets/{test_cancel_sale['baskets'][0]['id']}/prepare")

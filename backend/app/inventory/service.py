@@ -96,47 +96,118 @@ def product_average_cost(db: Session, product_id: int) -> Decimal | None:
     return product_average_costs(db, [product])[product.id]
 
 
+def get_active_reservations_for_product(db: Session, product_id: int) -> Decimal:
+    """Returns SUM(reserved_quantity - consumed_quantity) for all ACTIVE reservations of a product."""
+    from app.sales.models import SaleStockReservation
+    value = db.scalar(
+        select(func.coalesce(
+            func.sum(SaleStockReservation.reserved_quantity - SaleStockReservation.consumed_quantity), 0
+        )).where(
+            SaleStockReservation.product_id == product_id,
+            SaleStockReservation.status == 'ACTIVE'
+        )
+    )
+    return Decimal(value)
+
+
+def check_reservable(db: Session, product_id: int, quantity: Decimal) -> bool:
+    """Check if a product has enough available stock for reservation.
+    
+    available = balance - SUM(reserved - consumed FROM active reservations)
+    """
+    _product_or_raise(db, product_id)
+    current_balance = _balance(db, product_id)
+    active_reservations = get_active_reservations_for_product(db, product_id)
+    available = current_balance - active_reservations
+    return available >= quantity
+
+
+def get_available_for_reservation(db: Session, product_id: int) -> Decimal:
+    """Returns the available quantity for new reservations."""
+    current_balance = _balance(db, product_id)
+    active_reservations = get_active_reservations_for_product(db, product_id)
+    return current_balance - active_reservations
+
+
 def create_movement(
     db: Session,
     product_id: int,
     quantity: Decimal,
     movement_type: MovementType,
     unit_cost: Decimal | None = None,
+    sale_id: int | None = None,
+    *,
+    use_savepoint: bool = True,
 ) -> InventoryMovement:
     if movement_type is MovementType.ENTRY and quantity <= 0:
         raise BusinessRuleError("A quantidade da entrada deve ser maior que zero.")
     if movement_type is MovementType.ADJUSTMENT and quantity == 0:
         raise BusinessRuleError("A quantidade do ajuste não pode ser zero.")
+    if movement_type is MovementType.OUTPUT and quantity >= 0:
+        raise BusinessRuleError("A quantidade de saída deve ser negativa.")
     if movement_type is MovementType.ENTRY and unit_cost is not None:
         if not unit_cost.is_finite() or unit_cost < 0:
             raise BusinessRuleError("O custo unitário não pode ser negativo.")
         unit_cost = unit_cost.quantize(Decimal("0.01"))
-    elif movement_type is MovementType.ADJUSTMENT:
+    elif movement_type in (MovementType.ADJUSTMENT, MovementType.OUTPUT):
         unit_cost = None
 
-    with db.begin():
-        product = _product_or_raise(db, product_id, lock=True)
-        if not product.active:
-            raise BusinessRuleError(
-                "Produtos inativos devem ser reativados antes de alterar o estoque."
+    if use_savepoint:
+        with db.begin():
+            movement = _create_movement_inner(
+                db, product_id, quantity, movement_type, unit_cost, sale_id
             )
-        _validate_quantity(product.base_unit, quantity)
-        current_balance = _balance(db, product_id)
-        resulting_balance = current_balance + quantity
-        if resulting_balance < 0:
-            raise BusinessRuleError(
-                f"Estoque insuficiente. Disponível: {current_balance} "
-                f"{product.base_unit}. Necessário: {abs(quantity)} {product.base_unit}."
-            )
-        movement = InventoryMovement(
-            product_id=product_id,
-            quantity=quantity,
-            unit_cost=unit_cost,
-            type=movement_type.value,
+    else:
+        movement = _create_movement_inner(
+            db, product_id, quantity, movement_type, unit_cost, sale_id
         )
-        db.add(movement)
-        db.flush()
-        db.refresh(movement)
+
+    return movement
+
+
+def _create_movement_inner(
+    db: Session,
+    product_id: int,
+    quantity: Decimal,
+    movement_type: MovementType,
+    unit_cost: Decimal | None,
+    sale_id: int | None,
+) -> InventoryMovement:
+    product = _product_or_raise(db, product_id, lock=True)
+    if not product.active:
+        raise BusinessRuleError(
+            "Produtos inativos devem ser reativados antes de alterar o estoque."
+        )
+    _validate_quantity(product.base_unit, abs(quantity))
+    current_balance = _balance(db, product_id)
+    resulting_balance = current_balance + quantity
+    if resulting_balance < 0:
+        raise BusinessRuleError(
+            f"Estoque insuficiente. Disponível: {current_balance} "
+            f"{product.base_unit}. Necessário: {abs(quantity)} {product.base_unit}."
+        )
+
+    # Reservation coverage check — ADJUSTMENT only
+    # OUTPUT is excluded because the sale flow updates consumed_quantity
+    # in the same transaction, maintaining coverage.
+    if movement_type == MovementType.ADJUSTMENT and quantity < 0:
+        active_reservations = get_active_reservations_for_product(db, product_id)
+        if resulting_balance < active_reservations:
+            raise BusinessRuleError(
+                "Ajuste rejeitado: estoque físico insuficiente para cobrir reservas ativas. "
+                f"Saldo resultante: {resulting_balance}, reservas ativas: {active_reservations}."
+            )
+
+    movement = InventoryMovement(
+        product_id=product_id,
+        quantity=quantity,
+        unit_cost=unit_cost,
+        type=movement_type.value,
+        sale_id=sale_id,
+    )
+    db.add(movement)
+    db.flush()
+    db.refresh(movement)
     return movement
 
 

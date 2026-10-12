@@ -3,7 +3,7 @@ from app.core.database import Base, engine
 
 
 def test_tables_in_metadata() -> None:
-    """Verify the current product, inventory, basket, template, customer, important-date, and sales schema."""
+    """Verify the current product, inventory, basket, template, customer, important-date, sales, payment, and reservation schema."""
     assert set(Base.metadata.tables) == {
         "products",
         "inventory_movements",
@@ -19,6 +19,9 @@ def test_tables_in_metadata() -> None:
         "sale_composition_histories",
         "sale_reopen_histories",
         "sale_delivery_histories",
+        "payments",
+        "sale_stock_reservations",
+        "sale_cancellation_inspection",
     }
 
 
