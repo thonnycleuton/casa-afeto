@@ -1,6 +1,6 @@
 # Contrato de Negócio da Casa Afeto
 
-**Versão do documento:** 0.3
+**Versão do documento:** 0.6
 **Status:** Ativo
 
 ---
@@ -324,24 +324,20 @@ Estoque permanece inalterado
 e:
 
 ```text
-Confirmação da venda em M4
+Confirmação financeira da venda
     ↓
-Estado operacional da venda definido
+Reserva de estoque acionada (seção 37)
     ↓
-Sem movimentação automática de estoque
+Baixa física no início da preparação (seção 37)
 ```
 
-No modelo aprovado da Fase 1, a confirmação da venda no M4 não executa baixa automática de estoque.
+A política de reserva e baixa de estoque associada às vendas está formalizada na seção 37. A confirmação financeira aciona a reserva, e a baixa física ocorre no início da preparação.
 
 A autorização financeira da transição `RASCUNHO → CONFIRMADA` pertence ao M5, conforme as regras de pagamento e de dados obrigatórios de entrega já aprovadas.
 
-Esta seção não deve ser interpretada como autorização para deduzir estoque automaticamente na confirmação da venda.
+Esta seção não deve ser interpretada como autorização para deduzir estoque automaticamente na confirmação da venda — a baixa física ocorre no início da preparação, conforme a política aprovada.
 
-A política de estoque negativo (`INV-006`) permanece aplicável a qualquer movimentação de estoque que venha a ser explicitamente definida, sem antecipar que essa movimentação ocorra na confirmação.
-
-O marco e o momento de uma eventual baixa de estoque associada às vendas permanecem indefinidos nesta formalização e exigem decisão explícita antes de implementação.
-
-Este documento também não atribui, por inferência, a execução dessa baixa ao M5.
+A política de estoque negativo (`INV-006`) aplica-se a todas as movimentações de estoque, incluindo as baixas físicas definidas na seção 37.
 
 Esta política não exige que o sistema implemente reposição automática.
 
@@ -665,6 +661,8 @@ No modelo aprovado para a Fase 1:
 
 O M4 não registra pagamentos, não calcula valores pagos e não implementa uma segunda lógica independente de confirmação financeira.
 
+**Relação entre confirmação financeira e estado operacional:** O modelo atual de estados operacionais é mantido sem criar um novo estado persistido. `RASCUNHO` permanece como estado da venda enquanto a confirmação financeira não tiver sido efetivada, mesmo quando os dados de entrega estiverem completos e houver pagamentos registrados. A confirmação financeira só pode ser efetivada quando o pagamento registrado atingir pelo menos 50% do valor da venda e a reserva integral de estoque for concluída com sucesso, conforme a operação atômica definida na seção 37 (RES-001). Se faltar estoque para reservar integralmente, a venda permanece em `RASCUNHO`, o pagamento recebido permanece registrado e o sistema informa os produtos e as quantidades faltantes. A interface pode comunicar que a venda aguarda confirmação financeira por insuficiência de estoque, sem criar um novo estado persistido. O M4 não pode efetivar a confirmação financeira independentemente do M5.
+
 ---
 
 # 26. Alterações de Composição por Estado
@@ -679,7 +677,12 @@ Vendas `ENTREGUE` ou `CANCELADA` não aceitam alterações comerciais de composi
 
 Toda alteração de composição deve preservar histórico não apagável pelo fluxo normal, registrando composição anterior, composição nova, identificador textual do operador responsável e data/hora. A ausência do identificador textual bloqueia o salvamento da alteração.
 
-Alterar composição não altera automaticamente o preço acordado e não presume ajuste automático de estoque.
+Alterar composição não altera automaticamente o preço acordado.
+
+Quando uma venda possui reserva ou baixa ativa, as alterações de composição seguem a política de diferença definida na seção 37:
+
+- Adições e aumentos exigem reserva atômica da diferença de quantidades. Se a venda já iniciou a preparação, a baixa física da diferença ocorre quando o operador marca explicitamente como preparada a cesta cuja composição foi alterada, sem repetir baixas anteriores.
+- Reduções e remoções liberam somente as quantidades ainda reservadas. Quantidades já baixadas fisicamente não geram entradas automáticas de estoque nem são consideradas recuperadas por inferência.
 
 ---
 
@@ -687,13 +690,17 @@ Alterar composição não altera automaticamente o preço acordado e não presum
 
 Cada cesta pode ser marcada individualmente como preparada.
 
-A preparação é uma condição operacional. Ela não representa entrega e não executa movimentação automática de estoque.
+A preparação é uma condição operacional. Ela não representa entrega.
 
 A venda só passa para `PRONTA` quando todas as suas cestas estiverem marcadas como preparadas.
 
 Se a composição de uma cesta mudar durante `EM PREPARAÇÃO`, sua marcação anterior de preparação é invalidada.
 
 Cestas não alteradas preservam sua preparação concluída.
+
+A transição `CONFIRMADA → EM PREPARAÇÃO` inicia a baixa física de todos os produtos da venda, conforme a política de reserva e baixa definida na seção 37. A baixa é atômica e não permite estoque negativo. A entrega subsequente de cestas não executa nova movimentação de estoque.
+
+Quando a composição de uma cesta é alterada durante `EM PREPARAÇÃO` e a cesta é marcada como preparada, a baixa física das quantidades adicionais reservadas ocorre nesse momento, atomicamente com a liberação das reservas correspondentes. Se a baixa física falhar ou não houver estoque físico suficiente, a cesta não pode ser marcada como preparada e não pode ocorrer baixa parcial nem atualização parcial das reservas.
 
 ---
 
@@ -714,6 +721,8 @@ A ausência de justificativa ou de identificador textual bloqueia a reabertura. 
 A reabertura retorna a venda para `EM PREPARAÇÃO`.
 
 Por si só, a reabertura não altera preços, não cancela a venda e não executa ajustes automáticos de estoque.
+
+A reabertura não repete baixas físicas já realizadas durante a preparação anterior, conforme a política de reserva e baixa definida na seção 37.
 
 ---
 
@@ -749,7 +758,12 @@ Uma venda cancelada não deve ser excluída.
 
 Venda, cestas e históricos devem permanecer preservados.
 
-O cancelamento não presume reembolso, devolução física de itens nem ajuste automático de estoque.
+O cancelamento segue a política de reserva e baixa definida na seção 37:
+
+* Antes do início da preparação: a reserva integral é liberada sem movimentação física fictícia.
+* Após o início da preparação: as reservas remanescentes são liberadas, exige-se conferência dos produtos já baixados fisicamente, e somente as quantidades fisicamente recuperadas e aproveitáveis são reintegradas mediante movimentação registrada.
+
+O histórico, o responsável e o motivo do cancelamento são preservados.
 
 Uma venda `ENTREGUE` não pode ser cancelada pelo fluxo normal.
 
@@ -994,21 +1008,21 @@ Correções de estoque devem preservar o histórico original de movimentações.
 
 Um produto com estoque insuficiente pode ser selecionado para uma cesta ou venda antes da confirmação financeira, desde que a falta seja claramente indicada.
 
-### INV-004 — M4 Não Move Estoque Automaticamente
+### INV-004 — Reserva e Baixa Seguem Política Aprovada
 
-Criar, editar, preparar, reabrir, entregar ou cancelar uma venda no M4 não deve deduzir, devolver, reservar ou ajustar estoque automaticamente.
+A reserva de estoque e a baixa física associadas às vendas seguem a política formal definida na seção 37. Operações de venda não movimentam estoque de forma automática ou implícita fora dos eventos e condições explicitamente definidos pela política.
 
-### INV-005 — Alterações de Composição em M4 Não Presumem Ajuste de Estoque
+### INV-005 — Alterações de Composição Seguem Política de Diferença
 
-Alterações na composição de uma venda em M4 não presumem ajuste automático de estoque.
+Alterações na composição de uma venda após a reserva seguem as regras de diferença de quantidades definidas pela política de reserva e baixa: adições e aumentos exigem reserva atômica da diferença; reduções e remoções liberam a diferença reservada sem gerar movimentação física fictícia.
 
 ### INV-006 — Proibição de Estoque Físico Negativo
 
 O sistema não deve criar uma movimentação de estoque que faça o saldo de estoque físico disponível de um produto se tornar negativo. Esse invariante é absoluto e se aplica estritamente a operações de estoque concorrentes (`ADR-001`).
 
-### INV-007 — Preparação e Entrega Não São Movimento de Estoque
+### INV-007 — Preparação Inicia Baixa Física
 
-Preparar ou entregar uma cesta no M4 não equivale, por si só, a uma movimentação automática de estoque.
+No início da preparação de uma venda, o sistema executa a baixa física das quantidades necessárias de todos os produtos da venda, de forma atômica, sem permitir estoque negativo. A entrega de uma cesta não executa nova movimentação de estoque.
 
 ### INV-008 — Produtos Inativos Não Podem Receber Operações de Estoque
 
@@ -1028,13 +1042,105 @@ A busca de produtos não diferencia maiúsculas de minúsculas e corresponde a s
 
 ---
 
-# 37. Decisões de Negócio em Aberto
+# 37. Política de Reserva e Baixa de Estoque Associada às Vendas
+
+Esta seção formaliza a política aprovada pelo Product Owner sobre reserva, baixa física, alterações de composição e cancelamento de vendas.
+
+A política distingue explicitamente os seguintes conceitos:
+
+1. **Pagamento registrado:** registro de um pagamento recebido pela venda. O pagamento persiste independentemente do resultado da confirmação financeira.
+2. **Confirmação financeira da venda:** autorização da transição `RASCUNHO → CONFIRMADA`, condicionada ao pagamento mínimo de 50% e à disponibilidade integral dos produtos necessários para reserva.
+3. **Reserva de estoque:** alocação lógica das quantidades necessárias dos produtos da venda, impedindo que sejam reservadas para outras vendas. A reserva não é baixa física.
+4. **Baixa física:** dedução real do saldo de estoque físico, registrada como movimentação de estoque.
+5. **Liberação de reserva:** devolução das quantidades reservadas para o pool disponível, sem movimentação física.
+6. **Reintegração física:** retorno de produtos ao estoque mediante confirmação física e movimentação registrada.
+
+### Responsabilidade conceitual por etapa
+
+A confirmação financeira e a reserva de estoque pertencem ao marco de pagamentos (M5). A baixa física no início da preparação pertence ao fluxo operacional de vendas, integrado ao marco que implementar a política de estoque.
+
+Nenhuma dessas responsabilidades é atribuída automaticamente ao M4, que define a estrutura operacional da venda.
+
+### Regras da política
+
+### RES-001 — Confirmação Financeira e Reserva como Operação Atômica
+
+A confirmação financeira e a reserva de estoque constituem uma única operação atômica executada nesta ordem:
+
+1. Verificar se o pagamento registrado atingiu pelo menos 50% do valor total da venda.
+2. Verificar a disponibilidade integral de todos os produtos necessários para reserva.
+3. Reservar todas as quantidades necessárias.
+4. Efetivar a confirmação financeira da venda.
+
+Se qualquer validação ou reserva falhar, a confirmação financeira e a reserva integral não são efetivadas. O pagamento já recebido permanece registrado. A política impede reservas parciais: se um produto não puder ser reservado, nenhuma quantidade é reservada.
+
+### RES-002 — Bloqueio por Estoque Insuficiente
+
+Se faltar estoque para reservar integralmente os produtos da venda, a confirmação financeira é bloqueada. O sistema informa quais produtos e quantidades estão faltantes. O pagamento recebido permanece registrado, mas a venda não é confirmada financeiramente e nenhuma reserva é criada.
+
+### RES-003 — Pagamento Registrado Independente da Confirmação
+
+Um pagamento recebido deve continuar registrado mesmo quando a venda não puder ser confirmada financeiramente por falta de estoque. Pagamento registrado e confirmação financeira da venda são conceitos distintos.
+
+### RES-004 — Reserva Não é Baixa Física
+
+A reserva de estoque não representa baixa física. O saldo de estoque físico permanece inalterado enquanto os produtos estiverem apenas reservados.
+
+### RES-005 — Baixa Física e Liberação da Reserva no Início da Preparação
+
+No início da preparação (`CONFIRMADA → EM PREPARAÇÃO`), o sistema executa atomicamente:
+
+1. A baixa física das quantidades necessárias de todos os produtos da venda, registrada como movimentação de estoque.
+2. A liberação das reservas correspondentes, pois as quantidades baixadas fisicamente deixam de estar reservadas.
+
+O estoque físico é atualizado por movimentações registradas, sem permitir saldo físico negativo. Se a operação falhar, não há baixa parcial nem atualização parcial das reservas: toda a transação é revertida.
+
+### RES-006 — Adições e Aumentos Exigem Reserva da Diferença
+
+Adições de itens e aumentos de quantidade em uma venda com reserva ou baixa ativa exigem disponibilidade e reserva atômica somente da diferença de quantidades. Se não houver estoque suficiente para a diferença, a alteração é rejeitada sem modificar a composição ou a reserva existentes.
+
+A regra distingue três situações:
+
+- **Quantidades ainda reservadas:** produtos reservados mas ainda não baixados fisicamente. Adições reservam a diferença; a baixa física ocorre quando o operador marca explicitamente como preparada a cesta cuja composição foi alterada.
+- **Quantidades já baixadas fisicamente:** produtos cuja baixa física já foi registrada. Adições de quantidade reservam a diferença, mas não alteram as quantidades já baixadas.
+- **Baixa física de quantidades adicionais:** quando uma adição ou aumento é reservado após o início da preparação, a baixa física da diferença ocorre quando o operador marca explicitamente como preparada a cesta cuja composição foi alterada. A baixa física e a liberação das reservas correspondentes ocorrem atomicamente. Se a baixa física falhar ou não houver estoque físico suficiente, a cesta não pode ser marcada como preparada e não pode ocorrer baixa parcial nem atualização parcial das reservas. Quantidades já baixadas fisicamente em etapas anteriores nunca podem ser baixadas novamente.
+
+### RES-007 — Reduções e Remoções Liberam a Reserva
+
+Reduções de quantidade e remoções de itens liberam somente as quantidades ainda reservadas, sem gerar movimentação física fictícia.
+
+A remoção ou redução de quantidades já baixadas fisicamente não pode gerar entrada automática de estoque. Quantidades já baixadas fisicamente não são liberadas por redução ou remoção: não geram entradas automáticas de estoque nem são consideradas recuperadas por inferência. Sua eventual reintegração exige conferência física e movimentação registrada.
+
+### RES-008 — Quantidades Já Baixadas Não Geram Entradas Automáticas
+
+Quantidades já baixadas fisicamente não geram entradas automáticas de estoque por alterações de composição. Qualquer reintegração exige confirmação física e movimentação registrada.
+
+### RES-009 — Reabertura Não Repete Baixas
+
+A reabertura de uma venda `PRONTA` para `EM PREPARAÇÃO` não pode repetir baixas físicas já realizadas durante a preparação anterior. Quantidades já baixadas fisicamente nunca podem ser baixadas novamente.
+
+### RES-010 — Cancelamento Antes da Preparação
+
+No cancelamento de uma venda antes do início da preparação, a reserva integral é liberada sem movimentação física fictícia.
+
+### RES-011 — Cancelamento Após o Início da Preparação
+
+No cancelamento de uma venda após o início da preparação:
+
+1. As reservas remanescentes (produtos reservados mas ainda não baixados) são liberadas.
+2. Exige-se conferência dos produtos já baixados fisicamente.
+3. Somente as quantidades fisicamente recuperadas e aproveitáveis são reintegradas ao estoque, mediante movimentação de estoque registrada.
+4. O histórico, o responsável e o motivo do cancelamento são preservados.
+
+### RES-012 — Proibição de Cancelamento com Entrega
+
+Manutenção da proibição vigente: o cancelamento de uma venda é bloqueado quando alguma cesta já tiver sido entregue.
+
+---
+
+# 38. Decisões de Negócio em Aberto
 
 Os tópicos a seguir permanecem intencionalmente sem resolução e não devem ser transformados em suposições pela implementação.
-
-### Movimentação de Estoque Associada às Vendas
-
-O momento e o marco responsáveis por eventual baixa física de estoque associada às vendas permanecem em aberto. O M4 não movimenta estoque e a execução dessa baixa não deve ser atribuída por inferência ao M5 nem a nenhum outro marco. Qualquer automação de baixa de estoque exigirá decisão explícita futura do Product Owner.
 
 ### Autenticação e Controle de Acesso
 
@@ -1064,7 +1170,7 @@ Fluxos detalhados para perdas, danos, vencimentos e consumo interno ainda não f
 
 ---
 
-# 38. Oportunidades de Negócio Futuras
+# 39. Oportunidades de Negócio Futuras
 
 As capacidades a seguir poderão ser consideradas após a estabilização do sistema operacional central:
 
@@ -1090,7 +1196,7 @@ Cada capacidade futura exige sua própria decisão de negócio e escopo de imple
 
 ---
 
-# 39. Política de Mudanças
+# 40. Política de Mudanças
 
 Este documento representa o entendimento atual do negócio.
 
@@ -1109,7 +1215,7 @@ O agente não deve alterar silenciosamente o comportamento de negócio com base 
 
 ---
 
-# 40. Princípio Orientador de Negócio
+# 41. Princípio Orientador de Negócio
 
 O sistema existe para apoiar a operação real da Casa Afeto.
 
