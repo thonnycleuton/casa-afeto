@@ -64,6 +64,9 @@ const paymentLoading = ref(false)
 const paymentError = ref('')
 const confirmErrorType = ref<'payment' | 'stock' | 'delivery' | null>(null)
 
+// Template ref para SaleDetailView, usado para sinalizar sucesso de pagamento
+const saleDetailRef = ref<InstanceType<typeof SaleDetailView> | null>(null)
+
 const statusOptions = [
   { label: 'Todos os status', value: 'ALL' },
   { label: 'Rascunho', value: 'RASCUNHO' },
@@ -90,20 +93,31 @@ async function loadPaymentData(saleId: number): Promise<void> {
   paymentLoading.value = true
   paymentError.value = ''
   confirmErrorType.value = null
+  let hasError = false
+
+  // Consultar resumo financeiro de forma independente
   try {
-    const [total, list] = await Promise.all([
-      fetchPaymentTotal(saleId),
-      fetchPayments(saleId),
-    ])
+    const total = await fetchPaymentTotal(saleId)
     paymentTotal.value = total
+  } catch (err: unknown) {
+    hasError = true
+    paymentTotal.value = null
+  }
+
+  // Consultar histórico de forma independente
+  try {
+    const list = await fetchPayments(saleId)
     payments.value = list
   } catch (err: unknown) {
-    paymentError.value = err instanceof Error ? err.message : 'Falha ao carregar dados de pagamento.'
-    paymentTotal.value = null
+    hasError = true
     payments.value = []
-  } finally {
-    paymentLoading.value = false
   }
+
+  if (hasError) {
+    paymentError.value = 'Falha ao carregar alguns dados de pagamento.'
+  }
+
+  paymentLoading.value = false
 }
 
 async function selectSale(id: number): Promise<void> {
@@ -178,10 +192,24 @@ async function handleRecordPayment(
   saleId: number,
   payload: { amount: string; method: string; idempotency_key: string },
 ): Promise<void> {
-  await runAction(
-    () => recordPayment(saleId, payload as { amount: string; method: 'PIX' | 'CARTAO'; idempotency_key: string }),
-    'Pagamento registrado com sucesso.',
-  )
+  loading.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    await recordPayment(saleId, payload as { amount: string; method: 'PIX' | 'CARTAO'; idempotency_key: string })
+    notice.value = 'Pagamento registrado com sucesso.'
+    // Sinaliza sucesso ao SaleDetailView para fechar o modal com reset
+    if (saleDetailRef.value) {
+      saleDetailRef.value.handlePaymentSuccess()
+    }
+    if (selectedSaleId.value) await selectSale(selectedSaleId.value)
+    await loadSales()
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : 'Falha ao registrar pagamento.'
+    // Em caso de erro, o modal permanece aberto com campos bloqueados
+  } finally {
+    loading.value = false
+  }
 }
 
 function formatCurrency(val: string): string {
@@ -219,6 +247,7 @@ onMounted(async () => {
     <!-- Detail View if a sale is selected -->
     <div v-if="selectedSale">
       <SaleDetailView
+        ref="saleDetailRef"
         :sale="selectedSale"
         :templates="availableTemplates"
         :payment-total="paymentTotal"

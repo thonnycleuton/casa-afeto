@@ -10,12 +10,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'record', payload: { amount: string; method: string; idempotency_key: string }): void
+  (e: 'success'): void
 }>()
 
 const method = ref<PaymentMethod>('PIX')
 const amount = ref('')
 const idempotencyKey = ref(crypto.randomUUID())
-const originalPayload = ref<{ amount: string; method: string } | null>(null)
+const originalPayload = ref<{ amount: string; method: string; idempotency_key: string } | null>(null)
+const attemptPending = ref(false)
 
 const remaining = computed(() => {
   const total = Number(props.saleTotal)
@@ -43,12 +45,36 @@ const isValid = computed(() => {
 
 function submit(): void {
   if (!isValid.value) return
-  originalPayload.value = { amount: amount.value.trim(), method: method.value }
+  // Se há uma tentativa pendente, reenvia o payload original sem alterar
+  if (attemptPending.value && originalPayload.value) {
+    emit('record', {
+      amount: originalPayload.value.amount,
+      method: originalPayload.value.method,
+      idempotency_key: originalPayload.value.idempotency_key,
+    })
+    return
+  }
+  // Primeiro envio: salva o payload original e marca como pendente
+  originalPayload.value = {
+    amount: amount.value.trim(),
+    method: method.value,
+    idempotency_key: idempotencyKey.value,
+  }
+  attemptPending.value = true
   emit('record', {
     amount: amount.value.trim(),
     method: method.value,
     idempotency_key: idempotencyKey.value,
   })
+}
+
+function onRecordSuccess(): void {
+  attemptPending.value = false
+  originalPayload.value = null
+  amount.value = ''
+  method.value = 'PIX'
+  idempotencyKey.value = crypto.randomUUID()
+  emit('success')
 }
 
 watch(
@@ -60,6 +86,10 @@ watch(
     }
   },
 )
+
+defineExpose({
+  onRecordSuccess,
+})
 </script>
 
 <template>
@@ -75,9 +105,13 @@ watch(
           Valor restante: <strong>R$ {{ remaining }}</strong>
         </p>
 
+        <div v-if="attemptPending" class="pending-notice" role="alert">
+          Tentativa pendente. Os dados estão travados. Clique em "Registrar" para repetir com os mesmos dados.
+        </div>
+
         <div class="form-group">
           <label>Método de Pagamento:</label>
-          <select v-model="method" class="form-input">
+          <select v-model="method" :disabled="attemptPending" class="form-input">
             <option value="PIX">PIX</option>
             <option value="CARTAO">Cartão</option>
           </select>
@@ -91,6 +125,7 @@ watch(
             inputmode="decimal"
             placeholder="0,00"
             class="form-input"
+            :disabled="attemptPending"
             :class="{ 'form-input-error': amountError }"
           />
           <p v-if="amountError" class="field-error" role="alert">{{ amountError }}</p>
@@ -168,6 +203,14 @@ watch(
 }
 .payment-hint strong {
   color: var(--color-text-primary);
+}
+.pending-notice {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-warning);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
 }
 .form-group label {
   display: block;

@@ -185,13 +185,111 @@ describe('PaymentModal', () => {
 
     const firstPayload = wrapper.emitted('record')![0][0] as { idempotency_key: string }
 
-    // Change amount and submit again — key should be preserved
-    await input.setValue('60.00')
+    // Second submit (retry) — fields are locked, should reuse original payload
     await wrapper.find('footer .button.primary').trigger('click')
 
     const secondPayload = wrapper.emitted('record')![1][0] as { idempotency_key: string }
 
     expect(firstPayload.idempotency_key).toBe(secondPayload.idempotency_key)
+  })
+
+  it('locks fields after first submit', async () => {
+    const wrapper = mount(PaymentModal, {
+      props: { ...props },
+    })
+
+    const input = wrapper.find('input[type="text"]')
+    const select = wrapper.find('select')
+
+    // Fields should be enabled before submit
+    expect(input.attributes('disabled')).toBeUndefined()
+    expect(select.attributes('disabled')).toBeUndefined()
+
+    await input.setValue('50.00')
+    await wrapper.find('footer .button.primary').trigger('click')
+
+    // After submit, fields should be disabled
+    expect(input.attributes('disabled')).toBeDefined()
+    expect(select.attributes('disabled')).toBeDefined()
+  })
+
+  it('shows pending notice after first submit', async () => {
+    const wrapper = mount(PaymentModal, {
+      props: { ...props },
+    })
+
+    expect(wrapper.find('.pending-notice').exists()).toBe(false)
+
+    const input = wrapper.find('input[type="text"]')
+    await input.setValue('50.00')
+    await wrapper.find('footer .button.primary').trigger('click')
+
+    expect(wrapper.find('.pending-notice').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Tentativa pendente')
+  })
+
+  it('retries with original payload values on second submit', async () => {
+    const wrapper = mount(PaymentModal, {
+      props: { ...props },
+    })
+
+    const input = wrapper.find('input[type="text"]')
+    await input.setValue('75.50')
+    // Change method to CARTAO
+    const select = wrapper.find('select')
+    await select.setValue('CARTAO')
+    await wrapper.find('footer .button.primary').trigger('click')
+
+    const firstPayload = wrapper.emitted('record')![0][0] as { amount: string; method: string; idempotency_key: string }
+    expect(firstPayload.amount).toBe('75.50')
+    expect(firstPayload.method).toBe('CARTAO')
+
+    // Retry submit — should emit the same original payload
+    await wrapper.find('footer .button.primary').trigger('click')
+
+    const secondPayload = wrapper.emitted('record')![1][0] as { amount: string; method: string; idempotency_key: string }
+    expect(secondPayload.amount).toBe('75.50')
+    expect(secondPayload.method).toBe('CARTAO')
+    expect(secondPayload.idempotency_key).toBe(firstPayload.idempotency_key)
+  })
+
+  it('resets fields and generates new UUID after onRecordSuccess', async () => {
+    const wrapper = mount(PaymentModal, {
+      props: { ...props },
+    })
+
+    const input = wrapper.find('input[type="text"]')
+    await input.setValue('50.00')
+    await wrapper.find('footer .button.primary').trigger('click')
+
+    // Fields should be locked
+    expect((input.element as HTMLInputElement).disabled).toBe(true)
+
+    // Call onRecordSuccess via exposed method
+    ;(wrapper.vm as any).onRecordSuccess()
+    await wrapper.vm.$nextTick()
+
+    // Fields should be unlocked and reset
+    expect((input.element as HTMLInputElement).disabled).toBe(false)
+    expect((input.element as HTMLInputElement).value).toBe('')
+    expect(wrapper.find('select').element.textContent).toContain('PIX')
+
+    // New submit should generate a new UUID
+    await input.setValue('30.00')
+    await wrapper.find('footer .button.primary').trigger('click')
+
+    const newPayload = wrapper.emitted('record')![1][0] as { idempotency_key: string }
+    expect(newPayload.idempotency_key).not.toBe('test-uuid-1')
+  })
+
+  it('emits success event on onRecordSuccess', async () => {
+    const wrapper = mount(PaymentModal, {
+      props: { ...props },
+    })
+
+    ;(wrapper.vm as any).onRecordSuccess()
+
+    expect(wrapper.emitted('success')).toHaveLength(1)
   })
 
   it('shows no error for exact remaining amount', async () => {

@@ -39,6 +39,7 @@ const emit = defineEmits<{
   (e: 'prepare-basket', saleId: number, basketId: number): void
   (e: 'deliver-basket', saleId: number, basketId: number, operatorName: string): void
   (e: 'record-payment', saleId: number, payload: { amount: string; method: string; idempotency_key: string }): void
+  (e: 'payment-success'): void
   (e: 'retry-payments'): void
 }>()
 
@@ -46,6 +47,9 @@ const showReopenModal = ref(false)
 const showPaymentModal = ref(false)
 const addingBasket = ref(false)
 const selectedTemplateId = ref<number | ''>('')
+
+// Referência ao PaymentModal para chamar onRecordSuccess após sucesso do backend
+const paymentModalRef = ref<InstanceType<typeof PaymentModal> | null>(null)
 
 const pricedTemplates = computed(() =>
   props.templates.filter((t) => t.active && t.price !== null),
@@ -83,6 +87,13 @@ const canRegisterPayment = computed(() => {
 
 function handleRecordPayment(payload: { amount: string; method: string; idempotency_key: string }): void {
   emit('record-payment', props.sale.id, payload)
+  // Não fecha o modal aqui — o SalesView decide o resultado
+}
+
+function handlePaymentSuccess(): void {
+  if (paymentModalRef.value) {
+    paymentModalRef.value.onRecordSuccess()
+  }
   showPaymentModal.value = false
 }
 
@@ -94,6 +105,10 @@ function handleAddBasket(): void {
   selectedTemplateId.value = ''
   addingBasket.value = false
 }
+
+defineExpose({
+  handlePaymentSuccess,
+})
 </script>
 
 <template>
@@ -296,11 +311,13 @@ function handleAddBasket(): void {
     />
 
     <PaymentModal
+      ref="paymentModalRef"
       v-if="showPaymentModal && paymentTotal"
       :sale-total="paymentTotal.sale_total"
       :total-paid="paymentTotal.total_paid"
       @close="showPaymentModal = false"
       @record="handleRecordPayment"
+      @success="handlePaymentSuccess"
     />
   </div>
 </template>
