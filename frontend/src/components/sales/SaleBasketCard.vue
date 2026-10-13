@@ -139,13 +139,20 @@ function formatCurrency(val: string): string {
         </button>
 
         <button
-          v-if="!basket.is_delivered && saleStatus !== 'RASCUNHO' && saleStatus !== 'CANCELADA' && saleStatus !== 'ENTREGUE'"
+          v-if="!basket.is_delivered && basket.is_prepared && saleStatus !== 'RASCUNHO' && saleStatus !== 'CANCELADA' && saleStatus !== 'ENTREGUE'"
           type="button"
           class="btn-action deliver-btn"
           @click="delivering = true"
         >
           Registrar Entrega
         </button>
+
+        <span
+          v-if="!basket.is_delivered && !basket.is_prepared && saleStatus !== 'RASCUNHO' && saleStatus !== 'CANCELADA' && saleStatus !== 'ENTREGUE'"
+          class="deliver-disabled-hint"
+        >
+          Entrega disponível após preparo
+        </span>
 
         <button
           v-if="saleStatus === 'RASCUNHO' && canRemove"
@@ -356,5 +363,10 @@ function formatCurrency(val: string): string {
 .history-panel ul {
   margin: 0;
   padding-left: var(--space-3);
+}
+.deliver-disabled-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 </style>

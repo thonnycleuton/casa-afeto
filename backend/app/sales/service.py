@@ -804,6 +804,15 @@ def deliver_basket(
     db: Session, sale_id: int, basket_id: int, payload: SaleDeliveryPayload
 ) -> SaleBasket:
     sale = _sale_or_raise(db, sale_id, lock=True)
+
+    basket = _basket_or_raise(sale, basket_id)
+
+    # Idempotency check first: if basket is already delivered, return immediately
+    # without validating sale status. This allows re-delivering a basket that was
+    # the last one to complete the sale (status already ENTREGUE).
+    if basket.is_delivered:
+        return basket
+
     if sale.status in (SaleStatus.ENTREGUE.value, SaleStatus.CANCELADA.value):
         raise BusinessRuleError(
             "Não é possível registrar entrega em venda já entregue ou cancelada."
@@ -817,7 +826,11 @@ def deliver_basket(
     if not operator_name:
         raise BusinessRuleError("A identificação textual do operador é obrigatória.")
 
-    basket = _basket_or_raise(sale, basket_id)
+    if not basket.is_prepared:
+        raise BusinessRuleError(
+            "Não é possível registrar entrega de cesta que ainda não foi preparada."
+        )
+
     basket.is_delivered = True
 
     history = SaleDeliveryHistory(

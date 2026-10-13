@@ -570,3 +570,176 @@ def test_delivery_flow_and_cancellation_rules(
     # AC-M4-045: ENTREGUE cannot be cancelled
     cancel_entregue = client.post(f"/api/v1/sales/{sale['id']}/cancel")
     assert cancel_entregue.status_code == 409
+
+
+def test_deliver_unprepared_basket_is_rejected(
+    client: TestClient,
+    sample_customer_and_template: tuple[dict, dict, dict],
+    register_sales_cleanup: Callable[[int], None],
+) -> None:
+    """A cesta não preparada não pode ser entregue via API."""
+    customer, template, _ = sample_customer_and_template
+
+    sale = client.post(
+        "/api/v1/sales",
+        json={
+            "customer_id": customer["id"],
+            "baskets": [
+                {
+                    "template_id": template["id"],
+                    "recipient_name": "Helena",
+                    "delivery_address": "Rua D",
+                    "delivery_date": "2026-11-15",
+                    "delivery_time": "10:00",
+                }
+            ],
+        },
+    ).json()
+    register_sales_cleanup(sale["id"])
+    b1_id = sale["baskets"][0]["id"]
+
+    # Record payment, confirm, and start preparation
+    client.post(
+        f"/api/v1/sales/{sale['id']}/payments",
+        json={
+            "amount": "150.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
+    confirm_res = client.post(f"/api/v1/sales/{sale['id']}/confirm")
+    assert confirm_res.status_code == 200, f"Confirm failed: {confirm_res.text}"
+    prep_res = client.post(f"/api/v1/sales/{sale['id']}/start-preparation")
+    assert prep_res.status_code == 200, f"Start prep failed: {prep_res.text}"
+
+    # Do NOT prepare the basket — attempt delivery directly
+    deliver_res = client.post(
+        f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/deliver",
+        json={"operator_name": "Entregador Teste"},
+    )
+    assert deliver_res.status_code == 409
+    assert "não foi preparada" in deliver_res.json()["detail"]
+
+    # Verify basket is still not delivered
+    sale_data = client.get(f"/api/v1/sales/{sale['id']}").json()
+    b1 = next(b for b in sale_data["baskets"] if b["id"] == b1_id)
+    assert b1["is_delivered"] is False
+    assert b1["is_prepared"] is False
+
+
+def test_deliver_prepared_basket_succeeds(
+    client: TestClient,
+    sample_customer_and_template: tuple[dict, dict, dict],
+    register_sales_cleanup: Callable[[int], None],
+) -> None:
+    """Uma cesta preparada pode ser entregue e a venda é concluída quando todas são entregues."""
+    customer, template, _ = sample_customer_and_template
+
+    sale = client.post(
+        "/api/v1/sales",
+        json={
+            "customer_id": customer["id"],
+            "baskets": [
+                {
+                    "template_id": template["id"],
+                    "recipient_name": "Irene",
+                    "delivery_address": "Rua E",
+                    "delivery_date": "2026-11-15",
+                    "delivery_time": "11:00",
+                }
+            ],
+        },
+    ).json()
+    register_sales_cleanup(sale["id"])
+    b1_id = sale["baskets"][0]["id"]
+
+    # Record payment, confirm, start preparation, and prepare the basket
+    client.post(
+        f"/api/v1/sales/{sale['id']}/payments",
+        json={
+            "amount": "150.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
+    confirm_res = client.post(f"/api/v1/sales/{sale['id']}/confirm")
+    assert confirm_res.status_code == 200, f"Confirm failed: {confirm_res.text}"
+    prep_res = client.post(f"/api/v1/sales/{sale['id']}/start-preparation")
+    assert prep_res.status_code == 200, f"Start prep failed: {prep_res.text}"
+    prepare_res = client.post(f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/prepare")
+    assert prepare_res.status_code == 200, f"Prepare failed: {prepare_res.text}"
+
+    # Deliver the prepared basket
+    deliver_res = client.post(
+        f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/deliver",
+        json={"operator_name": "Entregador Teste"},
+    )
+    assert deliver_res.status_code == 200, f"Deliver failed: {deliver_res.text}"
+    assert deliver_res.json()["is_delivered"] is True
+    assert len(deliver_res.json()["delivery_histories"]) == 1
+    assert deliver_res.json()["delivery_histories"][0]["operator_name"] == "Entregador Teste"
+
+    # Sale should be ENTREGUE since all baskets are delivered
+    sale_data = client.get(f"/api/v1/sales/{sale['id']}").json()
+    assert sale_data["status"] == "ENTREGUE"
+
+
+def test_deliver_already_delivered_basket_is_idempotent(
+    client: TestClient,
+    sample_customer_and_template: tuple[dict, dict, dict],
+    register_sales_cleanup: Callable[[int], None],
+) -> None:
+    """Entregar uma cesta já entregue retorna sem criar histórico duplicado."""
+    customer, template, _ = sample_customer_and_template
+
+    sale = client.post(
+        "/api/v1/sales",
+        json={
+            "customer_id": customer["id"],
+            "baskets": [
+                {
+                    "template_id": template["id"],
+                    "recipient_name": "Joana",
+                    "delivery_address": "Rua F",
+                    "delivery_date": "2026-11-15",
+                    "delivery_time": "12:00",
+                }
+            ],
+        },
+    ).json()
+    register_sales_cleanup(sale["id"])
+    b1_id = sale["baskets"][0]["id"]
+
+    # Record payment, confirm, start preparation, prepare, and deliver
+    client.post(
+        f"/api/v1/sales/{sale['id']}/payments",
+        json={
+            "amount": "150.00",
+            "method": "PIX",
+            "idempotency_key": str(uuid4()),
+        },
+    )
+    confirm_res = client.post(f"/api/v1/sales/{sale['id']}/confirm")
+    assert confirm_res.status_code == 200, f"Confirm failed: {confirm_res.text}"
+    prep_res = client.post(f"/api/v1/sales/{sale['id']}/start-preparation")
+    assert prep_res.status_code == 200, f"Start prep failed: {prep_res.text}"
+    prepare_res = client.post(f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/prepare")
+    assert prepare_res.status_code == 200, f"Prepare failed: {prepare_res.text}"
+    deliver_res = client.post(
+        f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/deliver",
+        json={"operator_name": "Entregador Teste"},
+    )
+    assert deliver_res.status_code == 200, f"Deliver failed: {deliver_res.text}"
+
+    # Deliver again — should be idempotent
+    deliver_again = client.post(
+        f"/api/v1/sales/{sale['id']}/baskets/{b1_id}/deliver",
+        json={"operator_name": "Entregador Teste 2"},
+    )
+    assert deliver_again.status_code == 200
+
+    # Should still have only 1 delivery history
+    sale_data = client.get(f"/api/v1/sales/{sale['id']}").json()
+    b1 = next(b for b in sale_data["baskets"] if b["id"] == b1_id)
+    assert len(b1["delivery_histories"]) == 1
+    assert b1["delivery_histories"][0]["operator_name"] == "Entregador Teste"
