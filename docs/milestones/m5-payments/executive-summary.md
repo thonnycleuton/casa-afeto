@@ -227,9 +227,19 @@ Várias regras RES não possuem teste dedicado e direto. A cobertura existente �
 
 ### 5. Validação manual
 
-Não há evidência de validação manual documentada do fluxo completo M5.
+**⚠️ ADIADA — decisão do Product Owner, 14 de outubro de 2026.**
 
-**Decisão necessária:** Realizar e documentar a validação manual antes de aprovar o marco.
+A validação manual completa do M5 foi deliberadamente adiada por ser considerada muito custosa para a fase atual do projeto. Três cenários básicos foram executados manualmente com resultado aprovado:
+
+- Registro de pagamento.
+- Confirmação com pagamento ≥ 50% e estoque disponível.
+- Confirmação com pagamento ≥ 50% e estoque insuficiente.
+
+Os 27 cenários restantes foram adiados. O roteiro corrigido está em `manual-validation-checklist.md` e pode ser executado quando a validação manual for retomada.
+
+A cobertura automatizada (101 testes, 25 critérios com teste direto) serve como mitigação até a validação manual ser concluída.
+
+**Decisão pendente:** Executar e documentar a validação manual antes de aprovar formalmente o marco.
 
 ### 6. Dependência em `test_m4_sales.py`
 

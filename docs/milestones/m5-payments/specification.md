@@ -449,12 +449,12 @@ Hierarquia global de locks para prevenir deadlocks:
 ## 14. Decisões Pendentes
 
 1. **Comprovante de pagamento:** Definir formatos aceitos, método de armazenamento e validações técnicas. (Obrigatoriedade já definida: opcional.)
-2. **Pagamento excedente:** A rejeição foi aprovada. Implementação pendente de validação concorrente.
-3. **Desenho técnico:** Revisar e aprovar as decisões técnicas implementadas.
-4. **ADR:** Confirmar se ADR é necessário para as decisões arquiteturais do M5.
-5. **Cobertura de testes:** Avaliar se a cobertura atual é suficiente.
-6. **Validação manual:** Realizar e documentar.
-7. **Dependência em `test_m4_sales.py`:** Avaliar se a dependência em entidades M5 é aceitável.
+2. **Pagamento excedente:** ✓ Resolvido — implementação e testes concorrentes concluídos.
+3. **Desenho técnico:** Revisar e aprovar as decisões técnicas implementadas. (Decisões técnicas registradas e aprovadas no ADR-002; aprovação formal do desenho técnico pendente.)
+4. **ADR:** ✓ Resolvido — ADR-002 criado e aprovado.
+5. **Cobertura de testes:** Avaliar se a cobertura atual é suficiente. (25 testes diretos, 12 indiretos, 1 parcial, 3 não verificados, 2 estáticos = 43 critérios.)
+6. **Validação manual:** ⚠️ Adiada por decisão do Product Owner em 14 de outubro de 2026 — considerada muito custosa para a fase atual. Três cenários básicos foram executados com sucesso. O roteiro corrigido está em `manual-validation-checklist.md`. A validação manual deve ser retomada antes da aprovação formal do M5.
+7. **Dependência em `test_m4_sales.py`:** Avaliar se a dependência em entidades M5 é aceitável. (Dependência puramente técnica para respeitar FKs RESTRICT.)
 
 ---
 

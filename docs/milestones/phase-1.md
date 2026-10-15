@@ -801,7 +801,7 @@ Não crie especificações detalhadas para todos os marcos antecipadamente.
 | M2 — Cestas e Templates de Cesta | Concluído (COMPLETED)        | Conclusão original mantida no histórico; correção pontual de custos de aquisição e sugestão de preços concluída, validada e aceita pelo Product Owner |
 | M3 — Clientes e Datas Importantes | Concluído (COMPLETED) | Implementação e validação aceitas pelo Product Owner                         |
 | M4 — Vendas                      | Concluído (COMPLETED)        | Implementação, refinamento visual, validação (6 testes) e aceitação humana concluídos |
-| M5 — Pagamentos                  | Planejado                    | Depende de M1–M4                                                           |
+| M5 — Pagamentos e Reservas de Estoque | Implementado          | Backend e frontend implementados; 101 testes; validação manual adiada; documentos em RASCUNHO |
 
 ### Dependências dos Marcos
 
@@ -832,7 +832,7 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-O marco **M2 — Cestas e Templates de Cesta** foi originalmente concluído (COMPLETED) com Validation/Review VALIDATED e aprovação humana em 2026-10-06. A reabertura pontual para persistência de preços, registro de custo unitário de aquisição em entradas de estoque e sugestão de preço de venda (2 × custo estimado) com autonomia do operador foi integralmente implementada, validada e aceita pelo Product Owner (COMPLETED). O marco **M3 — Clientes e Datas Importantes** está COMPLETED após implementação, Validation/Review VALIDATED e aceitação humana concluída. O marco **M4 — Vendas** está COMPLETED após implementação, refinamento visual, validação automatizada (6 testes) e aceitação humana pelo Product Owner em 2026-10-10.
+O marco **M2 — Cestas e Templates de Cesta** foi originalmente concluído (COMPLETED) com Validation/Review VALIDATED e aprovação humana em 2026-10-06. A reabertura pontual para persistência de preços, registro de custo unitário de aquisição em entradas de estoque e sugestão de preço de venda (2 × custo estimado) com autonomia do operador foi integralmente implementada, validada e aceita pelo Product Owner (COMPLETED). O marco **M3 — Clientes e Datas Importantes** está COMPLETED após implementação, Validation/Review VALIDATED e aceitação humana concluída. O marco **M4 — Vendas** está COMPLETED após implementação, refinamento visual, validação automatizada (6 testes) e aceitação humana pelo Product Owner em 2026-10-10. O marco **M5 — Pagamentos e Reservas de Estoque** está implementado com backend e frontend funcionais, 101 testes automatizados passando e validação manual adiada por decisão do Product Owner em 14 de outubro de 2026. Os documentos do M5 permanecem em status RASCUNHO.
 
 Decisões fundamentais de negócio para M1 foram resolvidas:
 

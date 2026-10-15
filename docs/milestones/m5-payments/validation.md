@@ -297,14 +297,43 @@ Os testes em `test_m5_concurrency.py` cobrem os seguintes cenários:
 
 ## 12. Validação manual
 
-**⚠️ NÃO VALIDADA.**
+**⚠️ VALIDAÇÃO MANUAL ADIADA — decisão do Product Owner, 14 de outubro de 2026.**
 
-A validação manual do fluxo completo M5 não foi realizada. Os passos a seguir devem ser executados por um operador humano após a revisão e aprovação dos documentos:
+A validação manual completa do M5 foi deliberadamente adiada por ser considerada muito custosa para a fase atual do projeto. A decisão foi registrada para permitir que o desenvolvimento avance para os próximos marcos, mantendo a validação manual como pendência documentada.
 
-1. Seguir os cenários das seções 3 a 10.
+### Cenários já executados manualmente
+
+| Seção | Cenário | Resultado |
+|-------|---------|-----------||
+| 3.1 | Registro de pagamento | ✓ Aprovado |
+| 3.3 | Confirmação com pagamento ≥ 50% e estoque disponível | ✓ Aprovado |
+| 3.5 | Confirmação com pagamento ≥ 50% e estoque insuficiente | ✓ Aprovado |
+
+### Cenários adiados
+
+Os demais cenários das seções 3 a 10 não foram executados manualmente. O roteiro corrigido está disponível em `manual-validation-checklist.md` e pode ser executado quando a validação manual for retomada.
+
+**Total de cenários pendentes:** 27 (incluindo 1 bloqueado por limitação técnica — V-M5-11).
+
+### Cobertura automatizada como mitigação
+
+Na ausência de validação manual completa, a cobertura automatizada serve como proteção principal:
+
+- **101 testes automatizados** passam na suíte backend.
+- **25 critérios** possuem teste direto.
+- **12 critérios** possuem cobertura indireta.
+- **1 critério** possui cobertura parcial.
+- **3 critérios** (AC-M5-026, 027, 028) não possuem teste direto nem cobertura indireta.
+- **2 critérios** (AC-M5-037, 038) verificados por inspeção estática.
+
+### Retomada da validação manual
+
+Quando a validação manual for retomada:
+
+1. Seguir os cenários de `manual-validation-checklist.md`.
 2. Registrar o resultado de cada passo.
 3. Identificar discrepâncias entre o comportamento esperado e o observado.
-4. Documentar os resultados.
+4. Atualizar este documento com os resultados.
 
 ---
 

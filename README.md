@@ -24,19 +24,17 @@ Para a visão completa do produto, consulte:
 
 ## Status Atual
 
-A base técnica M0 foi estabelecida. M1, M2 e M3 foram originalmente concluídos e aceitos conforme seus respectivos históricos. M2 possui uma reabertura pontual em andamento para a correção de preço de venda persistido da cesta-modelo.
+A base técnica M0 foi estabelecida. M1 a M5 foram implementados. M5 possui validação manual adiada por decisão do Product Owner.
 
 ```text
 M1 — Produtos e Estoque: COMPLETED
-M2 — Cestas e Templates de Cesta: Conclusão original mantida (COMPLETED); reaberto pontualmente para persistência de preço (implementação e validação da correção pendentes)
+M2 — Cestas e Templates de Cesta: COMPLETED
 M3 — Clientes e Datas Importantes: COMPLETED
-M4 — Vendas: Planejado (documentação formalizada; implementação não iniciada; início condicionado ao fechamento da correção de M2 e decisões pendentes)
-M5 — Pagamentos: Planejado
+M4 — Vendas: COMPLETED
+M5 — Pagamentos: Implementado (validação manual adiada; documentos em RASCUNHO)
 ```
 
-M3 — Clientes e Datas Importantes foi validado e concluído.
-
-A primeira fase de desenvolvimento é:
+M1 a M5 foram implementados. A Fase 1 — Operações Centrais está funcionalmente completa.
 
 **Fase 1 — Operações Centrais**
 
@@ -56,9 +54,9 @@ Pagamentos
 
 O marco concluído mais recente é:
 
-**M3 — Clientes e Datas Importantes**
+**M5 — Pagamentos e Reservas de Estoque**
 
-M4 — Vendas é o próximo marco planejado. Sua documentação está formalizada, a implementação não foi iniciada e o início permanece condicionado ao fechamento da correção pontual aprovada em M2 (preço de venda persistido da cesta-modelo) e à resolução das decisões que bloqueiam o escopo (como a definição do marco e momento da baixa de estoque).
+A Fase 1 está funcionalmente completa. O próximo passo é a Fase 2 — Evolução do Estoque e dos Clientes, começando com M6 — Gestão de Compras.
 
 Consulte:
 
@@ -73,10 +71,10 @@ A Fase 1 é dividida em cinco marcos:
 | Marco | Escopo                               | Status  |
 | ----- | ------------------------------------ | ------- |
 | M1    | Produtos e Estoque                  | Concluído (COMPLETED) |
-| M2    | Cestas e Templates de Cesta          | Conclusão original mantida no histórico; reaberto pontualmente para preço de venda persistido (implementação e validação da correção pendentes) |
+| M2    | Cestas e Templates de Cesta          | Concluído (COMPLETED) |
 | M3    | Clientes e Datas Importantes        | Concluído (COMPLETED) |
-| M4    | Vendas                               | Planejado (documentação formalizada; implementação não iniciada; início condicionado ao fechamento de M2 e decisões pendentes) |
-| M5    | Pagamentos                           | Planejado |
+| M4    | Vendas                               | Concluído (COMPLETED) |
+| M5    | Pagamentos e Reservas de Estoque     | Implementado (validação manual adiada; documentos em RASCUNHO) |
 
 Cada marco deve ser especificado, implementado, testado e validado manualmente antes de avançar para o próximo.
 

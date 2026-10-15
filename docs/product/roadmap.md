@@ -498,7 +498,7 @@ Mesmo quando o limiar financeiro tiver sido atingido, a autorização financeira
 ## Status atual
 
 ```text
-Status: Planejado
+Status: Implementado (validação manual adiada; documentos em RASCUNHO)
 ```
 
 ---
@@ -518,7 +518,7 @@ M1 — Produtos e Estoque
 M2 — Cestas e Templates de Cesta  Concluído (COMPLETED) — Conclusão original mantida no histórico; correção de custos de aquisição e sugestão de preços concluída e aceita pelo Product Owner
 M3 — Clientes e Datas Importantes  Concluído (COMPLETED)
 M4 — Vendas                       Concluído (COMPLETED) — Implementação, refinamento visual, validação e aceitação humana concluídos
-M5 — Pagamentos                   Planejado
+M5 — Pagamentos                   Implementado — Backend e frontend implementados; 101 testes automatizados; validação manual adiada; documentos em RASCUNHO
 ```
 
 Esta seção deve ser atualizada sempre que um marco mudar de estado.
