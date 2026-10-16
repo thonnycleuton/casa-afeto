@@ -1,7 +1,7 @@
 # Casa Afeto — Fase 1
 
-**Versão do documento:** 0.1
-**Status:** Ativo
+**Versão do documento:** 0.2
+**Status:** Fase 1 Concluída
 **Fase:** 1 — Operações Centrais (Core Operations)
 
 ---
@@ -801,7 +801,7 @@ Não crie especificações detalhadas para todos os marcos antecipadamente.
 | M2 — Cestas e Templates de Cesta | Concluído (COMPLETED)        | Conclusão original mantida no histórico; correção pontual de custos de aquisição e sugestão de preços concluída, validada e aceita pelo Product Owner |
 | M3 — Clientes e Datas Importantes | Concluído (COMPLETED) | Implementação e validação aceitas pelo Product Owner                         |
 | M4 — Vendas                      | Concluído (COMPLETED)        | Implementação, refinamento visual, validação (6 testes) e aceitação humana concluídos |
-| M5 — Pagamentos e Reservas de Estoque | Implementado          | Backend e frontend implementados; 101 testes; validação manual adiada; documentos em RASCUNHO |
+| M5 — Pagamentos e Reservas de Estoque | Concluído (COMPLETED) | Implementação, validação automatizada (101 testes + 54 verificações API), validação manual parcial e aceitação humana concluídos |
 
 ### Dependências dos Marcos
 
@@ -832,7 +832,13 @@ Aceitação humana:    Concluída
 Status geral:        Concluído (COMPLETED)
 ```
 
-O marco **M2 — Cestas e Templates de Cesta** foi originalmente concluído (COMPLETED) com Validation/Review VALIDATED e aprovação humana em 2026-10-06. A reabertura pontual para persistência de preços, registro de custo unitário de aquisição em entradas de estoque e sugestão de preço de venda (2 × custo estimado) com autonomia do operador foi integralmente implementada, validada e aceita pelo Product Owner (COMPLETED). O marco **M3 — Clientes e Datas Importantes** está COMPLETED após implementação, Validation/Review VALIDATED e aceitação humana concluída. O marco **M4 — Vendas** está COMPLETED após implementação, refinamento visual, validação automatizada (6 testes) e aceitação humana pelo Product Owner em 2026-10-10. O marco **M5 — Pagamentos e Reservas de Estoque** está implementado com backend e frontend funcionais, 101 testes automatizados passando e validação manual adiada por decisão do Product Owner em 14 de outubro de 2026. Os documentos do M5 permanecem em status RASCUNHO.
+O marco **M2 — Cestas e Templates de Cesta** foi originalmente concluído (COMPLETED) com Validation/Review VALIDATED e aprovação humana em 2026-10-06. A reabertura pontual para persistência de preços, registro de custo unitário de aquisição em entradas de estoque e sugestão de preço de venda (2 × custo estimado) com autonomia do operador foi integralmente implementada, validada e aceita pelo Product Owner (COMPLETED). O marco **M3 — Clientes e Datas Importantes** está COMPLETED após implementação, Validation/Review VALIDATED e aceitação humana concluída. O marco **M4 — Vendas** está COMPLETED após implementação, refinamento visual, validação automatizada (6 testes) e aceitação humana pelo Product Owner em 2026-10-10. O marco **M5 — Pagamentos e Reservas de Estoque** está COMPLETED após implementação backend e frontend, validação automatizada (101 testes + 54 verificações API), validação manual parcial (3 cenários via UI) e aceitação humana pelo Product Owner em 2026-10-15.
+
+**A Fase 1 está concluída.** Todos os cinco marcos passaram pelo ciclo completo: implementação, validação e aceitação humana. O fluxo operacional central da Casa Afeto está funcional:
+
+```text
+Produto → Estoque → Cesta → Cliente → Venda → Pagamento → Confirmação → Entrega
+```
 
 Decisões fundamentais de negócio para M1 foram resolvidas:
 

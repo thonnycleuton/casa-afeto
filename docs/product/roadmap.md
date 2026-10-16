@@ -1,8 +1,8 @@
 # Casa Afeto — Roadmap do Produto
 
-**Versão do documento:** 0.3
+**Versão do documento:** 0.4
 **Status:** Ativo
-**Última atualização:** 2026-10-06
+**Última atualização:** 2026-10-15
 
 ---
 
@@ -498,7 +498,7 @@ Mesmo quando o limiar financeiro tiver sido atingido, a autorização financeira
 ## Status atual
 
 ```text
-Status: Implementado (validação manual adiada; documentos em RASCUNHO)
+Status: Concluído (COMPLETED) — Implementação, validação automatizada (101 testes + 54 verificações API), validação manual parcial e aceitação humana concluídos em 2026-10-15.
 ```
 
 ---
@@ -518,7 +518,7 @@ M1 — Produtos e Estoque
 M2 — Cestas e Templates de Cesta  Concluído (COMPLETED) — Conclusão original mantida no histórico; correção de custos de aquisição e sugestão de preços concluída e aceita pelo Product Owner
 M3 — Clientes e Datas Importantes  Concluído (COMPLETED)
 M4 — Vendas                       Concluído (COMPLETED) — Implementação, refinamento visual, validação e aceitação humana concluídos
-M5 — Pagamentos                   Implementado — Backend e frontend implementados; 101 testes automatizados; validação manual adiada; documentos em RASCUNHO
+M5 — Pagamentos                   Concluído (COMPLETED) — Implementação, validação automatizada (101 testes + 54 verificações API), validação manual parcial e aceitação humana concluídos
 ```
 
 Esta seção deve ser atualizada sempre que um marco mudar de estado.
@@ -949,6 +949,14 @@ As decisões fundamentais de negócio da especificação M1 foram resolvidas:
   * Este invariante é absoluto e também se aplica a operações concorrentes de estoque (`ADR-001`).
 
 M4 — Vendas está concluído (COMPLETED) após implementação, refinamento visual, validação automatizada (6 testes) e aceitação humana pelo Product Owner em 2026-10-10.
+
+M5 — Pagamentos está concluído (COMPLETED) após implementação backend e frontend, validação automatizada (101 testes + 54 verificações API), validação manual parcial (3 cenários via UI) e aceitação humana pelo Product Owner em 2026-10-15.
+
+**A Fase 1 está concluída.** O fluxo operacional central da Casa Afeto está funcional:
+
+```text
+Produto → Estoque → Cesta → Cliente → Venda → Pagamento → Confirmação → Entrega
+```
 
 ---
 

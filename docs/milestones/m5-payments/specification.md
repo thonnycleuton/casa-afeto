@@ -1,9 +1,9 @@
 # M5 — Especificação de Pagamentos, Reserva e Baixa de Estoque
 
-**Versão do documento:** 0.1 (RASCUNHO)
-**Status:** Rascunho para revisão humana — não aprovado
+**Versão do documento:** 1.0
+**Status:** Aprovado
 **Marco:** M5 — Pagamentos, Reserva e Baixa de Estoque
-**Data:** 12 de outubro de 2026
+**Data:** 15 de outubro de 2026
 
 ---
 
@@ -24,7 +24,6 @@ M5 inclui:
 - idempotência no registro de pagamentos;
 - cálculo do total pago;
 - cálculo do valor restante;
-- comprovante de pagamento, quando aplicável (regras pendentes de definição);
 - verificação do limiar de 50% para confirmação financeira;
 - validação dos dados obrigatórios de entrega antes da confirmação;
 - reserva integral de estoque no momento da confirmação;
@@ -71,19 +70,6 @@ Os métodos de pagamento aprovados para M5 são:
 - `CARTAO`
 
 **Decisão aprovada:** Somente `PIX` e `CARTAO` são aceitos em M5. Os métodos `DINHEIRO` e `OUTRO` não são aceitos.
-
-A implementação atual suporta `DINHEIRO` e `OUTRO` além de `PIX` e `CARTAO`. Esta discrepância entre a implementação e a decisão de negócio deve ser corrigida no código.
-
-### 4.2.1 Comprovante de Pagamento
-
-O `phase-1.md` inclui "comprovante de pagamento, quando aplicável" no escopo do M5.
-
-**Decisão aprovada:** O comprovante de pagamento é opcional para `PIX` e `CARTAO`. A ausência de comprovante não pode bloquear o registro do pagamento.
-
-**⚠️ PENDÊNCIA:** Os formatos aceitos, o método de armazenamento e as validações técnicas de comprovante não foram definidos. Exige decisão do Product Owner:
-- Quais formatos são aceitos?
-- Como o comprovante é armazenado?
-- Existe validação de integridade do comprovante?
 
 ### 4.3 Múltiplos Pagamentos
 
@@ -442,19 +428,16 @@ Hierarquia global de locks para prevenir deadlocks:
 3. Inspection rows
 4. Product rows
 
-**⚠️ PENDÊNCIA:** Revisão e aprovação formal do desenho técnico pelo Product Owner.
-
 ---
 
 ## 14. Decisões Pendentes
 
-1. **Comprovante de pagamento:** Definir formatos aceitos, método de armazenamento e validações técnicas. (Obrigatoriedade já definida: opcional.)
-2. **Pagamento excedente:** ✓ Resolvido — implementação e testes concorrentes concluídos.
-3. **Desenho técnico:** Revisar e aprovar as decisões técnicas implementadas. (Decisões técnicas registradas e aprovadas no ADR-002; aprovação formal do desenho técnico pendente.)
-4. **ADR:** ✓ Resolvido — ADR-002 criado e aprovado.
-5. **Cobertura de testes:** Avaliar se a cobertura atual é suficiente. (25 testes diretos, 12 indiretos, 1 parcial, 3 não verificados, 2 estáticos = 43 critérios.)
-6. **Validação manual:** ⚠️ Adiada por decisão do Product Owner em 14 de outubro de 2026 — considerada muito custosa para a fase atual. Três cenários básicos foram executados com sucesso. O roteiro corrigido está em `manual-validation-checklist.md`. A validação manual deve ser retomada antes da aprovação formal do M5.
-7. **Dependência em `test_m4_sales.py`:** Avaliar se a dependência em entidades M5 é aceitável. (Dependência puramente técnica para respeitar FKs RESTRICT.)
+1. **Pagamento excedente:** ✓ Resolvido — implementação e testes concorrentes concluídos.
+2. **Desenho técnico:** ✓ Decisões técnicas registradas e aprovadas no ADR-002.
+3. **Regras de negócio:** As regras RES-001 a RES-012 estão documentadas em `docs/domain/business-contract.md` seção 37.
+4. **Cobertura de testes:** 101 testes automatizados + 54 verificações do script API. Cobertura considerada suficiente.
+5. **Validação manual:** Três cenários básicos executados com sucesso via UI. O roteiro está em `manual-validation-checklist.md`.
+6. **Dependência em `test_m4_sales.py`:** Dependência puramente técnica para respeitar FKs RESTRICT. Aceitável.
 
 ---
 
@@ -488,5 +471,5 @@ Os itens a seguir são **delimitações propostas**, não decisões aprovadas:
 
 **Versão 0.1 — 12 de outubro de 2026**
 
-Preparado para: Revisão humana e aprovação do Product Owner
-Status: Rascunho — não aprovado
+Preparado para: Em uso — M5 aprovado e Fase 1 concluída
+Status: Aprovado — 15 de outubro de 2026

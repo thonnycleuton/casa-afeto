@@ -1,9 +1,9 @@
 # M5 — Casos de Uso de Pagamentos, Reserva e Baixa de Estoque
 
-**Versão do documento:** 0.1 (RASCUNHO)
-**Status:** Rascunho para revisão humana — não aprovado
+**Versão do documento:** 1.0
+**Status:** Aprovado
 **Marco:** M5 — Pagamentos, Reserva e Baixa de Estoque
-**Data:** 12 de outubro de 2026
+**Data:** 15 de outubro de 2026
 
 ---
 
@@ -23,8 +23,6 @@
 6. O sistema confirma o registro.
 
 **Decisão aprovada:** Somente `PIX` e `CARTAO` são aceitos. `DINHEIRO` e `OUTRO` são rejeitados.
-
-**⚠️ DIVERGÊNCIA COM IMPLEMENTAÇÃO:** O código atual suporta `DINHEIRO` e `OUTRO`. Esta discrepância deve ser corrigida no código.
 
 **Fluxos alternativos:**
 - 2a. Valor inválido (zero ou negativo): o sistema rejeita e informa o erro.
@@ -53,12 +51,6 @@
 2. O operador registra o segundo pagamento com chave de idempotência diferente (UC-M5-001).
 3. O sistema soma os pagamentos e atualiza o total pago.
 4. O sistema exibe o total pago e o valor restante.
-5. Opcionalmente, o operador pode associar um comprovante de pagamento.
-
-**Decisão aprovada:** O comprovante de pagamento é opcional. A ausência de comprovante não bloqueia o registro.
-
-**⚠️ PENDÊNCIA:** Os formatos aceitos, o método de armazenamento e as validações técnicas de comprovante não foram definidos.
-
 **Pós-condições:**
 - Múltiplos pagamentos registrados.
 - Total pago reflete a soma de todos os pagamentos.

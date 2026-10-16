@@ -1,9 +1,9 @@
 # M5 — Critérios de Aceitação
 
-**Versão do documento:** 0.1 (RASCUNHO)
-**Status:** Rascunho para revisão humana — não aprovado
+**Versão do documento:** 1.0
+**Status:** Aprovado
 **Marco:** M5 — Pagamentos, Reserva e Baixa de Estoque
-**Data:** 12 de outubro de 2026
+**Data:** 15 de outubro de 2026
 
 ---
 
@@ -38,8 +38,6 @@
 **Cobertura de testes:** Não verificada diretamente
 
 **Decisão aprovada:** Somente `PIX` e `CARTAO` são aceitos. `DINHEIRO` e `OUTRO` são rejeitados.
-
-**⚠️ DIVERGÊNCIA COM IMPLEMENTAÇÃO:** O código atual suporta `DINHEIRO` e `OUTRO`. Esta discrepância deve ser corrigida no código.
 
 ---
 
@@ -94,17 +92,9 @@
 
 ---
 
-### AC-M5-040 — Comprovante de pagamento é opcional
+### AC-M5-040 — Comprovante de pagamento fora do escopo M5
 
-**Dado** uma venda com pagamento registrado
-**Quando** o operador registra o pagamento sem associar comprovante
-**Então** o pagamento é registrado com sucesso — a ausência de comprovante não bloqueia o registro
-
-**Cobertura de testes:** Não verificada diretamente
-
-**Decisão aprovada:** O comprovante é opcional para `PIX` e `CARTAO`.
-
-**⚠️ PENDÊNCIA:** Os formatos aceitos, o método de armazenamento e as validações técnicas de comprovante não foram definidos. Exige decisão do Product Owner.
+O comprovante de pagamento não faz parte do escopo do M5. Pagamentos são registrados sem comprovante.
 
 ---
 
@@ -142,9 +132,7 @@
 **E** a segunda operação é rejeitada porque o total resultante (R$ 225,00) excederia o total da venda
 **E** o total pago final é R$ 200,00, sem ultrapassar o limite
 
-**Cobertura de testes:** Não verificada diretamente
-
-**⚠️ PENDÊNCIA:** A validação concorrente para rejeição de pagamento excedente ainda não está implementada ou testada.
+**Cobertura de testes:** Direta — `test_m5_concurrency.py` (teste de pagamento excedente concorrente).
 
 ---
 
@@ -515,12 +503,11 @@
 | PAY-001 | AC-M5-001, AC-M5-037 | Não verificada |
 | PAY-002 | AC-M5-009, AC-M5-010, AC-M5-011 | Indireta |
 | Valor restante | AC-M5-039 | Não verificada |
-| Comprovante | AC-M5-040 | Não verificada |
-| Pagamento excedente | AC-M5-041, AC-M5-042, AC-M5-043 | Não verificada |
+| Pagamento excedente | AC-M5-041, AC-M5-042, AC-M5-043 | Direta |
 
 ---
 
-**Versão 0.1 — 12 de outubro de 2026**
+**Versão 1.0 — 15 de outubro de 2026**
 
-Preparado para: Revisão humana e aprovação do Product Owner
-Status: Rascunho — não aprovado
+Preparado para: Em uso — M5 aprovado e Fase 1 concluída
+Status: Aprovado — 15 de outubro de 2026
