@@ -1,8 +1,10 @@
 # Casa Afeto — Agent & Developer Protocol
 
-**Document version:** 0.2
+**Document version:** 0.3
 **Status:** Active
-**Last updated:** 2026-10-03
+**Last updated:** 2026-10-17
+
+**Changes in 0.3:** Added TLC-Spec-Driven validation components: deterministic gates scripts, Test Coverage Matrix, Test Adequacy Review, Discrimination Sensor, and Lessons Layer.
 
 ---
 
@@ -37,6 +39,7 @@ The fundamental principle is:
 11. [Traceability](#11-traceability)
 12. [Tests](#12-tests)
 13. [Validation](#13-validation)
+19. [TLC Validation Components](#19-tlc-validation-components)
 14. [Milestones](#14-milestones)
 15. [Agent Final Report](#15-agent-final-report)
 16. [Product Owner Authority](#16-product-owner-authority)
@@ -577,6 +580,14 @@ Do not create large numbers of tests that merely test framework behavior or triv
 * run the full suite when appropriate;
 * not remove or weaken tests just to make the implementation pass.
 
+### Test Coverage Matrix
+
+For each new milestone, generate a Test Coverage Matrix that maps every Acceptance Criterion to a specific test with an exact `file:line` reference. See [Section 19.2](#192-test-coverage-matrix) for format.
+
+### Test Adequacy Review
+
+After each task, execute the 4 checks defined in [Section 19.3](#193-test-adequacy-review). The evidence-or-zero rule applies: each covered AC must cite the exact `file:line` of its test assertion.
+
 ### Test the Business Rules
 
 When a rule is important, tests should make it visible.
@@ -1016,6 +1027,110 @@ AI-assisted coding is expected in this project.
 Generated code must be treated as code requiring review.
 
 The agent must not assume that generated code is correct merely because it compiles, tests pass, or a common pattern was used.
+
+---
+
+# 19. TLC Validation Components
+
+This section describes the deterministic validation tools adopted from [TLC-Spec-Driven](https://github.com/tech-leads-club/agent-skills) and integrated into the Casa Afeto workflow.
+
+Scripts are located in `scripts/tlc/`. See `scripts/tlc/README.md` for usage details.
+
+---
+
+## 19.1 Deterministic Gates
+
+The agent must execute validation scripts at key points instead of relying on memory to remember checks.
+
+| Script | When to run | Purpose |
+|--------|-------------|--------- |
+| `validate_spec_casa.py` | Before confirming a spec with the Product Owner | Validates Casa Afeto spec format: required sections, testable ACs, pending decisions |
+| `validate_tasks.py` | Before starting milestone implementation | Validates task granularity and dependency consistency |
+| `check_commit.py` | On every commit | Validates Conventional Commits format |
+| `validate_state.py` | At the end of a milestone | Validates the feature is truly complete |
+
+A script failure (non-zero exit code) means the gate is not passed. The agent must fix the issue before proceeding.
+
+---
+
+## 19.2 Test Coverage Matrix
+
+For each new milestone, the agent must generate a Test Coverage Matrix before implementation.
+
+Format (add to `acceptance-criteria.md` or a separate file):
+
+```markdown
+## Test Coverage Matrix
+
+| AC ID | Test Name | File | Line | Status |
+|-------|-----------|------|------|--------|
+| AC-M5-001 | test_payment_linked_to_sale | tests/test_payments.py | 42 | ✓ |
+| AC-M5-002 | test_payment_value_positive | tests/test_payments.py | 58 | ✗ |
+```
+
+Each Acceptance Criterion must be mapped to a specific test with an exact `file:line` reference. ACs without a test are marked `✗` and must be covered before closing the milestone.
+
+---
+
+## 19.3 Test Adequacy Review
+
+After each task, the agent must execute 4 quality checks on the tests:
+
+**Check A — Sufficient coverage:** Each AC is mapped to `file:line` + assertion expression.
+
+**Check B — No shallow litmus:** Rejects trivial tests that only verify getters/setters.
+
+**Check C — Necessity:** Each test is mapped to a real requirement.
+
+**Check D — Compliance:** Tests follow the project's guidelines.
+
+The **evidence-or-zero rule** requires that each covered criterion cites an exact `file:line`. Without evidence, the AC is not covered.
+
+---
+
+## 19.4 Discrimination Sensor
+
+For critical features (payments, inventory, auth), the agent must run mutation testing after writing tests to verify they actually detect regressions.
+
+```bash
+python3 scripts/tlc/discrimination_sensor.py backend/app/payments/ \
+  --test-cmd "cd backend && python -m pytest tests/test_payments.py -x"
+```
+
+The sensor injects intentional faults (inverting conditions, changing return values, swapping operators) and checks if tests fail. If mutations survive, the tests are weak and must be strengthened.
+
+**Exit codes:**
+- `0` — All mutations detected (tests are adequate)
+- `1` — Some mutations survived (tests are weak)
+- `2` — Error
+
+---
+
+## 19.5 Lessons Layer
+
+The project learns from past validation failures. Lessons are stored in `scripts/tlc/lessons.json` and managed by `scripts/tlc/lessons.py`.
+
+**Workflow:**
+
+1. After each validation failure, record a lesson:
+   ```bash
+   python3 scripts/tlc/lessons.py add \
+     --feature "M5-Payments" \
+     --signal surviving_mutant \
+     --source "backend/app/payments/service.py:42" \
+     --text "Concurrency tests require explicit locks" \
+     --scope "M5-Payments"
+   ```
+2. Before starting a new milestone, load confirmed lessons:
+   ```bash
+   python3 scripts/tlc/lessons.py list --status confirmed
+   ```
+3. The agent must check relevant lessons before implementing features in the same scope.
+
+**Lesson statuses:**
+- `candidate` — New lesson, needs confirmation
+- `confirmed` — Confirmed by multiple occurrences
+- `quarantined` — In doubt, may be removed
 
 ---
 
