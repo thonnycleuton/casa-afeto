@@ -22,6 +22,8 @@ def test_tables_in_metadata() -> None:
         "payments",
         "sale_stock_reservations",
         "sale_cancellation_inspection",
+        "purchases",
+        "purchase_items",
     }
 
 

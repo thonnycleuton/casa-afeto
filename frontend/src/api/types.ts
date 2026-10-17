@@ -202,3 +202,35 @@ export interface SaleCreateInput {
   baskets: SaleBasketAddInput[]
 }
 
+// --- M6: Purchases ---
+
+export interface PurchaseItemInput {
+  product_id: number
+  commercial_unit?: string | null
+  conversion_factor: string
+  commercial_quantity: string
+  commercial_unit_price: string
+}
+
+export interface PurchaseCreateInput {
+  purchased_at?: string | null
+  items: PurchaseItemInput[]
+}
+
+export interface PurchaseItem {
+  id: number
+  product_id: number
+  product_name: string
+  base_unit: string
+  commercial_unit: string | null
+  conversion_factor: string
+  commercial_quantity: string
+  commercial_unit_price: string
+}
+
+export interface Purchase {
+  id: number
+  purchased_at: string
+  items: PurchaseItem[]
+}
+

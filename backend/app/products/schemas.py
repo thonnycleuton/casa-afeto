@@ -97,6 +97,8 @@ class MovementRead(BaseModel):
     quantity: Decimal
     type: MovementType
     unit_cost: Optional[Decimal] = None
+    sale_id: Optional[int] = None
+    purchase_id: Optional[int] = None
     created_at: datetime
 
 

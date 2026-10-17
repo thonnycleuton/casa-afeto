@@ -99,6 +99,9 @@ class InventoryMovement(Base):
     sale_id: Mapped[int | None] = mapped_column(
         ForeignKey("sales.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    purchase_id: Mapped[int | None] = mapped_column(
+        ForeignKey("purchases.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

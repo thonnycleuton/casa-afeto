@@ -136,6 +136,7 @@ def create_movement(
     movement_type: MovementType,
     unit_cost: Decimal | None = None,
     sale_id: int | None = None,
+    purchase_id: int | None = None,
     *,
     use_savepoint: bool = True,
 ) -> InventoryMovement:
@@ -155,11 +156,11 @@ def create_movement(
     if use_savepoint:
         with db.begin():
             movement = _create_movement_inner(
-                db, product_id, quantity, movement_type, unit_cost, sale_id
+                db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id
             )
     else:
         movement = _create_movement_inner(
-            db, product_id, quantity, movement_type, unit_cost, sale_id
+            db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id
         )
 
     return movement
@@ -172,6 +173,7 @@ def _create_movement_inner(
     movement_type: MovementType,
     unit_cost: Decimal | None,
     sale_id: int | None,
+    purchase_id: int | None = None,
 ) -> InventoryMovement:
     product = _product_or_raise(db, product_id, lock=True)
     if not product.active:
@@ -204,6 +206,7 @@ def _create_movement_inner(
         unit_cost=unit_cost,
         type=movement_type.value,
         sale_id=sale_id,
+        purchase_id=purchase_id,
     )
     db.add(movement)
     db.flush()
