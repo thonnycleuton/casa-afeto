@@ -27,9 +27,9 @@ import sys
 # Seções obrigatórias no formato Casa Afeto
 # Cada entrada pode ser uma string simples ou uma tupla (nome_exibido, padrão_regex)
 REQUIRED_SECTIONS = [
-    "Objetivo",
+    ("Objetivo", r"(Objetivo|Finalidade|Propósito)"),
     "Escopo",
-    ("Fora do Escopo", r"(Fora do Escopo|Explicitamente Fora do Escopo|Out of Scope)"),
+    ("Fora do Escopo", r"(Fora do Escopo|Explicitamente fora do escopo|Explicitamente Fora do Escopo|Out of Scope)"),
 ]
 
 # Seções recomendadas (warning se ausentes)
@@ -93,8 +93,9 @@ def section_bounds(lines, name):
     
     start = None
     for i, ln in enumerate(lines):
-        # Match ## N. Name ou ## Name
-        if re.match(r"^#{1,3}\s+(\d+\.\s+)?" + pattern + r"\s*$", ln.strip()):
+        # Match ## N. Name ou ## N.M. Name ou ## Name
+        # Accepts: "1.", "2.2", "3.1.2" followed by space
+        if re.match(r"^#{1,3}\s+(?:(\d+(?:\.\d+)*(?:\.\s+|\s+)))?" + pattern + r"\s*$", ln.strip()):
             start = i + 1
             break
     if start is None:
@@ -125,8 +126,9 @@ def check(spec_path):
 
     # 1. Seções obrigatórias
     for name in REQUIRED_SECTIONS:
+        display_name = name[0] if isinstance(name, tuple) else name
         if section_bounds(lines, name) is None:
-            errors.append(f"seção obrigatória ausente: ## {name}")
+            errors.append(f"seção obrigatória ausente: ## {display_name}")
 
     # 2. Seções recomendadas
     for name in RECOMMENDED_SECTIONS:
