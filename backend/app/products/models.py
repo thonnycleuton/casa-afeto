@@ -42,12 +42,19 @@ class Product(Base):
             "reference_price IS NULL OR reference_price >= 0",
             name="ck_products_reference_price_non_negative",
         ),
+        CheckConstraint(
+            "commercial_conversion_factor IS NULL OR commercial_conversion_factor > 0",
+            name="ck_products_commercial_conversion_factor_positive",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     base_unit: Mapped[str] = mapped_column(String(2), nullable=False)
     reference_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2, asdecimal=True), nullable=True
+    )
+    commercial_conversion_factor: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 2, asdecimal=True), nullable=True
     )
     active: Mapped[bool] = mapped_column(

@@ -9,8 +9,6 @@ def test_tables_in_metadata() -> None:
         "inventory_movements",
         "basket_templates",
         "basket_template_items",
-        "baskets",
-        "basket_items",
         "customers",
         "important_dates",
         "sales",

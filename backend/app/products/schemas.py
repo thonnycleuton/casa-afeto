@@ -25,12 +25,25 @@ def _validate_reference_price(value: Decimal | None) -> Decimal | None:
     return value.quantize(Decimal("0.01"))
 
 
+def _validate_commercial_conversion_factor(value: Decimal | None) -> Decimal | None:
+    if value is None:
+        return None
+    if not value.is_finite():
+        raise ValueError("O fator de conversão deve ser um valor numérico válido.")
+    if value <= 0:
+        raise ValueError("O fator de conversão deve ser maior que zero.")
+    if value.as_tuple().exponent < -2:
+        raise ValueError("O fator de conversão deve ter no máximo duas casas decimais.")
+    return value.quantize(Decimal("0.01"))
+
+
 class ProductCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
     base_unit: BaseUnit
     reference_price: Decimal | None = None
+    commercial_conversion_factor: Decimal | None = None
 
     @field_validator("name")
     @classmethod
@@ -45,6 +58,11 @@ class ProductCreate(BaseModel):
     def validate_reference_price(cls, value: Decimal | None) -> Decimal | None:
         return _validate_reference_price(value)
 
+    @field_validator("commercial_conversion_factor")
+    @classmethod
+    def validate_commercial_conversion_factor(cls, value: Decimal | None) -> Decimal | None:
+        return _validate_commercial_conversion_factor(value)
+
 
 class ProductUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -52,6 +70,7 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     base_unit: Optional[BaseUnit] = None
     reference_price: Optional[Decimal] = None
+    commercial_conversion_factor: Optional[Decimal] = None
 
     @field_validator("name")
     @classmethod
@@ -68,6 +87,11 @@ class ProductUpdate(BaseModel):
     def validate_reference_price(cls, value: Decimal | None) -> Decimal | None:
         return _validate_reference_price(value)
 
+    @field_validator("commercial_conversion_factor")
+    @classmethod
+    def validate_commercial_conversion_factor(cls, value: Decimal | None) -> Decimal | None:
+        return _validate_commercial_conversion_factor(value)
+
     @model_validator(mode="after")
     def require_editable_field(self) -> "ProductUpdate":
         if not self.model_fields_set:
@@ -82,6 +106,7 @@ class ProductRead(BaseModel):
     name: str
     base_unit: BaseUnit
     reference_price: Optional[Decimal] = None
+    commercial_conversion_factor: Optional[Decimal] = None
     active: bool
     created_at: datetime
     updated_at: datetime
