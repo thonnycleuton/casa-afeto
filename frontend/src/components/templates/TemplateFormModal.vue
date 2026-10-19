@@ -93,7 +93,7 @@ function submit(): void {
     width="800px"
   >
     <template #body>
-      <div v-if="apiError" class="form-banner-error" role="alert">{{ apiError }}</div>
+      <div v-if="apiError" class="feedback feedback-error" role="alert">{{ apiError }}</div>
       <div class="form-group">
         <label for="tf-name">Nome</label>
         <input
@@ -164,19 +164,11 @@ function submit(): void {
       />
     </template>
     <template #footer>
-      <button class="button secondary" type="button" @click="emit('update:open', false)">Cancelar</button>
-      <button class="button primary" type="button" @click="submit">
+      <button class="btn" type="button" @click="emit('update:open', false)">Cancelar</button>
+      <button class="btn primary" type="button" @click="submit">
         {{ isEdit ? 'Salvar alterações' : 'Salvar template' }}
       </button>
     </template>
   </BaseModal>
 </template>
 
-<style scoped>
-.template-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-}
-</style>

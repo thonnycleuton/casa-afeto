@@ -154,7 +154,7 @@ function displayImportantDate(date: ImportantDate): string {
     <template #header-actions>
       <button
         v-if="!formVisible"
-        class="button compact primary"
+        class="btn primary small"
         type="button"
         :disabled="loading"
         @click="beginNewDate"
@@ -163,8 +163,8 @@ function displayImportantDate(date: ImportantDate): string {
       </button>
     </template>
     <template #body>
-      <div v-if="error" class="form-banner-error" role="alert">{{ error }}</div>
-      <div v-if="notice" class="form-banner-success" role="status">{{ notice }}</div>
+      <div v-if="error" class="feedback feedback-error" role="alert">{{ error }}</div>
+      <div v-if="notice" class="feedback feedback-success" role="status">{{ notice }}</div>
 
       <form v-if="formVisible" class="important-date-form" @submit.prevent="saveDate">
         <div class="form-group">
@@ -196,10 +196,10 @@ function displayImportantDate(date: ImportantDate): string {
           <input id="id-full-date" v-model="form.date" type="date" required :disabled="loading" class="form-input" />
         </div>
         <div class="form-actions">
-          <button class="button primary" type="submit" :disabled="loading">
+          <button class="btn primary" type="submit" :disabled="loading">
             {{ editingDateId === null ? 'Salvar data' : 'Salvar alterações' }}
           </button>
-          <button class="button secondary" type="button" :disabled="loading" @click="formVisible = false">Cancelar</button>
+          <button class="btn" type="button" :disabled="loading" @click="formVisible = false">Cancelar</button>
         </div>
       </form>
 
@@ -224,8 +224,8 @@ function displayImportantDate(date: ImportantDate): string {
                 </span>
               </td>
               <td class="row-actions">
-                <button class="button compact secondary" type="button" :disabled="loading" @click="beginEditDate(date)">Editar</button>
-                <button class="button compact ghost" type="button" :disabled="loading" @click="changeDateStatus(date)">
+                <button class="btn small" type="button" :disabled="loading" @click="beginEditDate(date)">Editar</button>
+                <button class="btn ghost small" type="button" :disabled="loading" @click="changeDateStatus(date)">
                   {{ date.status === 'ACTIVE' ? 'Inativar' : 'Reativar' }}
                 </button>
               </td>
@@ -241,7 +241,7 @@ function displayImportantDate(date: ImportantDate): string {
       </div>
     </template>
     <template #footer>
-      <button class="button secondary" type="button" @click="emit('update:open', false)">Fechar</button>
+      <button class="btn" type="button" @click="emit('update:open', false)">Fechar</button>
     </template>
   </BaseModal>
 </template>

@@ -230,11 +230,121 @@ Keep the reusable vocabulary small and use the existing frontend architecture. S
 | Page heading | `.page-heading`, `.page-eyebrow`, `.page-description` | One clear title and concise context per section |
 | Card | `.card`, `.card-heading` | Group related controls and information; use surface and border tokens |
 | Button | `.button.primary`, `.button.secondary`, `.button.ghost` | One main action; use secondary/ghost for supporting actions |
+| Compact button | `.btn`, `.btn.primary`, `.btn.ghost`, `.btn.small` | Compact buttons for modal detail views; smaller padding than `.button` |
 | Form field | `.form-field`, `.field-hint` | Keep visible labels associated with native controls; use hints for clarification |
 | Feedback | `.feedback-error`, `.feedback-success`, `.loading-state` | Pair concise text with an icon and semantic color |
+| Feedback banner | `.feedback`, `.feedback-error`, `.feedback-warning` | Inline error/warning banners with semantic colors |
 | Status | `.status-pill`, `.movement-pill` | Compact textual status; color reinforces the label |
 | Table | `.table-card`, `.table-scroll`, `.numeric` | Horizontal separators, readable headers, aligned numeric values |
 | Empty state | `.empty-state`, `.empty-panel` | Explain what is absent and the next available action when one exists |
+
+## Modal Detail Patterns
+
+Extracted from the SaleDetailView refactoring, these patterns define the visual identity for detail modals with tabs, sidebars, and panel-based layouts. All classes are defined in `frontend/src/style.css` under the "Modal Detail Patterns" section.
+
+### Sale summary card
+
+A compact header card showing the sale identity, client, status, total, and actions. Uses `.sale-summary` with grid layout.
+
+| Class | Purpose |
+| --- | --- |
+| `.sale-summary` | Grid container: identity, total, actions |
+| `.sale-ident` | Flex container for icon + heading + client |
+| `.sale-icon` | Emoji/icon bubble with primary translucent background |
+| `.sale-heading` | Title + status badge row |
+| `.total` | Right-aligned total with eyebrow label |
+| `.eyebrow` | Uppercase label above key values |
+| `.money` | Large green currency value |
+| `.actions` | Button row within the summary |
+
+### Panels with icon bubbles
+
+Bordered cards with optional icon bubble titles, used in sidebars and detail views.
+
+| Class | Purpose |
+| --- | --- |
+| `.panel` | Bordered card container with surface background |
+| `.panel-title` | Title row with icon bubble |
+| `.icon-bubble` | 31px square icon container with primary translucent styling |
+| `.panel-body` | Padded content area within a panel |
+| `.note-text` | Secondary text within panels |
+
+### Tab navigation
+
+Pill-style tab buttons for switching between content sections without page reload.
+
+| Class | Purpose |
+| --- | --- |
+| `.tabs` | Flex container for tab buttons |
+| `.tab` | Individual tab button with surface background |
+| `.tab.active` | Active tab with primary translucent highlight |
+| `.tab-pane` | Content container for the active tab |
+
+### Finance rows and progress
+
+Breakdown of financial data with total/paid/remaining rows and a progress bar.
+
+| Class | Purpose |
+| --- | --- |
+| `.finance-rows` | Grid container for finance rows |
+| `.finance-row` | Label + value row with secondary/primary text |
+| `.finance-row .paid` | Paid amount with primary accent color |
+| `.progress` | Thin progress bar container |
+| `.progress span` | Filled portion of the progress bar |
+
+### Delivery forms
+
+Per-basket delivery editing forms with recipient, address, date, and time fields.
+
+| Class | Purpose |
+| --- | --- |
+| `.delivery-tabs-content` | Grid container for delivery form cards |
+| `.delivery-form-card` | Bordered card with basket title and form |
+| `.delivery-form` | Grid layout for form fields |
+| `.form-row` | Two-column grid for date/time fields |
+| `.field` | Form input with dark recessed background |
+
+### Client info card
+
+Read-only display of client data in a clean key-value layout.
+
+| Class | Purpose |
+| --- | --- |
+| `.client-info-card` | Bordered card with surface background |
+| `.client-field` | Key-value row with bottom border separator |
+| `.client-label` | Secondary text label |
+| `.client-value` | Primary text value |
+
+### Payment list
+
+History of payments with method, amount, and date.
+
+| Class | Purpose |
+| --- | --- |
+| `.payment-list` | Vertical flex container |
+| `.payment-item` | Single payment row with surface-elevated background |
+| `.payment-method` | Bold method label (PIX, Cartão) |
+| `.payment-amount` | Green amount with tabular numerals |
+| `.payment-date` | Muted date, right-aligned |
+
+### Compact buttons (`.btn` family)
+
+Smaller, compact buttons for modal detail views. Distinct from the `.button` family used in forms and pages.
+
+| Class | Purpose |
+| --- | --- |
+| `.btn` | Default compact button with border |
+| `.btn.primary` | Primary action with indigo background |
+| `.btn.ghost` | Low-emphasis button with transparent background |
+| `.btn.small` | Extra-small variant for inline actions |
+| `.btn.full-width` | Full-width button for panel actions |
+
+### Responsive behavior
+
+The modal detail patterns adapt to smaller screens:
+
+- **≤950px:** Two-column layout becomes single column; sale-summary stacks vertically
+- **≤600px:** Tabs become horizontally scrollable; sale-icon shrinks
 
 Create a Vue component only when the same behavior-bearing visual pattern is repeated and the component provides a real consistency or maintenance benefit. CSS class reuse is sufficient for presentational patterns that do not need their own component contract.
 

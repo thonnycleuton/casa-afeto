@@ -91,7 +91,7 @@ function submit(): void {
     width="520px"
   >
     <template #body>
-      <div v-if="apiError" class="form-banner-error" role="alert">{{ apiError }}</div>
+      <div v-if="apiError" class="feedback feedback-error" role="alert">{{ apiError }}</div>
       <div class="form-group">
         <label for="cf-name">Nome</label>
         <input
@@ -132,17 +132,11 @@ function submit(): void {
       </div>
     </template>
     <template #footer>
-      <button class="button secondary" type="button" @click="emit('update:open', false)">Cancelar</button>
-      <button class="button primary" type="button" @click="submit">
+      <button class="btn" type="button" @click="emit('update:open', false)">Cancelar</button>
+      <button class="btn primary" type="button" @click="submit">
         {{ isEdit ? 'Salvar alterações' : 'Salvar cliente' }}
       </button>
     </template>
   </BaseModal>
 </template>
 
-<style scoped>
-textarea.form-input {
-  min-height: 60px;
-  padding: var(--space-2) var(--space-3);
-}
-</style>

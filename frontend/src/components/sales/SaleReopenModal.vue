@@ -25,7 +25,7 @@ function submit(): void {
 <template>
   <BaseModal :open="open" @update:open="emit('update:open', $event)" title="Reabrir Venda Pronta" width="480px">
     <template #body>
-      <p class="modal-info">
+      <p class="field-hint">
         A reabertura retornará a venda para <strong>EM PREPARAÇÃO</strong>. Esta operação exige justificativa e identificação textual do operador para auditoria.
       </p>
 
@@ -50,10 +50,10 @@ function submit(): void {
       </div>
     </template>
     <template #footer>
-      <button type="button" class="button secondary" @click="emit('update:open', false)">Cancelar</button>
+      <button type="button" class="btn" @click="emit('update:open', false)">Cancelar</button>
       <button
         type="button"
-        class="button primary"
+        class="btn primary"
         :disabled="!reason.trim() || !operatorName.trim()"
         @click="submit"
       >
@@ -63,11 +63,3 @@ function submit(): void {
   </BaseModal>
 </template>
 
-<style scoped>
-.modal-info {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-</style>

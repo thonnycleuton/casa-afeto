@@ -94,7 +94,7 @@ function submit(): void {
 <template>
   <BaseModal :open="open" @update:open="emit('update:open', $event)" :title="isEdit ? 'Editar Produto' : 'Novo Produto'" width="520px">
     <template #body>
-      <div v-if="apiError" class="form-banner-error" role="alert">{{ apiError }}</div>
+      <div v-if="apiError" class="feedback feedback-error" role="alert">{{ apiError }}</div>
       <div class="form-group">
         <label for="pf-name">Nome</label>
         <input
@@ -143,8 +143,8 @@ function submit(): void {
       </div>
     </template>
     <template #footer>
-      <button class="button secondary" type="button" @click="emit('update:open', false)">Cancelar</button>
-      <button class="button primary" type="button" @click="submit">
+      <button class="btn" type="button" @click="emit('update:open', false)">Cancelar</button>
+      <button class="btn primary" type="button" @click="submit">
         {{ isEdit ? 'Salvar alterações' : 'Salvar produto' }}
       </button>
     </template>

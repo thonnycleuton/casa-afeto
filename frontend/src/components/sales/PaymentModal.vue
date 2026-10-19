@@ -97,11 +97,11 @@ defineExpose({
 <template>
   <BaseModal :open="open" @update:open="emit('update:open', $event)" title="Registrar Pagamento" width="480px">
     <template #body>
-      <p class="payment-hint">
+      <p class="field-hint">
         Valor restante: <strong>R$ {{ remaining }}</strong>
       </p>
 
-      <div v-if="attemptPending" class="pending-notice" role="alert">
+      <div v-if="attemptPending" class="feedback feedback-warning" role="alert">
         Tentativa pendente. Os dados estão travados. Clique em "Registrar" para repetir com os mesmos dados.
       </div>
 
@@ -128,10 +128,10 @@ defineExpose({
       </div>
     </template>
     <template #footer>
-      <button type="button" class="button secondary" @click="emit('update:open', false)">Cancelar</button>
+      <button type="button" class="btn" @click="emit('update:open', false)">Cancelar</button>
       <button
         type="button"
-        class="button primary"
+        class="btn primary"
         :disabled="!isValid"
         @click="submit"
       >
@@ -141,22 +141,3 @@ defineExpose({
   </BaseModal>
 </template>
 
-<style scoped>
-.payment-hint {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-}
-.payment-hint strong {
-  color: var(--color-text-primary);
-}
-.pending-notice {
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-warning);
-  color: var(--color-text-primary);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-}
-</style>

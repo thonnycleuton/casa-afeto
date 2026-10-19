@@ -146,7 +146,7 @@ function submitAdjustment(): void {
             <p v-if="entryCostError" class="field-error">{{ entryCostError }}</p>
             <p v-else class="field-hint">Usado no cálculo do custo médio ponderado.</p>
           </div>
-          <button class="button primary" type="submit" :disabled="!product.active">
+          <button class="btn primary" type="submit" :disabled="!product.active">
             Registrar entrada
           </button>
           <p v-if="!product.active" class="field-hint">Reative este produto para alterar o estoque.</p>
@@ -172,7 +172,7 @@ function submitAdjustment(): void {
             />
             <p v-if="adjustmentQuantityError" class="field-error">{{ adjustmentQuantityError }}</p>
           </div>
-          <button class="button primary" type="submit" :disabled="!product.active">
+          <button class="btn primary" type="submit" :disabled="!product.active">
             Registrar ajuste
           </button>
           <p v-if="!product.active" class="field-hint">Reative este produto para alterar o estoque.</p>
@@ -217,7 +217,7 @@ function submitAdjustment(): void {
       </div>
     </template>
     <template #footer>
-      <button class="button secondary" type="button" @click="emit('update:open', false)">Fechar</button>
+      <button class="btn" type="button" @click="emit('update:open', false)">Fechar</button>
     </template>
   </BaseModal>
 </template>

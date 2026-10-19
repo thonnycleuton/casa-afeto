@@ -80,8 +80,8 @@ function submit(): void {
 
       <div class="form-group">
         <label>Adicionar Cestas (ao menos 1 obrigatória):</label>
-        <div class="template-selector">
-          <select v-model="selectedTemplateId" class="form-input">
+        <div class="add-basket-box">
+          <select v-model="selectedTemplateId" class="select-tpl form-input">
             <option value="" disabled>Selecione um modelo com preço...</option>
             <option v-for="t in pricedTemplates" :key="t.id" :value="t.id">
               {{ t.name }} — R$ {{ t.price }}
@@ -89,7 +89,7 @@ function submit(): void {
           </select>
           <button
             type="button"
-            class="button secondary"
+            class="btn"
             :disabled="!selectedTemplateId"
             @click="addBasketToDraft"
           >
@@ -101,29 +101,31 @@ function submit(): void {
         </p>
       </div>
 
-      <div v-if="draftBaskets.length > 0" class="draft-baskets-list">
-        <h4>Cestas da Venda ({{ draftBaskets.length }})</h4>
-        <div v-for="(b, idx) in draftBaskets" :key="idx" class="draft-basket-item">
-          <div class="draft-basket-header">
-            <strong>{{ getTemplateName(b.template_id) }}</strong>
-            <button type="button" class="button ghost compact" @click="removeDraftBasket(idx)">Remover</button>
-          </div>
-          <div class="draft-basket-fields">
-            <input v-model="b.recipient_name" placeholder="Destinatário (opcional)" class="form-input" />
-            <input v-model="b.delivery_address" placeholder="Endereço de entrega" class="form-input" />
-            <div class="row-fields">
-              <input v-model="b.delivery_date" type="date" class="form-input" />
-              <input v-model="b.delivery_time" type="time" class="form-input" />
+      <div v-if="draftBaskets.length > 0" class="panel">
+        <div class="panel-title">Cestas da Venda ({{ draftBaskets.length }})</div>
+        <div class="panel-body">
+          <div v-for="(b, idx) in draftBaskets" :key="idx" class="draft-basket-item">
+            <div class="draft-basket-header">
+              <strong>{{ getTemplateName(b.template_id) }}</strong>
+              <button type="button" class="btn ghost small" @click="removeDraftBasket(idx)">Remover</button>
+            </div>
+            <div class="draft-basket-fields">
+              <input v-model="b.recipient_name" placeholder="Destinatário (opcional)" class="form-input" />
+              <input v-model="b.delivery_address" placeholder="Endereço de entrega" class="form-input" />
+              <div class="form-row">
+                <input v-model="b.delivery_date" type="date" class="form-input" />
+                <input v-model="b.delivery_time" type="time" class="form-input" />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </template>
     <template #footer>
-      <button type="button" class="button secondary" @click="emit('update:open', false)">Cancelar</button>
+      <button type="button" class="btn" @click="emit('update:open', false)">Cancelar</button>
       <button
         type="button"
-        class="button primary"
+        class="btn primary"
         :disabled="!selectedCustomerId || draftBaskets.length === 0"
         @click="submit"
       >
@@ -134,27 +136,15 @@ function submit(): void {
 </template>
 
 <style scoped>
-.template-selector {
-  display: flex;
-  gap: var(--space-2);
-}
-.draft-baskets-list {
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3);
-}
-.draft-baskets-list h4 {
-  margin: 0 0 var(--space-2) 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
 .draft-basket-item {
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: var(--space-2);
   margin-bottom: var(--space-2);
+}
+.draft-basket-item:last-child {
+  margin-bottom: 0;
 }
 .draft-basket-header {
   display: flex;
@@ -167,9 +157,5 @@ function submit(): void {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-}
-.row-fields {
-  display: flex;
-  gap: var(--space-2);
 }
 </style>
