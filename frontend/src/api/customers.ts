@@ -10,17 +10,17 @@ import type {
 export interface CustomerListFilters {
   search: string
   status: CustomerStatus | 'ALL'
-  page: number
-  pageSize: number
+  page?: number
+  pageSize?: number
 }
 
 export function fetchCustomers(filters: CustomerListFilters): Promise<Customer[]> {
   const params = new URLSearchParams({
     status: filters.status,
-    page: String(filters.page),
-    page_size: String(filters.pageSize),
   })
   if (filters.search.trim()) params.set('search', filters.search.trim())
+  if (filters.page !== undefined) params.set('page', String(filters.page))
+  if (filters.pageSize !== undefined) params.set('page_size', String(filters.pageSize))
   return apiClient<Customer[]>(`/api/v1/customers?${params.toString()}`)
 }
 

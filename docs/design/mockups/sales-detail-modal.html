@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casa Afeto — Mockup de detalhamento da venda</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f1117;
+    --overlay: rgba(0,0,0,.6);
+    --modal: #161822;
+    --surface: #1a1c24;
+    --surface-2: #20232d;
+    --surface-3: #242633;
+    --border: #2b2e39;
+    --border-soft: #3a3e4b;
+    --text: #f3f4f6;
+    --muted: #b7bac5;
+    --subtle: #9296a3;
+    --accent: #6366f1;
+    --accent-hover: #5558e8;
+    --accent-soft: rgba(99,102,241,.14);
+    --green: #10b981;
+    --green-soft: rgba(16,185,129,.11);
+    --orange: #f59e0b;
+    --orange-soft: rgba(245,158,11,.11);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 14px/1.45 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  .app-bg { position: fixed; inset: 0; opacity: .35; pointer-events: none; }
+  .app-top { height: 44px; border-bottom: 1px solid var(--border); padding: 12px 28px; color: var(--subtle); font-size: 12px; }
+  .scrim { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: 22px; }
+  .modal {
+    width: min(1380px, 100%); height: min(900px, calc(100vh - 44px)); min-height: 500px;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--modal); border: 1px solid var(--border-soft); border-radius: var(--radius);
+    box-shadow: 0 24px 90px rgba(0,0,0,.5);
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    padding: 17px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; letter-spacing: -.25px; }
+  .close { color: var(--muted); border: 0; background: transparent; font-size: 23px; line-height: 1; padding: 2px 4px; }
+  .close:hover { color: white; }
+  .modal-content { min-height: 0; flex: 1; overflow: auto; scrollbar-color: var(--border) transparent; scrollbar-width: thin; }
+  .sale-summary {
+    display: grid; grid-template-columns: minmax(260px,1fr) auto auto; align-items: center; gap: 28px;
+    margin: 20px 24px 16px; padding: 16px 20px;
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+  }
+  .sale-ident { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .sale-icon, .icon-bubble {
+    display: grid; place-items: center; flex: 0 0 auto; color: #c7c8ff;
+    background: var(--accent-soft); border: 1px solid rgba(99,102,241,.12);
+  }
+  .sale-icon { width: 46px; height: 46px; border-radius: 13px; font-size: 23px; }
+  .sale-heading { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h1,h2,h3,p { margin: 0; }
+  h1 { font-size: 18px; line-height: 1.3; }
+  .client { color: var(--muted); margin-top: 4px; font-size: 13px; overflow-wrap: anywhere; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .badge:before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.draft { color: var(--subtle); }
+  .badge.pending { color: var(--orange); border-color: rgba(245,158,11,.2); background: var(--orange-soft); }
+  .badge.info { color: #c7c8ff; border-color: rgba(99,102,241,.24); background: var(--accent-soft); }
+  .total { min-width: 150px; text-align: right; border-left: 1px solid var(--border); padding-left: 25px; }
+  .eyebrow { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .35px; }
+  .money { color: var(--green); font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .actions { display: flex; gap: 8px; align-items: center; }
+  .btn { border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text); padding: 9px 13px; font-weight: 600; white-space: nowrap; }
+  .btn:hover { background: var(--surface-3); }
+  .btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+  .btn.small { padding: 6px 10px; font-size: 12px; }
+  .main-grid { display: grid; grid-template-columns: minmax(245px, 280px) minmax(0,1fr); gap: 16px; margin: 0 24px 24px; align-items: start; }
+  .sidebar { display: grid; gap: 12px; }
+  .panel { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .status-panel { padding: 14px 16px; }
+  .status-panel p { color: var(--muted); font-size: 12px; margin-top: 9px; }
+  .financial { padding: 16px; }
+  .panel-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+  .icon-bubble { width: 31px; height: 31px; border-radius: 10px; font-size: 16px; }
+  .finance-rows { display: grid; gap: 12px; margin-top: 17px; }
+  .finance-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+  .finance-row strong { color: var(--text); font-weight: 650; }
+  .finance-row .paid { color: #c7c8ff; }
+  .progress { height: 5px; border-radius: 20px; background: var(--border); margin-top: 14px; overflow: hidden; }
+  .progress span { display: block; width: 0%; height: 100%; background: var(--accent); }
+  .empty-payment { display: flex; align-items: center; gap: 10px; padding: 12px; margin-top: 16px; background: var(--surface-2); border-radius: 10px; color: var(--muted); font-size: 11px; }
+  .empty-payment .empty-icon { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: #c7c8ff; font-size: 15px; }
+  .note { padding: 14px 16px; }
+  .note p { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .tabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; border: 1px solid transparent; border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; }
+  .tab.active { background: var(--accent-soft); color: #c7c8ff; border-color: rgba(99,102,241,.34); }
+  .tab:hover { color: white; }
+  .baskets { display: grid; gap: 14px; }
+  .basket { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+  .basket-head { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 18px; align-items: center; padding: 16px 18px; }
+  .basket-title-line { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+  .basket-title { font-size: 14px; font-weight: 700; }
+  .basket-sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .basket-statuses { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .basket-value { text-align: right; white-space: nowrap; font-weight: 750; font-size: 15px; }
+  .text-link { display: inline-block; color: #c7c8ff; background: transparent; border: 0; padding: 0; margin-top: 5px; font-size: 12px; }
+  .text-link:hover { color: #e0deff; }
+  .collapse { color: var(--muted); border: 0; background: transparent; font-size: 18px; padding: 5px; }
+  .delivery { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 0 18px 14px; color: var(--muted); font-size: 12px; }
+  .delivery strong { color: var(--text); font-weight: 600; }
+  .delivery-edit { margin-left: auto; }
+  .composition { margin: 0 14px 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--modal); }
+  .composition-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+  .composition-label { display: flex; gap: 11px; align-items: center; }
+  .composition-label .icon-bubble { width: 35px; height: 35px; border-radius: 11px; font-size: 17px; }
+  .composition-label h3 { font-size: 14px; }
+  .composition-label p { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .count { color: var(--muted); font-size: 11px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; white-space: nowrap; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 580px; }
+  th { background: var(--surface-2); color: var(--muted); text-align: left; font-size: 11px; font-weight: 600; padding: 10px 14px; }
+  td { border-top: 1px solid var(--border-soft); padding: 11px 14px; font-size: 12px; vertical-align: middle; }
+  .product-name { font-weight: 600; color: var(--text); }
+  .unit { color: var(--muted); font-size: 11px; margin-top: 3px; }
+  .qty { width: 94px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; }
+  .stock { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; color: var(--green); background: var(--green-soft); border: 1px solid rgba(16,185,129,.16); border-radius: 999px; font-size: 11px; white-space: nowrap; }
+  .row-actions { display: flex; gap: 5px; align-items: center; }
+  .add-product { margin: 0 14px 14px; padding: 15px 16px; border: 1px dashed var(--border); border-radius: 12px; background: var(--modal); }
+  .add-product h3 { font-size: 14px; }
+  .add-product p { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .add-fields { display: grid; grid-template-columns: minmax(0,1fr) 120px auto; gap: 10px; align-items: end; margin-top: 13px; }
+  label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+  select, .field { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 8px 9px; }
+  .tab-pane[hidden] { display: none !important; }
+  .footer-hint { color: var(--subtle); font-size: 11px; padding: 12px 2px 12px; }
+  @media (max-width: 600px) {
+    #pane-entrega .add-fields, #pane-cliente .add-fields { grid-template-columns: 1fr !important; }
+    #pane-entrega .add-fields > div[style*="grid-column"] { grid-column: auto !important; }
+  }
+  @media (max-width: 950px) {
+    .scrim { padding: 10px; }
+    .modal { height: calc(100vh - 20px); }
+    .sale-summary { grid-template-columns: minmax(0,1fr) auto; gap: 14px; margin: 12px; }
+    .total { border-left: 0; padding-left: 0; grid-column: 1; text-align: left; }
+    .actions { grid-column: 2; grid-row: 1 / span 2; flex-wrap: wrap; justify-content: end; }
+    .main-grid { grid-template-columns: 1fr; margin: 0 12px 16px; }
+    .sidebar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .status-panel { grid-column: 1 / -1; }
+    .basket-head { grid-template-columns: minmax(0,1fr) auto; }
+    .basket-value { grid-column: 1; grid-row: 2; text-align: left; }
+    .collapse { grid-column: 2; grid-row: 1; }
+  }
+  @media (max-width: 600px) {
+    .modal-header { padding: 14px 16px; }
+    .modal-title { font-size: 14px; }
+    .sale-summary { grid-template-columns: 1fr; }
+    .actions { grid-column: auto; grid-row: auto; justify-content: start; }
+    .sale-icon { display: none; }
+    .sidebar { grid-template-columns: 1fr; }
+    .status-panel { grid-column: auto; }
+    .basket-head { padding: 14px; }
+    .delivery { padding: 0 14px 12px; gap: 9px 14px; }
+    .delivery-edit { margin-left: 0; }
+    .composition { margin: 0 8px 8px; }
+    .composition-head { align-items: flex-start; padding: 12px; }
+    .composition-label p { max-width: 240px; }
+    .add-fields { grid-template-columns: 1fr 90px; }
+    .add-fields .btn { grid-column: 1 / -1; }
+    .total { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="app-bg"><div class="app-top">Casa Afeto&nbsp; / &nbsp;Vendas</div></div>
+<div class="scrim">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <header class="modal-header">
+      <div class="modal-title" id="modal-title">Venda #256 — TONY CLEITON DE LIMA NASCIMENTO</div>
+      <button class="close" aria-label="Fechar" onclick="alert('Ação demonstrativa: fechar modal')">×</button>
+    </header>
+    <div class="modal-content">
+      <section class="sale-summary">
+        <div class="sale-ident">
+          <div class="sale-icon">🛒</div>
+          <div>
+            <div class="sale-heading"><h1>Venda #256</h1><span class="badge draft">RASCUNHO</span></div>
+            <div class="client">TONY CLEITON DE LIMA NASCIMENTO&nbsp; · &nbsp;86988748154</div>
+          </div>
+        </div>
+        <div class="total"><div class="eyebrow">Total da venda</div><div class="money">R$ 62,56</div></div>
+        <div class="actions">
+          <button class="btn" onclick="alert('Ação demonstrativa: adicionar cesta')">＋ Adicionar Cesta</button>
+          <button class="btn primary" onclick="alert('Ação demonstrativa: confirmar venda')">✓ Confirmar Venda</button>
+          <button class="btn ghost" onclick="alert('Ação demonstrativa: cancelar venda')">Cancelar</button>
+        </div>
+      </section>
+
+      <div class="main-grid">
+        <aside class="sidebar">
+          <section class="panel status-panel">
+            <span class="badge draft">RASCUNHO</span>
+            <p>Confirme a venda para iniciar a reserva de estoque.</p>
+          </section>
+          <section class="panel financial">
+            <div class="panel-title"><span class="icon-bubble">◉</span>Resumo financeiro</div>
+            <div class="finance-rows">
+              <div class="finance-row"><span>Total</span><strong>R$ 62,56</strong></div>
+              <div class="finance-row"><span>Pago</span><strong class="paid">R$ 0,00 (0%)</strong></div>
+              <div class="finance-row"><span>Restante</span><strong>R$ 62,56</strong></div>
+            </div>
+            <div class="progress"><span></span></div>
+            <button class="btn primary" style="width:100%;margin-top:15px" onclick="alert('Ação demonstrativa: registrar pagamento')">Registrar Pagamento</button>
+            <div class="empty-payment"><span class="empty-icon">▤</span><span>Nenhum pagamento registrado.</span></div>
+          </section>
+          <section class="panel note">
+            <div class="panel-title"><span class="icon-bubble">ⓘ</span>Informação</div>
+            <p>Após a confirmação, o estoque será reservado e o ciclo da venda será iniciado.</p>
+          </section>
+        </aside>
+
+        <main>
+          <nav class="tabs" aria-label="Seções da venda">
+            <button class="tab active" data-tab="cestas">◇ CESTA</button>
+            <button class="tab" data-tab="entrega">⌖ ENTREGA</button>
+            <button class="tab" data-tab="cliente">♟ CLIENTE</button>
+          </nav>
+          <section class="tab-pane" id="pane-cestas">
+          <div class="baskets">
+            <article class="basket">
+              <div class="basket-head">
+                <div>
+                  <div class="basket-title-line"><div class="basket-title">Cesta: Café da Manhã Especial</div><span class="badge info">Cesta #1</span></div>
+                  <div class="basket-sub">Template com conversão 28ce237e</div>
+                  <div class="basket-statuses"><span class="badge pending">Preparo pendente</span><span class="badge info">Entrega pendente</span></div>
+                </div>
+                <div class="basket-value">R$ 62,56<br><button class="text-link" onclick="alert('Ação demonstrativa: editar preço')">Editar preço</button></div>
+                <button class="collapse" aria-label="Recolher composição" onclick="toggleBasket(this)">⌃</button>
+              </div>
+              <div class="delivery">
+                <span><strong>Destinatário:</strong> —</span><span><strong>Endereço:</strong> —</span><span><strong>Data/Hora:</strong> —</span>
+                <button class="text-link delivery-edit" onclick="alert('Ação demonstrativa: editar entrega')">✎ Editar dados de entrega</button>
+              </div>
+              <section class="composition">
+                <div class="composition-head">
+                  <div class="composition-label"><span class="icon-bubble">◇</span><div><h3>Composição da Cesta #1</h3><p>Produtos e quantidades pertencentes a esta cesta.</p></div></div>
+                  <span class="count">3 produtos</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th style="width:43%">Produto</th><th>Quantidade</th><th>Disponibilidade</th><th>Ações</th></tr></thead>
+                    <tbody>
+                      <tr><td><div class="product-name">tmpl-conv-9e4c795a11d4425891ad511ee609940c</div><div class="unit">UN</div></td><td><input class="qty" value="2" aria-label="Quantidade do primeiro produto"><br><button class="btn small" style="margin-top:5px" onclick="alert('Quantidade salva (demonstração)')">Salvar</button></td><td><span class="stock">✓ 0 UN disponível</span></td><td><div class="row-actions"><button class="btn small" onclick="alert('Ação demonstrativa: trocar produto')">Trocar</button><button class="btn small ghost" onclick="alert('Ação demonstrativa: remover produto')">Remover</button></div></td></tr>
+                      <tr><td><div class="product-name">Brioche Escandinavo</div><div class="unit">UN</div></td><td><input class="qty" value="1" aria-label="Quantidade do Brioche"><br><button class="btn small" style="margin-top:5px" onclick="alert('Quantidade salva (demonstração)')">Salvar</button></td><td><span class="stock">✓ 0 UN disponível</span></td><td><div class="row-actions"><button class="btn small" onclick="alert('Ação demonstrativa: trocar produto')">Trocar</button><button class="btn small ghost" onclick="alert('Ação demonstrativa: remover produto')">Remover</button></div></td></tr>
+                      <tr><td><div class="product-name">Croissant Misto Member's Mark 900g</div><div class="unit">UN</div></td><td><input class="qty" value="2" aria-label="Quantidade do Croissant"><br><button class="btn small" style="margin-top:5px" onclick="alert('Quantidade salva (demonstração)')">Salvar</button></td><td><span class="stock">✓ 0 UN disponível</span></td><td><div class="row-actions"><button class="btn small" onclick="alert('Ação demonstrativa: trocar produto')">Trocar</button><button class="btn small ghost" onclick="alert('Ação demonstrativa: remover produto')">Remover</button></div></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              <section class="add-product">
+                <h3>＋ Adicionar produto à Cesta #1</h3>
+                <p>Produtos inativos não podem ser incluídos novamente. A composição é específica desta cesta.</p>
+                <div class="add-fields">
+                  <div><label>Produto ativo</label><select><option>Selecione um produto</option><option>Brioche Escandinavo</option><option>Croissant Misto Member's Mark 900g</option></select></div>
+                  <div><label>Quantidade</label><input class="field" type="number" min="1" value="1"></div>
+                  <button class="btn primary" onclick="alert('Ação demonstrativa: adicionar produto à Cesta #1')">Adicionar produto</button>
+                </div>
+              </section>
+            </article>
+
+            <article class="basket">
+              <div class="basket-head">
+                <div>
+                  <div class="basket-title-line"><div class="basket-title">Cesta: Kit Café Individual</div><span class="badge info">Cesta #2</span></div>
+                  <div class="basket-sub">Template com conversão a91f42bd</div>
+                  <div class="basket-statuses"><span class="badge pending">Preparo pendente</span><span class="badge info">Entrega pendente</span></div>
+                </div>
+                <div class="basket-value">R$ 28,00<br><button class="text-link" onclick="alert('Ação demonstrativa: editar preço')">Editar preço</button></div>
+                <button class="collapse" aria-label="Recolher composição" onclick="toggleBasket(this)">⌃</button>
+              </div>
+              <div class="delivery">
+                <span><strong>Destinatário:</strong> —</span><span><strong>Endereço:</strong> —</span><span><strong>Data/Hora:</strong> —</span>
+                <button class="text-link delivery-edit" onclick="alert('Ação demonstrativa: editar entrega')">✎ Editar dados de entrega</button>
+              </div>
+              <section class="composition">
+                <div class="composition-head">
+                  <div class="composition-label"><span class="icon-bubble">◇</span><div><h3>Composição da Cesta #2</h3><p>Esta lista pertence somente à segunda cesta.</p></div></div>
+                  <span class="count">2 produtos</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th style="width:43%">Produto</th><th>Quantidade</th><th>Disponibilidade</th><th>Ações</th></tr></thead>
+                    <tbody>
+                      <tr><td><div class="product-name">Brioche Escandinavo</div><div class="unit">UN</div></td><td><input class="qty" value="1" aria-label="Quantidade do Brioche da cesta 2"><br><button class="btn small" style="margin-top:5px" onclick="alert('Quantidade salva (demonstração)')">Salvar</button></td><td><span class="stock">✓ Disponível</span></td><td><div class="row-actions"><button class="btn small" onclick="alert('Ação demonstrativa: trocar produto')">Trocar</button><button class="btn small ghost" onclick="alert('Ação demonstrativa: remover produto')">Remover</button></div></td></tr>
+                      <tr><td><div class="product-name">Suco de Uva Integral</div><div class="unit">ML</div></td><td><input class="qty" value="300" aria-label="Quantidade do suco da cesta 2"><br><button class="btn small" style="margin-top:5px" onclick="alert('Quantidade salva (demonstração)')">Salvar</button></td><td><span class="stock">✓ Disponível</span></td><td><div class="row-actions"><button class="btn small" onclick="alert('Ação demonstrativa: trocar produto')">Trocar</button><button class="btn small ghost" onclick="alert('Ação demonstrativa: remover produto')">Remover</button></div></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              <section class="add-product">
+                <h3>＋ Adicionar produto à Cesta #2</h3>
+                <p>Os produtos adicionados aqui não alteram a composição da Cesta #1.</p>
+                <div class="add-fields">
+                  <div><label>Produto ativo</label><select><option>Selecione um produto</option><option>Brioche Escandinavo</option><option>Suco de Uva Integral</option></select></div>
+                  <div><label>Quantidade</label><input class="field" type="number" min="1" value="1"></div>
+                  <button class="btn primary" onclick="alert('Ação demonstrativa: adicionar produto à Cesta #2')">Adicionar produto</button>
+                </div>
+              </section>
+            </article>
+          </div>
+          </section>
+
+          <section class="tab-pane" id="pane-entrega" hidden>
+            <div class="panel" style="padding:18px;margin-bottom:14px">
+              <div class="panel-title"><span class="icon-bubble">⌖</span>Dados de entrega</div>
+              <p style="color:var(--muted);font-size:12px;margin-top:7px">Preencha os dados de entrega de cada cesta. Os campos são independentes, pois cada cesta pode ter destinatário, endereço e horário próprios.</p>
+            </div>
+            <div class="baskets">
+              <article class="basket">
+                <div class="basket-head">
+                  <div><div class="basket-title-line"><div class="basket-title">Cesta: Café da Manhã Especial</div><span class="badge info">Cesta #1</span></div><div class="basket-sub">Entrega vinculada a esta cesta</div></div>
+                  <div class="basket-value">R$ 62,56</div>
+                </div>
+                <div style="padding:0 18px 18px">
+                  <div class="add-fields" style="grid-template-columns:repeat(2,minmax(0,1fr));align-items:start">
+                    <div><label for="recipient-1">Destinatário</label><input id="recipient-1" class="field" placeholder="Nome de quem receberá"></div>
+                    <div><label for="phone-1">Telefone do destinatário (opcional)</label><input id="phone-1" class="field" placeholder="(00) 00000-0000"></div>
+                    <div style="grid-column:1/-1"><label for="address-1">Endereço de entrega</label><input id="address-1" class="field" placeholder="Rua, número, complemento, bairro"></div>
+                    <div><label for="date-1">Data da entrega</label><input id="date-1" class="field" type="date"></div>
+                    <div><label for="time-1">Horário da entrega</label><input id="time-1" class="field" type="time"></div>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" onclick="saveDelivery(1)">Salvar entrega da Cesta #1</button></div>
+                  <p id="delivery-status-1" style="color:var(--green);font-size:12px;margin-top:8px" aria-live="polite"></p>
+                </div>
+              </article>
+              <article class="basket">
+                <div class="basket-head">
+                  <div><div class="basket-title-line"><div class="basket-title">Cesta: Kit Café Individual</div><span class="badge info">Cesta #2</span></div><div class="basket-sub">Entrega vinculada a esta cesta</div></div>
+                  <div class="basket-value">R$ 28,00</div>
+                </div>
+                <div style="padding:0 18px 18px">
+                  <div class="add-fields" style="grid-template-columns:repeat(2,minmax(0,1fr));align-items:start">
+                    <div><label for="recipient-2">Destinatário</label><input id="recipient-2" class="field" placeholder="Nome de quem receberá"></div>
+                    <div><label for="phone-2">Telefone do destinatário (opcional)</label><input id="phone-2" class="field" placeholder="(00) 00000-0000"></div>
+                    <div style="grid-column:1/-1"><label for="address-2">Endereço de entrega</label><input id="address-2" class="field" placeholder="Rua, número, complemento, bairro"></div>
+                    <div><label for="date-2">Data da entrega</label><input id="date-2" class="field" type="date"></div>
+                    <div><label for="time-2">Horário da entrega</label><input id="time-2" class="field" type="time"></div>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" onclick="saveDelivery(2)">Salvar entrega da Cesta #2</button></div>
+                  <p id="delivery-status-2" style="color:var(--green);font-size:12px;margin-top:8px" aria-live="polite"></p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="tab-pane" id="pane-cliente" hidden>
+            <article class="panel" style="padding:20px">
+              <div style="display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+                <div class="sale-icon" style="width:54px;height:54px;border-radius:50%">♟</div>
+                <div><h2 style="font-size:17px">Dados do cliente</h2><p style="color:var(--muted);font-size:12px;margin-top:4px">Cadastro associado a esta venda</p></div>
+              </div>
+              <div class="add-fields" style="grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;margin-top:18px">
+                <div><label>Nome completo</label><input class="field" value="TONY CLEITON DE LIMA NASCIMENTO" readonly></div>
+                <div><label>Telefone</label><input class="field" value="86988748154" readonly></div>
+                <div><label>Identificação da venda</label><input class="field" value="Venda #256" readonly></div>
+                <div><label>Situação</label><input class="field" value="RASCUNHO" readonly></div>
+              </div>
+              <p style="color:var(--muted);font-size:12px;margin-top:18px">Esta área é apenas ilustrativa para validar a navegação entre abas. Os dados do cliente são somente leitura neste protótipo.</p>
+            </article>
+          </section>
+          <div class="footer-hint">Mockup interativo de navegação — campos e botões de salvar são demonstrativos e não persistem dados em uma API.</div>
+        </main>
+      </div>
+    </div>
+  </section>
+</div>
+<script>
+  function toggleBasket(button) {
+    const basket = button.closest('.basket');
+    const sections = basket.querySelectorAll('.delivery, .composition, .add-product');
+    const hidden = button.dataset.collapsed !== 'true';
+    sections.forEach((section) => { section.style.display = hidden ? 'none' : ''; });
+    button.dataset.collapsed = hidden ? 'true' : 'false';
+    button.textContent = hidden ? '⌄' : '⌃';
+    button.setAttribute('aria-label', hidden ? 'Expandir composição' : 'Recolher composição');
+  }
+  document.querySelectorAll('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((item) => {
+        item.classList.toggle('active', item === tab);
+        item.setAttribute('aria-selected', item === tab ? 'true' : 'false');
+      });
+      document.querySelectorAll('.tab-pane').forEach((pane) => {
+        pane.hidden = pane.id !== 'pane-' + tab.dataset.tab;
+      });
+    });
+  });
+
+  function saveDelivery(basketNumber) {
+    const recipient = document.getElementById('recipient-' + basketNumber).value.trim();
+    const address = document.getElementById('address-' + basketNumber).value.trim();
+    const date = document.getElementById('date-' + basketNumber).value;
+    const time = document.getElementById('time-' + basketNumber).value;
+    const status = document.getElementById('delivery-status-' + basketNumber);
+    const missing = [];
+    if (!recipient) missing.push('destinatário');
+    if (!address) missing.push('endereço');
+    if (!date) missing.push('data');
+    if (!time) missing.push('horário');
+    status.textContent = missing.length
+      ? 'Demonstração: preencha ' + missing.join(', ') + ' antes de salvar.'
+      : 'Dados da Cesta #' + basketNumber + ' validados neste protótipo (não foram enviados à API).';
+    status.style.color = missing.length ? 'var(--orange)' : 'var(--green)';
+  }
+</script>
+</body>
+</html>

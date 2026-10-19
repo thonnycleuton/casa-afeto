@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { BasketTemplate, Sale, SaleBasketAddInput } from '../../api/types'
+import { computed, ref, watch } from 'vue'
+import type { BasketTemplate, Product, Sale, SaleBasketAddInput } from '../../api/types'
 import type { Payment, PaymentTotal } from '../../api/payments'
 import SaleBasketCard from './SaleBasketCard.vue'
 import PaymentModal from './PaymentModal.vue'
@@ -11,6 +11,7 @@ const props = withDefaults(
   defineProps<{
     sale: Sale
     templates: BasketTemplate[]
+    products?: Product[]
     paymentTotal?: PaymentTotal | null
     payments?: Payment[]
     paymentLoading?: boolean
@@ -18,6 +19,7 @@ const props = withDefaults(
     confirmErrorType?: 'payment' | 'stock' | 'delivery' | null
   }>(),
   {
+    products: () => [],
     paymentTotal: null,
     payments: () => [],
     paymentLoading: false,
@@ -38,6 +40,7 @@ const emit = defineEmits<{
   (e: 'update-delivery', saleId: number, basketId: number, delivery: { recipient_name: string; delivery_address: string; delivery_date: string; delivery_time: string }): void
   (e: 'prepare-basket', saleId: number, basketId: number): void
   (e: 'deliver-basket', saleId: number, basketId: number, operatorName: string): void
+  (e: 'update-composition', saleId: number, basketId: number, items: Array<{ product_id: number; quantity: string }>): void
   (e: 'record-payment', saleId: number, payload: { amount: string; method: string; idempotency_key: string }): void
   (e: 'payment-success'): void
   (e: 'retry-payments'): void
@@ -47,6 +50,40 @@ const showReopenModal = ref(false)
 const showPaymentModal = ref(false)
 const addingBasket = ref(false)
 const selectedTemplateId = ref<number | ''>('')
+
+// Tab navigation
+const activeTab = ref<'cestas' | 'entrega' | 'cliente'>('cestas')
+
+// Delivery form state per basket (for ENTREGA tab)
+interface DeliveryFormState {
+  recipient_name: string
+  delivery_address: string
+  delivery_date: string
+  delivery_time: string
+}
+const deliveryForms = ref<Record<number, DeliveryFormState>>({})
+
+// Initialize delivery forms for all baskets eagerly so v-model bindings are always valid
+function initDeliveryForms(): void {
+  for (const b of props.sale.baskets) {
+    if (!deliveryForms.value[b.id]) {
+      deliveryForms.value[b.id] = {
+        recipient_name: b.recipient_name || '',
+        delivery_address: b.delivery_address || '',
+        delivery_date: b.delivery_date || '',
+        delivery_time: b.delivery_time || '',
+      }
+    }
+  }
+}
+initDeliveryForms()
+
+// Re-init when baskets change (e.g., after adding/removing a basket)
+watch(
+  () => props.sale.baskets,
+  () => initDeliveryForms(),
+  { deep: true },
+)
 
 // Referência ao PaymentModal para chamar onRecordSuccess após sucesso do backend
 const paymentModalRef = ref<InstanceType<typeof PaymentModal> | null>(null)
@@ -85,6 +122,26 @@ const canRegisterPayment = computed(() => {
   )
 })
 
+const statusMessage = computed(() => {
+  const status = props.sale.status
+  switch (status) {
+    case 'RASCUNHO':
+      return 'Confirme a venda para iniciar a reserva de estoque.'
+    case 'CONFIRMADA':
+      return 'Estoque reservado. Inicie a preparação das cestas.'
+    case 'EM PREPARAÇÃO':
+      return 'Marque cada cesta como preparada à medida que fica pronta.'
+    case 'PRONTA':
+      return 'Todas as cestas preparadas. Aguardando entrega.'
+    case 'ENTREGUE':
+      return 'Venda entregue com sucesso.'
+    case 'CANCELADA':
+      return 'Venda cancelada.'
+    default:
+      return ''
+  }
+})
+
 function handleRecordPayment(payload: { amount: string; method: string; idempotency_key: string }): void {
   emit('record-payment', props.sale.id, payload)
   // Não fecha o modal aqui — o SalesView decide o resultado
@@ -106,6 +163,29 @@ function handleAddBasket(): void {
   addingBasket.value = false
 }
 
+function getDeliveryForm(basketId: number): DeliveryFormState {
+  if (!deliveryForms.value[basketId]) {
+    const basket = props.sale.baskets.find((b) => b.id === basketId)
+    deliveryForms.value[basketId] = {
+      recipient_name: basket?.recipient_name || '',
+      delivery_address: basket?.delivery_address || '',
+      delivery_date: basket?.delivery_date || '',
+      delivery_time: basket?.delivery_time || '',
+    }
+  }
+  return deliveryForms.value[basketId]
+}
+
+function saveDelivery(basketId: number): void {
+  const form = getDeliveryForm(basketId)
+  emit('update-delivery', props.sale.id, basketId, {
+    recipient_name: form.recipient_name,
+    delivery_address: form.delivery_address,
+    delivery_date: form.delivery_date,
+    delivery_time: form.delivery_time,
+  })
+}
+
 defineExpose({
   handlePaymentSuccess,
 })
@@ -113,209 +193,348 @@ defineExpose({
 
 <template>
   <div class="sale-detail">
-    <div class="top-nav">
-      <button type="button" class="btn-back" @click="emit('back')">← Voltar às Vendas</button>
-    </div>
-
-    <header class="sale-header">
-      <div class="header-left">
-        <h2>Venda #{{ sale.id }}</h2>
-        <div class="meta-row">
-          <span><strong>Cliente:</strong> {{ sale.customer_name }} ({{ sale.customer_phone }})</span>
-          <SaleStatusBadge :status="sale.status" />
+    <!-- Sale summary card (compact header) -->
+    <div class="sale-summary">
+      <div class="sale-ident">
+        <div class="sale-icon" aria-hidden="true">🛒</div>
+        <div>
+          <div class="sale-heading">
+            <h1>Venda #{{ sale.id }}</h1>
+            <SaleStatusBadge :status="sale.status" />
+          </div>
+          <p class="client">{{ sale.customer_name }} · {{ sale.customer_phone }}</p>
         </div>
       </div>
-      <div class="header-right">
-        <span class="total-label">Total da Venda</span>
-        <span class="total-value">{{ formatCurrency(sale.total) }}</span>
+      <div class="total">
+        <div class="eyebrow">Total</div>
+        <div class="money">{{ formatCurrency(sale.total) }}</div>
       </div>
-    </header>
-
-    <div class="control-bar">
-      <div class="status-actions">
-        <!-- RASCUNHO actions -->
+      <div class="actions">
         <button
           v-if="sale.status === 'RASCUNHO'"
           type="button"
-          class="button primary"
-          @click="emit('confirm', sale.id)"
-        >
-          Confirmar Venda
-        </button>
-
-        <!-- CONFIRMADA actions -->
-        <button
-          v-if="sale.status === 'CONFIRMADA'"
-          type="button"
-          class="button primary"
-          @click="emit('start-prep', sale.id)"
-        >
-          Iniciar Preparação
-        </button>
-
-        <!-- PRONTA actions -->
-        <button
-          v-if="sale.status === 'PRONTA'"
-          type="button"
-          class="button secondary"
-          @click="showReopenModal = true"
-        >
-          Reabrir Venda
-        </button>
-
-        <!-- Cancelar action -->
-        <button
-          v-if="!hasAnyDelivery && sale.status !== 'ENTREGUE' && sale.status !== 'CANCELADA'"
-          type="button"
-          class="button ghost"
-          @click="emit('cancel', sale.id)"
-        >
-          Cancelar Venda
-        </button>
-
-        <button
-          v-if="sale.status === 'RASCUNHO'"
-          type="button"
-          class="button secondary"
+          class="btn"
           @click="addingBasket = !addingBasket"
         >
           + Adicionar Cesta
         </button>
+        <button
+          v-if="sale.status === 'RASCUNHO'"
+          type="button"
+          class="btn primary"
+          @click="emit('confirm', sale.id)"
+        >
+          Confirmar Venda
+        </button>
+        <button
+          v-if="sale.status === 'CONFIRMADA'"
+          type="button"
+          class="btn primary"
+          @click="emit('start-prep', sale.id)"
+        >
+          Iniciar Preparação
+        </button>
+        <button
+          v-if="sale.status === 'PRONTA'"
+          type="button"
+          class="btn"
+          @click="showReopenModal = true"
+        >
+          Reabrir Venda
+        </button>
+        <button
+          v-if="!hasAnyDelivery && sale.status !== 'ENTREGUE' && sale.status !== 'CANCELADA'"
+          type="button"
+          class="btn ghost"
+          @click="emit('cancel', sale.id)"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
 
-    <!-- Payments section -->
-    <section class="payments-section">
-      <div class="payments-header">
-        <h3>Pagamentos</h3>
-        <button
-          v-if="canRegisterPayment"
-          type="button"
-          class="button primary compact"
-          @click="showPaymentModal = true"
-        >
-          Registrar Pagamento
-        </button>
-      </div>
+    <!-- Confirmation error feedback -->
+    <div v-if="confirmErrorType === 'payment'" class="feedback feedback-error" role="alert">
+      <span>É necessário pagar pelo menos 50% do total para confirmar a venda.</span>
+    </div>
+    <div v-if="confirmErrorType === 'stock'" class="feedback feedback-warning" role="alert">
+      <span>A venda permanece em RASCUNHO devido à indisponibilidade de estoque.</span>
+    </div>
+    <div v-if="confirmErrorType === 'delivery'" class="feedback feedback-error" role="alert">
+      <span>Todas as cestas devem possuir dados de entrega completos para confirmação.</span>
+    </div>
 
-      <!-- Payment summary -->
-      <div v-if="paymentTotal" class="payment-summary">
-        <div class="summary-row">
-          <span class="summary-label">Total da venda:</span>
-          <span class="summary-value">{{ formatCurrency(paymentTotal.sale_total) }}</span>
+    <!-- Two-column layout: sidebar + main with tabs -->
+    <div class="sale-layout">
+      <!-- Sidebar: Status + Finance + Note panels -->
+      <aside class="sale-sidebar">
+        <!-- Status panel -->
+        <section class="panel">
+          <div class="panel-title">
+            <span class="icon-bubble status-icon" aria-hidden="true">📋</span>
+            Status
+          </div>
+          <div class="panel-body">
+            <SaleStatusBadge :status="sale.status" />
+            <p class="note-text">{{ statusMessage }}</p>
+          </div>
+        </section>
+
+        <!-- Financial panel -->
+        <section v-if="paymentTotal" class="panel">
+          <div class="panel-title">
+            <span class="icon-bubble finance-icon" aria-hidden="true">💰</span>
+            Resumo Financeiro
+          </div>
+          <div class="panel-body">
+            <div class="finance-rows">
+              <div class="finance-row">
+                <span>Total</span>
+                <strong>{{ formatCurrency(paymentTotal.sale_total) }}</strong>
+              </div>
+              <div class="finance-row">
+                <span>Pago</span>
+                <strong class="paid">{{ formatCurrency(paymentTotal.total_paid) }} ({{ paymentPercentage }}%)</strong>
+              </div>
+              <div class="finance-row">
+                <span>Restante</span>
+                <strong>{{ formatCurrency(String(Number(paymentTotal.sale_total) - Number(paymentTotal.total_paid))) }}</strong>
+              </div>
+            </div>
+            <div class="progress">
+              <span :style="{ width: paymentPercentage + '%', backgroundColor: paymentProgressColor }"></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Payment action panel -->
+        <section v-if="canRegisterPayment" class="panel">
+          <div class="panel-body">
+            <button
+              type="button"
+              class="btn primary full-width"
+              @click="showPaymentModal = true"
+            >
+              Registrar Pagamento
+            </button>
+          </div>
+        </section>
+
+        <!-- Payment loading/error -->
+        <section v-if="paymentLoading || paymentError" class="panel">
+          <div class="panel-body">
+            <div v-if="paymentLoading" class="payment-loading">Carregando...</div>
+            <div v-if="paymentError" class="feedback feedback-error" role="alert">
+              <span>{{ paymentError }}</span>
+              <button type="button" class="btn ghost small retry-btn" @click="emit('retry-payments')">
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Payment history panel -->
+        <section v-if="payments && payments.length > 0" class="panel">
+          <div class="panel-title">
+            <span class="icon-bubble" aria-hidden="true">📄</span>
+            Histórico de Pagamentos
+          </div>
+          <div class="panel-body">
+            <div class="payment-list">
+              <div v-for="p in payments" :key="p.id" class="payment-item">
+                <span class="payment-method">{{ p.method === 'PIX' ? 'PIX' : 'Cartão' }}</span>
+                <span class="payment-amount">{{ formatCurrency(p.amount) }}</span>
+                <span class="payment-date">{{ new Date(p.created_at).toLocaleString('pt-BR') }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section v-else-if="!paymentLoading && !paymentError && payments && payments.length === 0" class="panel">
+          <div class="panel-body">
+            <div class="empty-payment">
+              <span class="empty-icon" aria-hidden="true">💳</span>
+              <span>Nenhum pagamento registrado.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reopen histories panel -->
+        <section v-if="sale.reopen_histories.length > 0" class="panel">
+          <div class="panel-title">
+            <span class="icon-bubble" aria-hidden="true">🔄</span>
+            Reaberturas
+          </div>
+          <div class="panel-body">
+            <ul class="reopen-list">
+              <li v-for="h in sale.reopen_histories" :key="h.id">
+                <strong>{{ h.operator_name }}</strong> em {{ new Date(h.created_at).toLocaleString('pt-BR') }}:
+                <em>"{{ h.reason }}"</em>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </aside>
+
+      <!-- Main content with tabs -->
+      <main class="sale-main">
+        <!-- Tab navigation -->
+        <div class="tabs">
+          <button
+            type="button"
+            :class="['tab', { active: activeTab === 'cestas' }]"
+            @click="activeTab = 'cestas'"
+          >
+            🧺 Cesta
+          </button>
+          <button
+            type="button"
+            :class="['tab', { active: activeTab === 'entrega' }]"
+            @click="activeTab = 'entrega'"
+          >
+            🚚 Entrega
+          </button>
+          <button
+            type="button"
+            :class="['tab', { active: activeTab === 'cliente' }]"
+            @click="activeTab = 'cliente'"
+          >
+            👤 Cliente
+          </button>
         </div>
-        <div class="summary-row">
-          <span class="summary-label">Total pago:</span>
-          <span class="summary-value paid">{{ formatCurrency(paymentTotal.total_paid) }} ({{ paymentPercentage }}%)</span>
-        </div>
-        <div class="summary-row">
-          <span class="summary-label">Valor restante:</span>
-          <span class="summary-value remaining">{{ formatCurrency(String(Number(paymentTotal.sale_total) - Number(paymentTotal.total_paid))) }}</span>
-        </div>
-        <div class="progress-bar-container">
-          <div
-            class="progress-bar"
-            :style="{ width: paymentPercentage + '%', backgroundColor: paymentProgressColor }"
-          ></div>
-        </div>
-      </div>
 
-      <!-- Payment loading state -->
-      <div v-if="paymentLoading" class="payment-loading">
-        Carregando dados de pagamento...
-      </div>
+        <!-- Tab: CESTAS -->
+        <div v-show="activeTab === 'cestas'" class="tab-pane">
+          <!-- Quick add basket in draft -->
+          <div v-if="addingBasket && sale.status === 'RASCUNHO'" class="add-basket-box">
+            <select v-model="selectedTemplateId" class="select-tpl">
+              <option value="" disabled>Selecione um modelo com preço...</option>
+              <option v-for="t in pricedTemplates" :key="t.id" :value="t.id">
+                {{ t.name }} — R$ {{ t.price }}
+              </option>
+            </select>
+            <button type="button" class="button primary compact" :disabled="!selectedTemplateId" @click="handleAddBasket">
+              Adicionar
+            </button>
+            <button type="button" class="button ghost compact" @click="addingBasket = false">Cancelar</button>
+          </div>
 
-      <!-- Payment error state -->
-      <div v-if="paymentError" class="feedback feedback-error" role="alert">
-        <span>{{ paymentError }}</span>
-        <button type="button" class="button ghost compact retry-btn" @click="emit('retry-payments')">
-          Tentar novamente
-        </button>
-      </div>
-
-      <!-- Confirmation error feedback -->
-      <div v-if="confirmErrorType === 'payment'" class="feedback feedback-error" role="alert">
-        <span>É necessário pagar pelo menos 50% do total para confirmar a venda.</span>
-      </div>
-      <div v-if="confirmErrorType === 'stock'" class="feedback feedback-warning" role="alert">
-        <span>A venda permanece em RASCUNHO devido à indisponibilidade de estoque.</span>
-      </div>
-      <div v-if="confirmErrorType === 'delivery'" class="feedback feedback-error" role="alert">
-        <span>Todas as cestas devem possuir dados de entrega completos para confirmação.</span>
-      </div>
-
-      <!-- Payment history -->
-      <div v-if="payments && payments.length > 0" class="payment-history">
-        <h4>Histórico de Pagamentos</h4>
-        <div class="payment-list">
-          <div v-for="p in payments" :key="p.id" class="payment-item">
-            <span class="payment-method">{{ p.method === 'PIX' ? 'PIX' : 'Cartão' }}</span>
-            <span class="payment-amount">{{ formatCurrency(p.amount) }}</span>
-            <span class="payment-date">{{ new Date(p.created_at).toLocaleString('pt-BR') }}</span>
+          <div class="baskets-grid">
+            <SaleBasketCard
+              v-for="b in sale.baskets"
+              :key="b.id"
+              :basket="b"
+              :sale-status="sale.status"
+              :can-remove="sale.baskets.length > 1"
+              :products="products"
+              @update-price="(bId, p) => emit('update-price', sale.id, bId, p)"
+              @remove="(bId) => emit('remove-basket', sale.id, bId)"
+              @prepare="(bId) => emit('prepare-basket', sale.id, bId)"
+              @deliver="(bId, op) => emit('deliver-basket', sale.id, bId, op)"
+              @update-composition="(bId, items) => emit('update-composition', sale.id, bId, items)"
+            />
           </div>
         </div>
-      </div>
-      <div v-else-if="!paymentLoading && !paymentError && payments && payments.length === 0" class="payment-empty">
-        Nenhum pagamento registrado.
-      </div>
-    </section>
 
-    <!-- Quick add basket in draft -->
-    <div v-if="addingBasket && sale.status === 'RASCUNHO'" class="add-basket-box">
-      <select v-model="selectedTemplateId" class="select-tpl">
-        <option value="" disabled>Selecione um modelo com preço...</option>
-        <option v-for="t in pricedTemplates" :key="t.id" :value="t.id">
-          {{ t.name }} — R$ {{ t.price }}
-        </option>
-      </select>
-      <button type="button" class="button primary compact" :disabled="!selectedTemplateId" @click="handleAddBasket">
-        Adicionar
-      </button>
-      <button type="button" class="button ghost compact" @click="addingBasket = false">Cancelar</button>
-    </div>
+        <!-- Tab: ENTREGA -->
+        <div v-show="activeTab === 'entrega'" class="tab-pane">
+          <div class="delivery-tabs-content">
+            <div v-for="b in sale.baskets" :key="b.id" class="delivery-form-card">
+              <h3>{{ b.name }}</h3>
+              <form @submit.prevent="saveDelivery(b.id)" class="delivery-form">
+                <div class="form-group">
+                  <label for="recipient-{{ b.id }}">Destinatário</label>
+                  <input
+                    :id="'recipient-' + b.id"
+                    v-model="deliveryForms[b.id].recipient_name"
+                    type="text"
+                    class="field"
+                    placeholder="Nome do destinatário"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="phone-{{ b.id }}">Telefone (opcional)</label>
+                  <input
+                    :id="'phone-' + b.id"
+                    type="text"
+                    class="field"
+                    placeholder="Telefone do destinatário"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="address-{{ b.id }}">Endereço</label>
+                  <input
+                    :id="'address-' + b.id"
+                    v-model="deliveryForms[b.id].delivery_address"
+                    type="text"
+                    class="field"
+                    placeholder="Endereço de entrega"
+                  />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="date-{{ b.id }}">Data da entrega</label>
+                    <input
+                      :id="'date-' + b.id"
+                      v-model="deliveryForms[b.id].delivery_date"
+                      type="date"
+                      class="field"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="time-{{ b.id }}">Horário</label>
+                    <input
+                      :id="'time-' + b.id"
+                      v-model="deliveryForms[b.id].delivery_time"
+                      type="time"
+                      class="field"
+                    />
+                  </div>
+                </div>
+                <button
+                  v-if="sale.status !== 'ENTREGUE' && sale.status !== 'CANCELADA'"
+                  type="submit"
+                  class="btn primary"
+                >
+                  Salvar
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
 
-    <!-- Baskets list -->
-    <div class="baskets-section">
-      <h3>Cestas da Venda ({{ sale.baskets.length }})</h3>
-      <div class="baskets-grid">
-        <SaleBasketCard
-          v-for="b in sale.baskets"
-          :key="b.id"
-          :basket="b"
-          :sale-status="sale.status"
-          :can-remove="sale.baskets.length > 1"
-          @update-price="(bId, p) => emit('update-price', sale.id, bId, p)"
-          @update-delivery="(bId, d) => emit('update-delivery', sale.id, bId, d)"
-          @remove="(bId) => emit('remove-basket', sale.id, bId)"
-          @prepare="(bId) => emit('prepare-basket', sale.id, bId)"
-          @deliver="(bId, op) => emit('deliver-basket', sale.id, bId, op)"
-        />
-      </div>
-    </div>
-
-    <!-- Reopen histories -->
-    <div v-if="sale.reopen_histories.length > 0" class="reopen-log">
-      <h4>Histórico de Reaberturas:</h4>
-      <ul>
-        <li v-for="h in sale.reopen_histories" :key="h.id">
-          <strong>{{ h.operator_name }}</strong> em {{ new Date(h.created_at).toLocaleString('pt-BR') }}:
-          <em>"{{ h.reason }}"</em>
-        </li>
-      </ul>
+        <!-- Tab: CLIENTE -->
+        <div v-show="activeTab === 'cliente'" class="tab-pane">
+          <div class="client-info-card">
+            <h3>Dados do Cliente</h3>
+            <div class="client-field">
+              <span class="client-label">Nome</span>
+              <span class="client-value">{{ sale.customer_name }}</span>
+            </div>
+            <div class="client-field">
+              <span class="client-label">Telefone</span>
+              <span class="client-value">{{ sale.customer_phone }}</span>
+            </div>
+            <div class="client-field">
+              <span class="client-label">Identificação</span>
+              <span class="client-value">Venda #{{ sale.id }}</span>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
     <SaleReopenModal
-      v-if="showReopenModal"
-      @close="showReopenModal = false"
-      @confirm="(payload) => { showReopenModal = false; emit('reopen', sale.id, payload) }"
+      :open="showReopenModal"
+      @update:open="showReopenModal = $event"
+      @confirm="(payload) => emit('reopen', sale.id, payload)"
     />
 
     <PaymentModal
       ref="paymentModalRef"
-      v-if="showPaymentModal && paymentTotal"
-      :sale-total="paymentTotal.sale_total"
-      :total-paid="paymentTotal.total_paid"
-      @close="showPaymentModal = false"
+      :open="showPaymentModal && !!paymentTotal"
+      @update:open="showPaymentModal = $event"
+      :sale-total="paymentTotal?.sale_total ?? '0'"
+      :total-paid="paymentTotal?.total_paid ?? '0'"
       @record="handleRecordPayment"
       @success="handlePaymentSuccess"
     />
@@ -323,71 +542,282 @@ defineExpose({
 </template>
 
 <style scoped>
+/* Root: fills the modal body, scrolls as a whole */
 .sale-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-3);
 }
-.btn-back {
-  background: none;
-  border: none;
-  color: var(--color-primary);
+
+/* Sale summary card */
+.sale-summary {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+}
+.sale-ident {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.sale-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-lg);
+  font-size: 23px;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 80%, white);
+}
+.sale-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.sale-heading h1 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: 1.3;
+}
+.client {
+  color: var(--color-text-secondary);
+  margin: 0;
+  margin-top: 4px;
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+.total {
+  min-width: 150px;
+  text-align: right;
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-5);
+}
+.eyebrow {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+.money {
+  color: var(--color-success);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin-top: 2px;
+}
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  padding: 9px 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--color-border);
+}
+.btn.primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+.btn.primary:hover {
+  background: var(--color-primary-hover, #5558e8);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+.btn.small {
+  padding: 6px 10px;
+  font-size: var(--font-size-xs);
+}
+.full-width {
+  width: 100%;
+}
+
+/* Two-column layout */
+.sale-layout {
+  display: grid;
+  grid-template-columns: minmax(245px, 280px) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Sidebar */
+.sale-sidebar {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Panels */
+.panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.panel-title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: 0;
+}
+.icon-bubble {
+  width: 31px;
+  height: 31px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-size: 16px;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 80%, white);
+}
+.panel-body {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.note-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-2);
+}
+
+/* Finance rows */
+.finance-rows {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+}
+.finance-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.finance-row strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+.finance-row .paid {
+  color: color-mix(in srgb, var(--color-primary) 80%, white);
+}
+.progress {
+  height: 5px;
+  border-radius: 20px;
+  background: var(--color-border);
+  margin-top: var(--space-3);
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--color-primary);
+}
+
+/* Empty payment */
+.empty-payment {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+.empty-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 80%, white);
+  font-size: 15px;
+}
+
+/* Reopen list */
+.reopen-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Main content */
+.sale-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-1);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 15px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
 }
-.btn-back:hover {
-  color: var(--color-primary-hover);
+.tab.active {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 80%, white);
+  border-color: color-mix(in srgb, var(--color-primary) 34%, transparent);
 }
-.sale-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--color-surface);
-  padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
+.tab:hover {
+  color: white;
 }
-.header-left h2 {
-  margin: 0;
-  font-size: var(--font-size-xl);
-  color: var(--color-text-primary);
-}
-.meta-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-top: var(--space-1);
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-}
-.header-right {
+
+/* Tab panes */
+.tab-pane {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  gap: var(--space-3);
 }
-.total-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.total-value {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: var(--color-success);
-  font-variant-numeric: tabular-nums;
-}
-.control-bar {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-}
-.status-actions {
-  display: flex;
-  gap: var(--space-2);
-}
+
+/* Add basket box */
 .add-basket-box {
   display: flex;
   gap: var(--space-2);
@@ -406,109 +836,124 @@ defineExpose({
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
 }
-.baskets-section h3 {
-  margin: 0 0 var(--space-3) 0;
-  font-size: var(--font-size-lg);
-  color: var(--color-text-primary);
-}
+
+/* Baskets grid */
 .baskets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+/* Delivery forms */
+.delivery-tabs-content {
+  display: grid;
   gap: var(--space-4);
 }
-.reopen-log {
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-.reopen-log h4 {
-  margin: 0 0 var(--space-2) 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-.reopen-log ul {
-  margin: 0;
-  padding-left: var(--space-4);
-}
-.reopen-log li {
-  color: var(--color-text-secondary);
-}
-/* Payments section */
-.payments-section {
-  background: var(--color-surface);
+.delivery-form-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+.delivery-form-card h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-base);
+}
+.delivery-form {
+  display: grid;
+  gap: var(--space-3);
+}
+.form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-1);
 }
-.payments-header {
+.form-group label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.field {
+  width: 100%;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 9px;
+  font-size: var(--font-size-sm);
+  min-height: 36px;
+}
+
+/* Client info */
+.client-info-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+.client-info-card h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-base);
+}
+.client-field {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border-soft, var(--color-border));
 }
-.payments-header h3 {
-  margin: 0;
-  font-size: var(--font-size-lg);
+.client-field:last-child {
+  border-bottom: none;
+}
+.client-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.client-value {
   color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
 }
-.payment-summary {
+
+/* Payment list */
+.payment-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
-.summary-row {
+.payment-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
 }
-.summary-label {
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-.summary-value {
-  color: var(--color-text-primary);
+.payment-method {
   font-weight: 600;
+  color: var(--color-text-primary);
+  min-width: 50px;
+}
+.payment-amount {
+  font-weight: 600;
+  color: var(--color-success);
   font-variant-numeric: tabular-nums;
 }
-.summary-value.paid {
-  color: var(--color-primary);
-}
-.summary-value.remaining {
-  color: var(--color-text-secondary);
-}
-.progress-bar-container {
-  height: 8px;
-  background: var(--color-border);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: var(--space-1);
-}
-.progress-bar {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.3s ease;
-  min-width: 0;
-}
-.payment-loading {
-  font-size: var(--font-size-sm);
+.payment-date {
+  margin-left: auto;
   color: var(--color-text-muted);
-  text-align: center;
-  padding: var(--space-3);
+  font-size: var(--font-size-xs);
 }
-.payment-empty {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  text-align: center;
-  padding: var(--space-3);
-}
+
+/* Feedback */
 .feedback {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   display: flex;
@@ -528,38 +973,46 @@ defineExpose({
 .retry-btn {
   margin-left: auto;
 }
-.payment-history h4 {
-  margin: 0 0 var(--space-2) 0;
+.payment-loading {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-.payment-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.payment-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-elevated);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-}
-.payment-method {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  min-width: 60px;
-}
-.payment-amount {
-  font-weight: 600;
-  color: var(--color-success);
-  font-variant-numeric: tabular-nums;
-}
-.payment-date {
-  margin-left: auto;
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  text-align: center;
+  padding: var(--space-3);
+}
+
+/* Responsive: single column on smaller screens */
+@media (max-width: 950px) {
+  .sale-layout {
+    grid-template-columns: 1fr;
+  }
+  .sale-summary {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .total {
+    border-left: none;
+    padding-left: 0;
+    text-align: left;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2);
+  }
+  .actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 600px) {
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .sale-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .sale-heading h1 {
+    font-size: var(--font-size-base);
+  }
 }
 </style>

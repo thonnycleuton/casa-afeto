@@ -42,12 +42,14 @@ export interface ProductInput {
   name: string
   base_unit: ProductUnit
   reference_price?: string | null
+  commercial_conversion_factor?: string | null
 }
 
 export interface Product extends ProductInput {
   id: number
   active: boolean
   reference_price?: string | null
+  commercial_conversion_factor?: string | null
   inventory_balance: string
   average_cost?: string | null
   created_at: string
@@ -81,18 +83,6 @@ export interface BasketTemplate {
   name: string
   active: boolean
   price: string | null
-  estimated_cost?: string | null
-  suggested_price?: string | null
-  has_reliable_cost?: boolean
-  created_at: string
-  updated_at: string
-  items: CompositionItem[]
-}
-
-export interface Basket {
-  id: number
-  name: string
-  template_id: number | null
   estimated_cost?: string | null
   suggested_price?: string | null
   has_reliable_cost?: boolean

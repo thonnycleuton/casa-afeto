@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import DataTable, { type DataColumn } from '../ui/DataTable.vue'
 import { fetchTemplates } from '../../api/baskets'
 import { fetchCustomers } from '../../api/customers'
-import type { BasketTemplate, Customer, Sale, SaleCreateInput } from '../../api/types'
+import { fetchProducts } from '../../api/products'
+import type { BasketTemplate, Customer, Product, Sale, SaleCreateInput } from '../../api/types'
 import {
   addBasketToSale,
   cancelSale,
@@ -15,6 +17,7 @@ import {
   removeBasketFromSale,
   reopenSale,
   startPreparation,
+  updateBasketComposition,
   updateBasketDelivery,
   updateBasketPrice,
 } from '../../api/sales'
@@ -24,8 +27,8 @@ import {
   fetchPaymentTotal,
 } from '../../api/payments'
 import type { Payment, PaymentTotal } from '../../api/payments'
-import SaleDetailView from './SaleDetailView.vue'
 import SaleFormModal from './SaleFormModal.vue'
+import SaleDetailModal from './SaleDetailModal.vue'
 import SaleStatusBadge from './SaleStatusBadge.vue'
 
 const props = withDefaults(
@@ -41,6 +44,7 @@ const props = withDefaults(
 
 const loadedCustomers = ref<Customer[]>([])
 const loadedTemplates = ref<BasketTemplate[]>([])
+const loadedProducts = ref<Product[]>([])
 
 const availableCustomers = computed(() =>
   props.customers.length > 0 ? props.customers : loadedCustomers.value,
@@ -48,24 +52,36 @@ const availableCustomers = computed(() =>
 const availableTemplates = computed(() =>
   props.templates.length > 0 ? props.templates : loadedTemplates.value,
 )
+const availableProducts = computed(() => loadedProducts.value)
 
 const sales = ref<Sale[]>([])
-const selectedSaleId = ref<number | null>(null)
-const selectedSale = ref<Sale | null>(null)
 const statusFilter = ref<string>('ALL')
 const showCreateModal = ref(false)
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 
+// Detail modal state
+const showDetailModal = ref(false)
+const selectedSale = ref<Sale | null>(null)
+const selectedSaleId = ref<number | null>(null)
 const paymentTotal = ref<PaymentTotal | null>(null)
 const payments = ref<Payment[]>([])
 const paymentLoading = ref(false)
 const paymentError = ref('')
 const confirmErrorType = ref<'payment' | 'stock' | 'delivery' | null>(null)
 
-// Template ref para SaleDetailView, usado para sinalizar sucesso de pagamento
-const saleDetailRef = ref<InstanceType<typeof SaleDetailView> | null>(null)
+// Template ref para SaleDetailModal
+const saleDetailModalRef = ref<InstanceType<typeof SaleDetailModal> | null>(null)
+
+const columns: DataColumn[] = [
+  { key: 'id', label: 'ID' },
+  { key: 'customer', label: 'Cliente' },
+  { key: 'status', label: 'Status' },
+  { key: 'baskets', label: 'Cestas', align: 'center' as const },
+  { key: 'total', label: 'Total', align: 'right' as const },
+  { key: 'date', label: 'Data' },
+]
 
 const statusOptions = [
   { label: 'Todos os status', value: 'ALL' },
@@ -95,7 +111,6 @@ async function loadPaymentData(saleId: number): Promise<void> {
   confirmErrorType.value = null
   let hasError = false
 
-  // Consultar resumo financeiro de forma independente
   try {
     const total = await fetchPaymentTotal(saleId)
     paymentTotal.value = total
@@ -104,7 +119,6 @@ async function loadPaymentData(saleId: number): Promise<void> {
     paymentTotal.value = null
   }
 
-  // Consultar histórico de forma independente
   try {
     const list = await fetchPayments(saleId)
     payments.value = list
@@ -120,7 +134,7 @@ async function loadPaymentData(saleId: number): Promise<void> {
   paymentLoading.value = false
 }
 
-async function selectSale(id: number): Promise<void> {
+async function openSaleDetail(id: number): Promise<void> {
   loading.value = true
   error.value = ''
   confirmErrorType.value = null
@@ -131,6 +145,7 @@ async function selectSale(id: number): Promise<void> {
     selectedSale.value = await fetchSale(id)
     selectedSaleId.value = id
     await loadPaymentData(id)
+    showDetailModal.value = true
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Falha ao carregar venda.'
   } finally {
@@ -153,7 +168,7 @@ async function handleCreateSale(payload: SaleCreateInput): Promise<void> {
     showCreateModal.value = false
     notice.value = `Venda #${created.id} criada com sucesso em Rascunho.`
     await loadSales()
-    await selectSale(created.id)
+    await openSaleDetail(created.id)
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Falha ao criar venda.'
   } finally {
@@ -176,7 +191,10 @@ async function runAction(action: () => Promise<unknown>, successMessage?: string
   try {
     await action()
     if (successMessage) notice.value = successMessage
-    if (selectedSaleId.value) await selectSale(selectedSaleId.value)
+    if (selectedSaleId.value) {
+      selectedSale.value = await fetchSale(selectedSaleId.value)
+      await loadPaymentData(selectedSaleId.value)
+    }
     await loadSales()
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Operação falhou.'
@@ -198,15 +216,17 @@ async function handleRecordPayment(
   try {
     await recordPayment(saleId, payload as { amount: string; method: 'PIX' | 'CARTAO'; idempotency_key: string })
     notice.value = 'Pagamento registrado com sucesso.'
-    // Sinaliza sucesso ao SaleDetailView para fechar o modal com reset
-    if (saleDetailRef.value) {
-      saleDetailRef.value.handlePaymentSuccess()
+    // Resetar o estado "Tentativa pendente" do PaymentModal
+    if (saleDetailModalRef.value) {
+      saleDetailModalRef.value.handlePaymentSuccess()
     }
-    if (selectedSaleId.value) await selectSale(selectedSaleId.value)
+    if (selectedSaleId.value) {
+      selectedSale.value = await fetchSale(selectedSaleId.value)
+      await loadPaymentData(selectedSaleId.value)
+    }
     await loadSales()
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Falha ao registrar pagamento.'
-    // Em caso de erro, o modal permanece aberto com campos bloqueados
   } finally {
     loading.value = false
   }
@@ -228,6 +248,9 @@ async function loadDependencies(): Promise<void> {
       loadedTemplates.value = await fetchTemplates()
     } catch {}
   }
+  try {
+    loadedProducts.value = await fetchProducts()
+  } catch {}
 }
 
 onMounted(async () => {
@@ -236,114 +259,115 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="sales-module">
+  <section aria-labelledby="sales-heading">
     <div v-if="error" class="feedback feedback-error" role="alert">
-      <span>{{ error }}</span>
+      <span class="feedback-icon" aria-hidden="true">!</span><span>{{ error }}</span>
     </div>
     <div v-if="notice" class="feedback feedback-success" role="status">
-      <span>{{ notice }}</span>
+      <span class="feedback-icon" aria-hidden="true">✓</span><span>{{ notice }}</span>
     </div>
 
-    <!-- Detail View if a sale is selected -->
-    <div v-if="selectedSale">
-      <SaleDetailView
-        ref="saleDetailRef"
-        :sale="selectedSale"
-        :templates="availableTemplates"
-        :payment-total="paymentTotal"
-        :payments="payments"
-        :payment-loading="paymentLoading"
-        :payment-error="paymentError"
-        :confirm-error-type="confirmErrorType"
-        @back="selectedSale = null; selectedSaleId = null"
-        @confirm="(id) => runAction(() => confirmSale(id), 'Venda confirmada.')"
-        @start-prep="(id) => runAction(() => startPreparation(id), 'Preparação iniciada.')"
-        @cancel="(id) => runAction(() => cancelSale(id), 'Venda cancelada.')"
-        @reopen="(id, p) => runAction(() => reopenSale(id, p.reason, p.operator_name), 'Venda reaberta para preparação.')"
-        @add-basket="(id, p) => runAction(() => addBasketToSale(id, p), 'Cesta adicionada.')"
-        @remove-basket="(id, bId) => runAction(() => removeBasketFromSale(id, bId), 'Cesta removida.')"
-        @update-price="(id, bId, pr) => runAction(() => updateBasketPrice(id, bId, pr), 'Preço atualizado.')"
-        @update-delivery="(id, bId, d) => runAction(() => updateBasketDelivery(id, bId, d), 'Dados de entrega atualizados.')"
-        @prepare-basket="(id, bId) => runAction(() => markBasketPrepared(id, bId), 'Cesta marcada como preparada.')"
-        @deliver-basket="(id, bId, op) => runAction(() => deliverBasket(id, bId, op), 'Entrega registrada.')"
-        @record-payment="handleRecordPayment"
-        @retry-payments="retryPayments"
-      />
+    <div class="page-heading">
+      <div>
+        <p class="page-eyebrow">Gestão de pedidos</p>
+        <h1 id="sales-heading">Vendas</h1>
+        <p class="page-description">Acompanhe e gerencie o ciclo completo das vendas.</p>
+      </div>
+      <button class="button primary" type="button" :disabled="loading" @click="showCreateModal = true">
+        Nova venda
+      </button>
     </div>
 
-    <!-- Sales List View -->
-    <div v-else class="sales-list-view">
+    <div class="card">
       <div class="sales-toolbar">
         <div class="toolbar-left">
-          <label>Filtrar por status:</label>
-          <select v-model="statusFilter" class="status-select" @change="loadSales">
+          <label for="sales-status-filter">Filtrar por status:</label>
+          <select id="sales-status-filter" v-model="statusFilter" class="status-select" @change="loadSales">
             <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </option>
           </select>
         </div>
-        <button type="button" class="button primary" @click="showCreateModal = true">
-          + Nova Venda
-        </button>
-      </div>
-
-      <div v-if="sales.length === 0 && !loading" class="empty-state">
-        <strong>Nenhuma venda encontrada</strong>
-        <span>Nenhuma venda encontrada para o filtro selecionado.</span>
-      </div>
-
-      <div v-else class="table-card">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Status</th>
-                <th>Cestas</th>
-                <th class="numeric">Total</th>
-                <th>Data</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="s in sales" :key="s.id">
-                <td class="col-id">#{{ s.id }}</td>
-                <td class="product-name">{{ s.customer_name }}</td>
-                <td><SaleStatusBadge :status="s.status" /></td>
-                <td>{{ s.baskets.length }} cesta(s)</td>
-                <td class="col-total numeric">{{ formatCurrency(s.total) }}</td>
-                <td class="col-date">{{ new Date(s.created_at).toLocaleDateString('pt-BR') }}</td>
-                <td>
-                  <button type="button" class="button ghost compact" @click="selectSale(s.id)">Ver Venda</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
 
+    <div class="card table-card">
+      <DataTable
+        :columns="columns"
+        :rows="sales"
+        :page-size="10"
+        :loading="loading"
+      >
+        <template #cell-id="{ row }: { row: Sale }">
+          <span class="col-id">#{{ row.id }}</span>
+        </template>
+        <template #cell-customer="{ row }: { row: Sale }">
+          {{ row.customer_name }}
+        </template>
+        <template #cell-status="{ row }: { row: Sale }">
+          <SaleStatusBadge :status="row.status" />
+        </template>
+        <template #cell-baskets="{ row }: { row: Sale }">
+          {{ row.baskets.length }}
+        </template>
+        <template #cell-total="{ row }: { row: Sale }">
+          <span class="col-total">{{ formatCurrency(row.total) }}</span>
+        </template>
+        <template #cell-date="{ row }: { row: Sale }">
+          <span class="col-date">{{ new Date(row.created_at).toLocaleDateString('pt-BR') }}</span>
+        </template>
+        <template #actions="{ row }: { row: Sale }">
+          <button class="button compact secondary" type="button" @click="openSaleDetail(row.id)">Ver detalhes</button>
+        </template>
+        <template #empty>
+          <strong>Nenhuma venda encontrada.</strong>
+          <span>Nenhuma venda encontrada para o filtro selecionado.</span>
+        </template>
+      </DataTable>
+    </div>
+
     <SaleFormModal
-      v-if="showCreateModal"
+      :open="showCreateModal"
+      @update:open="showCreateModal = $event"
       :customers="availableCustomers"
       :templates="availableTemplates"
-      @close="showCreateModal = false"
       @save="handleCreateSale"
     />
-  </div>
+
+    <SaleDetailModal
+      ref="saleDetailModalRef"
+      v-model:open="showDetailModal"
+      :sale="selectedSale"
+      :templates="availableTemplates"
+      :products="availableProducts"
+      :payment-total="paymentTotal"
+      :payments="payments"
+      :payment-loading="paymentLoading"
+      :payment-error="paymentError"
+      :confirm-error-type="confirmErrorType"
+      @confirm="(id) => runAction(() => confirmSale(id), 'Venda confirmada.')"
+      @start-prep="(id) => runAction(() => startPreparation(id), 'Preparação iniciada.')"
+      @cancel="(id) => runAction(() => cancelSale(id), 'Venda cancelada.')"
+      @reopen="(id, p) => runAction(() => reopenSale(id, p.reason, p.operator_name), 'Venda reaberta para preparação.')"
+      @add-basket="(id, p) => runAction(() => addBasketToSale(id, p), 'Cesta adicionada.')"
+      @remove-basket="(id, bId) => runAction(() => removeBasketFromSale(id, bId), 'Cesta removida.')"
+      @update-price="(id, bId, pr) => runAction(() => updateBasketPrice(id, bId, pr), 'Preço atualizado.')"
+      @update-delivery="(id, bId, d) => runAction(() => updateBasketDelivery(id, bId, d), 'Dados de entrega atualizados.')"
+      @prepare-basket="(id, bId) => runAction(() => markBasketPrepared(id, bId), 'Cesta marcada como preparada.')"
+      @deliver-basket="(id, bId, op) => runAction(() => deliverBasket(id, bId, op), 'Entrega registrada.')"
+      @update-composition="(id, bId, items) => runAction(() => updateBasketComposition(id, bId, items, 'Operador'), 'Composição atualizada.')"
+      @record-payment="handleRecordPayment"
+      @retry-payments="retryPayments"
+    />
+  </section>
 </template>
 
 <style scoped>
-.sales-module {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
 .sales-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: var(--space-3) var(--space-4);
 }
 .toolbar-left {
   display: flex;
@@ -359,10 +383,6 @@ onMounted(async () => {
   border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-.empty-state p {
-  color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 .col-id {

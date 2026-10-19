@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import BasketsView from './components/BasketsView.vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import CustomersView from './components/CustomersView.vue'
 import PurchasesView from './components/PurchasesView.vue'
 import TemplatesView from './components/TemplatesView.vue'
 import SalesView from './components/sales/SalesView.vue'
+import DataTable from './components/ui/DataTable.vue'
+import ProductFormModal from './components/products/ProductFormModal.vue'
+import InventoryModal from './components/inventory/InventoryModal.vue'
 import {
   activateProduct,
   adjustInventory,
@@ -18,7 +20,7 @@ import {
 import type { InventoryMovement, Product, ProductUnit } from './api/types'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
-const section = ref<'products' | 'inventory' | 'templates' | 'baskets' | 'customers' | 'sales' | 'purchases'>('products')
+const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases'>('products')
 
 // Theme management
 const isLightTheme = ref(false)
@@ -55,43 +57,56 @@ function initTheme(): void {
   } catch (e) {
     // localStorage may be unavailable
   }
-  // Fallback: detect OS preference
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
     applyTheme(true)
   } else {
     applyTheme(false)
   }
 }
+
 const products = ref<Product[]>([])
 const searchResults = ref<Product[]>([])
-const selectedProductId = ref<number | null>(null)
 const movements = ref<InventoryMovement[]>([])
-const balance = ref('0')
 const search = ref('')
-const editingProductId = ref<number | null>(null)
-const productFormVisible = ref(false)
-const productName = ref('')
-const productUnit = ref<ProductUnit>('UN')
-const productReferencePrice = ref('')
-const entryQuantity = ref('')
-const entryUnitCost = ref('')
-const adjustmentQuantity = ref('')
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 
-const selectedProduct = computed(
-  () => products.value.find((product) => product.id === selectedProductId.value) ?? null,
-)
+// Product modal state
+const showProductModal = ref(false)
+const editingProduct = ref<Product | null>(null)
+const productFormRef = ref<InstanceType<typeof ProductFormModal> | null>(null)
+
+// Inventory modal state
+const showInventoryModal = ref(false)
+const inventoryProduct = ref<Product | null>(null)
+
+// DataTable page
+const productsPage = ref(1)
+
 const sectionTitle = computed(() => ({
   products: 'Produtos',
   inventory: 'Estoque',
   templates: 'Templates de cesta',
-  baskets: 'Cestas',
   customers: 'Clientes',
   sales: 'Vendas',
   purchases: 'Compras',
 })[section.value])
+
+const productColumns = computed(() => [
+  { key: 'name', label: 'Nome' },
+  { key: 'base_unit', label: 'Unidade' },
+  { key: 'reference_price', label: 'Preço ref.', align: 'right' as const },
+  { key: 'inventory_balance', label: 'Saldo', align: 'right' as const },
+  { key: 'active', label: 'Situação' },
+])
+
+const inventoryColumns = computed(() => [
+  { key: 'name', label: 'Produto' },
+  { key: 'base_unit', label: 'Unidade' },
+  { key: 'inventory_balance', label: 'Saldo', align: 'right' as const },
+  { key: 'active', label: 'Situação' },
+])
 
 function formatCurrency(value: string | null | undefined): string {
   if (!value) return '—'
@@ -111,12 +126,6 @@ function formatQuantity(value: string): string {
 async function loadProducts(): Promise<void> {
   products.value = await fetchProducts()
   searchResults.value = products.value
-  if (
-    selectedProductId.value !== null &&
-    !products.value.some((product) => product.id === selectedProductId.value)
-  ) {
-    selectedProductId.value = null
-  }
 }
 
 async function runAction(action: () => Promise<void>): Promise<void> {
@@ -139,42 +148,36 @@ async function searchProducts(): Promise<void> {
 }
 
 function beginCreate(): void {
-  editingProductId.value = null
-  productFormVisible.value = true
-  productName.value = ''
-  productUnit.value = 'UN'
-  productReferencePrice.value = ''
+  editingProduct.value = null
+  showProductModal.value = true
 }
 
 function beginEdit(product: Product): void {
-  editingProductId.value = product.id
-  productFormVisible.value = true
-  productName.value = product.name
-  productUnit.value = product.base_unit
-  productReferencePrice.value = product.reference_price ?? ''
+  editingProduct.value = product
+  showProductModal.value = true
 }
 
-async function saveProduct(): Promise<void> {
+async function saveProduct(payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null }): Promise<void> {
   await runAction(async () => {
-    const payload: { name: string; base_unit: ProductUnit; reference_price?: string | null } = {
-      name: productName.value,
-      base_unit: productUnit.value,
+    const p: { name: string; base_unit: ProductUnit; reference_price?: string | null; commercial_conversion_factor?: string | null } = {
+      name: payload.name,
+      base_unit: payload.base_unit,
     }
-    const priceStr = String(productReferencePrice.value ?? '').trim()
-    if (priceStr) {
-      payload.reference_price = priceStr
+    if (payload.reference_price) {
+      p.reference_price = payload.reference_price
     }
-    if (editingProductId.value === null) {
-      await createProduct(payload)
+    if (payload.commercial_conversion_factor) {
+      p.commercial_conversion_factor = payload.commercial_conversion_factor
+    }
+    if (payload.id === null) {
+      await createProduct(p)
       notice.value = 'Produto criado.'
     } else {
-      await updateProduct(editingProductId.value, payload)
+      await updateProduct(payload.id, p)
       notice.value = 'Produto atualizado.'
     }
-    editingProductId.value = null
-    productFormVisible.value = false
-    productName.value = ''
-    productReferencePrice.value = ''
+    showProductModal.value = false
+    editingProduct.value = null
     await loadProducts()
     if (search.value.trim()) {
       searchResults.value = await fetchProducts(search.value.trim())
@@ -198,55 +201,60 @@ async function changeProductState(product: Product): Promise<void> {
   })
 }
 
-async function loadInventory(): Promise<void> {
-  if (selectedProductId.value === null) {
-    movements.value = []
-    balance.value = '0'
-    return
-  }
-  const product = products.value.find((item) => item.id === selectedProductId.value)
-  if (!product) return
-  balance.value = product.inventory_balance
-  movements.value = await fetchInventoryHistory(product.id)
+async function openInventory(product: Product): Promise<void> {
+  await runAction(async () => {
+    inventoryProduct.value = product
+    movements.value = await fetchInventoryHistory(product.id)
+    showInventoryModal.value = true
+  })
 }
 
-async function recordEntry(): Promise<void> {
-  const productId = selectedProductId.value
-  if (productId === null) return
+async function handleInventoryEntry(quantity: string, unitCost: string | null): Promise<void> {
+  if (!inventoryProduct.value) return
   await runAction(async () => {
-    const cost = String(entryUnitCost.value ?? '').trim()
+    const cost = unitCost || ''
     if (cost) {
-      await createInventoryEntry(productId, entryQuantity.value, cost)
+      await createInventoryEntry(inventoryProduct.value!.id, quantity, cost)
     } else {
-      await createInventoryEntry(productId, entryQuantity.value)
+      await createInventoryEntry(inventoryProduct.value!.id, quantity)
     }
-    entryQuantity.value = ''
-    entryUnitCost.value = ''
     await loadProducts()
-    await loadInventory()
+    const product = products.value.find((p) => p.id === inventoryProduct.value?.id)
+    if (product) {
+      inventoryProduct.value = product
+      movements.value = await fetchInventoryHistory(product.id)
+    }
     notice.value = 'Entrada de estoque registrada.'
   })
 }
 
-async function recordAdjustment(): Promise<void> {
-  const productId = selectedProductId.value
-  if (productId === null) return
+async function handleInventoryAdjustment(quantity: string): Promise<void> {
+  if (!inventoryProduct.value) return
   await runAction(async () => {
-    await adjustInventory(productId, adjustmentQuantity.value)
-    adjustmentQuantity.value = ''
+    await adjustInventory(inventoryProduct.value!.id, quantity)
     await loadProducts()
-    await loadInventory()
+    const product = products.value.find((p) => p.id === inventoryProduct.value?.id)
+    if (product) {
+      inventoryProduct.value = product
+      movements.value = await fetchInventoryHistory(product.id)
+    }
     notice.value = 'Ajuste de estoque registrado.'
   })
 }
 
-async function selectProduct(): Promise<void> {
-  await runAction(loadInventory)
+function handleProductsPageChange(page: number): void {
+  productsPage.value = page
 }
 
 onMounted(() => {
   initTheme()
   void runAction(loadProducts)
+})
+
+watch(section, (newSection) => {
+  if (newSection === 'products' || newSection === 'inventory') {
+    void runAction(loadProducts)
+  }
 })
 </script>
 
@@ -304,19 +312,6 @@ onMounted(() => {
         <button
           type="button"
           class="nav-item"
-          :class="{ active: section === 'baskets' }"
-          :aria-current="section === 'baskets' ? 'page' : undefined"
-          @click="section = 'baskets'"
-        >
-          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-            <path d="M3 7h14l-1.2 9H4.2L3 7Z" />
-            <path d="m6 7 4-4 4 4M7 10v3M10 10v3M13 10v3" />
-          </svg>
-          <span>Cestas</span>
-        </button>
-        <button
-          type="button"
-          class="nav-item"
           :class="{ active: section === 'customers' }"
           :aria-current="section === 'customers' ? 'page' : undefined"
           @click="section = 'customers'"
@@ -367,7 +362,7 @@ onMounted(() => {
           <strong>{{ sectionTitle }}</strong>
         </div>
         <div class="topbar-actions">
-          <span class="milestone-label">{{ section === 'sales' ? 'M4 · Vendas' : section === 'customers' ? 'M3 · Clientes' : section === 'purchases' ? 'M6 · Compras' : section === 'templates' || section === 'baskets' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
+          <span class="milestone-label">{{ section === 'sales' ? 'M4 · Vendas' : section === 'customers' ? 'M3 · Clientes' : section === 'purchases' ? 'M6 · Compras' : section === 'templates' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
           <button
             type="button"
             class="theme-toggle"
@@ -400,6 +395,7 @@ onMounted(() => {
           <span>Atualizando informações...</span>
         </div>
 
+        <!-- Products Section -->
         <section v-if="section === 'products'" aria-labelledby="products-heading">
           <div class="page-heading">
             <div>
@@ -442,52 +438,6 @@ onMounted(() => {
             </div>
           </form>
 
-          <form v-if="productFormVisible" class="card product-form" @submit.prevent="saveProduct">
-            <div class="card-heading">
-              <div>
-                <p class="card-eyebrow">Dados do produto</p>
-                <h2>{{ editingProductId === null ? 'Novo produto' : 'Editar produto' }}</h2>
-              </div>
-            </div>
-            <div class="form-grid">
-              <div class="form-field">
-                <label for="product-name">Nome</label>
-                <input id="product-name" v-model="productName" required placeholder="Ex.: Chocolate" />
-              </div>
-              <div class="form-field">
-                <label for="product-unit">Unidade base</label>
-                <select id="product-unit" v-model="productUnit" required>
-                  <option v-for="unit in units" :key="unit" :value="unit">{{ unit }}</option>
-                </select>
-                <span class="field-hint">Selecione a unidade usada para controlar o estoque deste produto.</span>
-              </div>
-              <div class="form-field">
-                <label for="product-reference-price">Preço de referência</label>
-                <input
-                  id="product-reference-price"
-                  v-model="productReferencePrice"
-                  type="text"
-                  inputmode="decimal"
-                  placeholder="Ex.: 12.50"
-                />
-                <span class="field-hint">Preço comercial do produto. Deixe vazio se ainda não definido.</span>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="button primary" type="submit" :disabled="loading">
-                {{ editingProductId === null ? 'Salvar produto' : 'Salvar alterações' }}
-              </button>
-              <button
-                v-if="editingProductId !== null"
-                class="button secondary"
-                type="button"
-                @click="beginCreate"
-              >
-                Cancelar edição
-              </button>
-            </div>
-          </form>
-
           <div class="card table-card">
             <div class="table-heading">
               <div>
@@ -496,204 +446,115 @@ onMounted(() => {
               </div>
               <span class="table-count">{{ new Intl.NumberFormat('pt-BR').format(searchResults.length) }} itens</span>
             </div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Unidade</th>
-                    <th class="numeric">Preço ref.</th>
-                    <th class="numeric">Saldo</th>
-                    <th>Situação</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="product in searchResults" :key="product.id">
-                    <td class="product-name">{{ product.name }}</td>
-                    <td><span class="unit-value">{{ product.base_unit }}</span></td>
-                    <td class="numeric">{{ product.reference_price ? formatCurrency(product.reference_price) : '—' }}</td>
-                    <td class="numeric quantity-value">{{ formatQuantity(product.inventory_balance) }} {{ product.base_unit }}</td>
-                    <td>
-                      <span :class="['status-pill', product.active ? 'status-success' : 'status-muted']">
-                        <span class="status-dot" aria-hidden="true"></span>
-                        {{ product.active ? 'Ativo' : 'Inativo' }}
-                      </span>
-                    </td>
-                    <td class="row-actions">
-                      <button class="button compact secondary" type="button" @click="beginEdit(product)">
-                        Editar
-                      </button>
-                      <button class="button compact ghost" type="button" @click="changeProductState(product)">
-                        {{ product.active ? 'Desativar' : 'Ativar' }}
-                      </button>
-                      <button
-                        class="button compact ghost"
-                        type="button"
-                        @click="selectedProductId = product.id; section = 'inventory'; selectProduct()"
-                      >
-                        Estoque
-                      </button>
-                    </td>
-                  </tr>
-                  <tr v-if="searchResults.length === 0">
-                    <td colspan="6" class="empty-state">
-                      <strong>Nenhum produto encontrado.</strong>
-                      <span>Tente outra busca ou crie um produto para começar.</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              :columns="productColumns"
+              :rows="searchResults"
+              :page-size="10"
+              :page="productsPage"
+              @page-change="handleProductsPageChange"
+            >
+              <template #cell-reference_price="{ row }: { row: Product }">
+                {{ (row as Product).reference_price ? formatCurrency((row as Product).reference_price) : '—' }}
+              </template>
+              <template #cell-inventory_balance="{ row }: { row: Product }">
+                {{ formatQuantity((row as Product).inventory_balance) }} {{ (row as Product).base_unit }}
+              </template>
+              <template #cell-active="{ row }: { row: Product }">
+                <span :class="['status-pill', (row as Product).active ? 'status-success' : 'status-muted']">
+                  <span class="status-dot" aria-hidden="true"></span>
+                  {{ (row as Product).active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </template>
+              <template #actions="{ row }: { row: Product }">
+                <button class="button compact secondary" type="button" @click.stop="beginEdit(row as Product)">
+                  Editar
+                </button>
+                <button class="button compact ghost" type="button" @click.stop="changeProductState(row as Product)">
+                  {{ (row as Product).active ? 'Desativar' : 'Ativar' }}
+                </button>
+                <button
+                  class="button compact ghost"
+                  type="button"
+                  @click.stop="openInventory(row as Product)"
+                >
+                  Estoque
+                </button>
+              </template>
+              <template #empty>
+                <strong>Nenhum produto encontrado.</strong>
+                <span>Tente outra busca ou crie um produto para começar.</span>
+              </template>
+            </DataTable>
           </div>
         </section>
+
+        <!-- Inventory Section -->
         <section v-if="section === 'inventory'" aria-labelledby="inventory-heading">
           <div class="page-heading">
             <div>
               <p class="page-eyebrow">Controle de estoque</p>
               <h1 id="inventory-heading">Estoque</h1>
-              <p class="page-description">Registre entradas, ajuste o saldo físico e consulte o histórico de movimentações.</p>
+              <p class="page-description">Consulte saldos e registre movimentações de estoque.</p>
             </div>
           </div>
 
-          <div class="card inventory-selector">
-            <div class="form-field inventory-product-field">
-              <label for="inventory-product">Produto</label>
-              <select
-                id="inventory-product"
-                v-model.number="selectedProductId"
-                @change="selectProduct"
-              >
-                <option :value="null" disabled>Selecione um produto</option>
-                <option v-for="product in products" :key="product.id" :value="product.id">
-                  {{ product.name }}{{ product.active ? '' : ' (Inativo)' }}
-                </option>
-              </select>
-            </div>
-            <div v-if="selectedProduct" class="balance-card">
-              <span class="balance-label">Saldo atual</span>
-              <strong>{{ formatQuantity(balance) }} <span>{{ selectedProduct.base_unit }}</span></strong>
-              <span v-if="selectedProduct.average_cost" class="field-hint">
-                Custo médio: {{ formatCurrency(selectedProduct.average_cost) }}
-              </span>
-              <span :class="['status-pill', selectedProduct.active ? 'status-success' : 'status-muted']">
-                <span class="status-dot" aria-hidden="true"></span>
-                {{ selectedProduct.active ? 'Ativo' : 'Inativo' }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="selectedProduct" class="inventory-grid">
-            <form class="card operation-card" @submit.prevent="recordEntry">
-              <div class="operation-icon operation-icon-entry" aria-hidden="true">+</div>
-              <div class="card-heading">
-                <div>
-                  <h2>Registrar entrada</h2>
-                  <p>Uma entrada aumenta o saldo disponível.</p>
-                </div>
-              </div>
-              <div class="form-field">
-                <label for="entry-quantity">Quantidade ({{ selectedProduct.base_unit }})</label>
-                <input
-                  id="entry-quantity"
-                  v-model="entryQuantity"
-                  type="number"
-                  :step="selectedProduct.base_unit === 'UN' ? '1' : 'any'"
-                  min="0"
-                  required
-                />
-              </div>
-              <div class="form-field">
-                <label for="entry-cost">Custo unitário de aquisição (R$)</label>
-                <input
-                  id="entry-cost"
-                  v-model="entryUnitCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Opcional (ex.: 15.50)"
-                />
-                <span class="field-hint">Opcional. Usado no cálculo do custo médio ponderado.</span>
-              </div>
-              <div class="operation-actions">
-                <button class="button primary" type="submit" :disabled="loading || !selectedProduct.active">
-                  Registrar entrada
-                </button>
-              </div>
-              <p v-if="!selectedProduct.active" class="field-hint">Reative este produto para alterar o estoque.</p>
-            </form>
-
-            <form class="card operation-card" @submit.prevent="recordAdjustment">
-              <div class="operation-icon operation-icon-adjustment" aria-hidden="true">+/-</div>
-              <div class="card-heading">
-                <div>
-                  <h2>Ajustar estoque</h2>
-                  <p>Use um valor positivo para aumentar ou negativo para reduzir o estoque.</p>
-                </div>
-              </div>
-              <div class="form-field">
-                <label for="adjustment-quantity">Quantidade com sinal ({{ selectedProduct.base_unit }})</label>
-                <input
-                  id="adjustment-quantity"
-                  v-model="adjustmentQuantity"
-                  type="number"
-                  :step="selectedProduct.base_unit === 'UN' ? '1' : 'any'"
-                  required
-                />
-              </div>
-              <div class="operation-actions">
-                <button class="button primary" type="submit" :disabled="loading || !selectedProduct.active">
-                  Registrar ajuste
-                </button>
-              </div>
-              <p v-if="!selectedProduct.active" class="field-hint">Reative este produto para alterar o estoque.</p>
-            </form>
-          </div>
-
-          <div v-if="selectedProduct" class="card table-card movement-table">
+          <div class="card table-card">
             <div class="table-heading">
               <div>
-                <h2>Histórico de movimentações</h2>
-                <p>Entradas e ajustes registrados para {{ selectedProduct.name }}.</p>
+                <h2>Saldo por produto</h2>
+                <p>Clique em um produto para ver o histórico e registrar movimentações.</p>
               </div>
+              <span class="table-count">{{ new Intl.NumberFormat('pt-BR').format(products.length) }} itens</span>
             </div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr><th>Data e hora</th><th>Tipo</th><th class="numeric">Quantidade</th><th>Custo un.</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="movement in movements" :key="movement.id">
-                    <td>{{ new Date(movement.created_at).toLocaleString('pt-BR') }}</td>
-                    <td>
-                      <span :class="['movement-pill', movement.type === 'ENTRY' ? 'movement-entry' : 'movement-adjustment']">
-                        {{ movement.type === 'ENTRY' ? 'Entrada' : 'Ajuste' }}
-                      </span>
-                    </td>
-                    <td class="numeric quantity-value">{{ formatQuantity(movement.quantity) }} {{ selectedProduct.base_unit }}</td>
-                    <td>{{ movement.unit_cost ? formatCurrency(movement.unit_cost) : '—' }}</td>
-                  </tr>
-                  <tr v-if="movements.length === 0">
-                    <td colspan="4" class="empty-state">
-                      <strong>Nenhuma movimentação de estoque.</strong>
-                      <span>As entradas e os ajustes aparecerão aqui.</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div v-else class="card empty-panel">
-            <span class="empty-panel-mark" aria-hidden="true">—</span>
-            <strong>Selecione um produto</strong>
-            <span>Escolha um produto acima para consultar o saldo e registrar movimentações de estoque.</span>
+            <DataTable
+              :columns="inventoryColumns"
+              :rows="products"
+              :page-size="10"
+              @row-click="openInventory($event as Product)"
+            >
+              <template #cell-inventory_balance="{ row }: { row: Product }">
+                {{ formatQuantity((row as Product).inventory_balance) }} {{ (row as Product).base_unit }}
+              </template>
+              <template #cell-active="{ row }: { row: Product }">
+                <span :class="['status-pill', (row as Product).active ? 'status-success' : 'status-muted']">
+                  <span class="status-dot" aria-hidden="true"></span>
+                  {{ (row as Product).active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </template>
+              <template #actions="{ row }: { row: Product }">
+                <button class="button compact ghost" type="button" @click.stop="openInventory(row as Product)">
+                  Ver estoque
+                </button>
+              </template>
+              <template #empty>
+                <strong>Nenhum produto cadastrado.</strong>
+                <span>Crie produtos na seção Produtos para gerenciar o estoque.</span>
+              </template>
+            </DataTable>
           </div>
         </section>
+
         <TemplatesView v-if="section === 'templates'" />
-        <BasketsView v-if="section === 'baskets'" />
         <CustomersView v-if="section === 'customers'" />
         <SalesView v-if="section === 'sales'" />
         <PurchasesView v-if="section === 'purchases'" />
+
+        <!-- Product Form Modal -->
+        <ProductFormModal
+          ref="productFormRef"
+          v-model:open="showProductModal"
+          :product="editingProduct"
+          @save="saveProduct"
+        />
+
+        <!-- Inventory Modal -->
+        <InventoryModal
+          v-model:open="showInventoryModal"
+          :product="inventoryProduct"
+          :movements="movements"
+          @entry="handleInventoryEntry"
+          @adjustment="handleInventoryAdjustment"
+        />
       </main>
     </div>
   </div>
