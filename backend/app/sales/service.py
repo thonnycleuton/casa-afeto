@@ -219,7 +219,7 @@ def add_basket_to_sale(
         db.add(sale_item)
 
     # Recalculate total
-    sale.total = sum((b.price for b in sale.baskets), Decimal("0.00")) + price
+    sale.total = sum((b.price for b in sale.baskets), Decimal("0.00"))
     db.commit()
     return _basket_or_raise(_sale_or_raise(db, sale.id), sale_basket.id)
 

@@ -50,7 +50,7 @@ M4 não inclui:
 M4 depende de decisões e capacidades já estabelecidas:
 
 * **M1 — Produtos e Estoque:** produtos, disponibilidade informativa e regras de integridade de estoque continuam válidos, mas M4 não executa movimentações automáticas de estoque.
-* **M2 — Cestas e Templates de Cesta:** a venda reutiliza cestas como origem de composição e preço. A composição da cesta na venda é uma cópia independente do modelo/origem, e a cesta-origem precisa ter preço de venda persistido para poder ser adicionada à venda.
+* **M2 — Cestas e Templates de Cesta:** a venda reutiliza o Template de Cesta (cesta-modelo) como origem de composição e preço. A composição da cesta na venda é uma cópia independente do Template, e o Template precisa ter preço de venda persistido para poder ser adicionado à venda. A Cesta concreta do M2 não é usada como origem de venda.
 * **M3 — Clientes e Datas Importantes:** uma nova venda só pode ser salva quando vinculada a cliente `ACTIVE`. Se o cliente se tornar `INACTIVE` depois da criação, o vínculo existente permanece válido.
 
 ## 4. Estrutura conceitual da venda
@@ -84,15 +84,17 @@ Cada cesta da venda possui, de forma independente:
 * condição operacional de preparação;
 * histórico de alterações e de entrega aplicável.
 
-Ao adicionar uma cesta à venda:
+Ao adicionar uma cesta à venda a partir de um Template:
 
-1. a composição da origem é copiada naquele momento;
-2. o preço vigente da origem é copiado naquele momento;
-3. a cesta na venda torna-se independente da origem para fins de composição e operação.
+1. a composição do Template é copiada naquele momento;
+2. o preço vigente do Template é copiado naquele momento;
+3. a cesta na venda torna-se independente do Template para fins de composição e operação.
 
-Se a origem não tiver preço de venda definido, a inclusão da cesta na venda deve ser bloqueada até que o preço seja informado na origem.
+Se o Template não tiver preço de venda definido, a inclusão da cesta na venda deve ser bloqueada até que o preço seja informado no Template.
 
-Alterações posteriores na venda não modificam o modelo/origem. Alterações posteriores na origem também não modificam a cesta já adicionada à venda.
+Alterações posteriores na cesta da venda não modificam o Template. Alterações posteriores no Template também não modificam a cesta já adicionada à venda.
+
+A cesta da venda pode ser personalizada: adicionar itens, remover itens, alterar quantidades — sem afetar o Template.
 
 ## 5. Composição, preço e total
 
