@@ -8,14 +8,11 @@ from app.core.exceptions import BusinessRuleError, ResourceNotFoundError
 from app.inventory.service import product_balances
 from app.products.models import BaseUnit, Product
 from app.baskets.models import (
-    Basket,
-    BasketItem,
     BasketTemplate,
     BasketTemplateItem,
 )
 from app.baskets.schemas import (
     BasketItemInput,
-    BasketRead,
     BasketTemplateRead,
     ProductCompositionRead,
 )
@@ -56,20 +53,6 @@ def _template_or_raise(
     if template is None:
         raise ResourceNotFoundError("Template de cesta não encontrado.")
     return template
-
-
-def _basket_or_raise(db: Session, basket_id: int, *, lock: bool = False) -> Basket:
-    statement = (
-        select(Basket)
-        .where(Basket.id == basket_id)
-        .options(selectinload(Basket.items).selectinload(BasketItem.product))
-    )
-    if lock:
-        statement = statement.with_for_update()
-    basket = db.scalar(statement)
-    if basket is None:
-        raise ResourceNotFoundError("Cesta não encontrada.")
-    return basket
 
 
 def _normalized_items(
@@ -119,7 +102,7 @@ def _lock_template_products(
         )
 
 
-def _touch(entity: Basket | BasketTemplate) -> None:
+def _touch(entity: BasketTemplate) -> None:
     entity.updated_at = datetime.now(timezone.utc)
 
 
@@ -281,153 +264,24 @@ def replace_template_item(
     return template
 
 
-def create_basket(
-    db: Session,
-    name: str,
-    template_id: int | None,
-    items: list[BasketItemInput],
-) -> Basket:
-    with db.begin():
-        basket = Basket(name=name)
-        if template_id is not None:
-            template = _template_or_raise(db, template_id, lock=True)
-            if not template.active:
-                raise BusinessRuleError("Um template inativo não pode originar cesta.")
-            if not template.items:
-                raise BusinessRuleError("Um template vazio não pode originar cesta.")
-            _lock_template_products(db, template.items)
-            basket.template = template
-            basket.items = [
-                BasketItem(product=item.product, quantity=item.quantity)
-                for item in template.items
-            ]
-        else:
-            normalized_items = _normalized_items(db, items)
-            basket.items = [
-                BasketItem(product=product, quantity=quantity)
-                for product, quantity in normalized_items
-            ]
-        db.add(basket)
-        db.flush()
-        db.refresh(basket)
-    return basket
+def _base_unit_reference_price(product: Product) -> Decimal | None:
+    """Calculate the reference price per base unit.
 
-
-def list_baskets(db: Session) -> list[Basket]:
-    return list(
-        db.scalars(
-            select(Basket)
-            .options(
-                selectinload(Basket.items).selectinload(BasketItem.product),
-                selectinload(Basket.template),
-            )
-            .order_by(Basket.name, Basket.id)
-        ).all()
-    )
-
-
-def get_basket(db: Session, basket_id: int) -> Basket:
-    return _basket_or_raise(db, basket_id)
-
-
-def update_basket(db: Session, basket_id: int, name: str) -> Basket:
-    with db.begin():
-        basket = _basket_or_raise(db, basket_id, lock=True)
-        basket.name = name
-        _touch(basket)
-        db.flush()
-    return basket
-
-
-def add_basket_item(
-    db: Session, basket_id: int, product_id: int, quantity: Decimal
-) -> Basket:
-    with db.begin():
-        basket = _basket_or_raise(db, basket_id, lock=True)
-        product = _product_or_raise(db, product_id, lock=True)
-        if not product.active:
-            raise BusinessRuleError("Produtos inativos não podem ser incluídos.")
-        _validate_quantity(product, quantity)
-        existing = next(
-            (item for item in basket.items if item.product_id == product_id), None
+    If the product has a commercial_conversion_factor, the reference_price
+    is divided by it to get the price per base unit.
+    Otherwise, the reference_price is already per base unit.
+    """
+    if product.reference_price is None:
+        return None
+    if product.commercial_conversion_factor is not None:
+        return (product.reference_price / product.commercial_conversion_factor).quantize(
+            Decimal("0.01")
         )
-        if existing:
-            existing.quantity += quantity
-            _validate_quantity(product, existing.quantity)
-        else:
-            basket.items.append(BasketItem(product=product, quantity=quantity))
-        _touch(basket)
-        db.flush()
-    return basket
-
-
-def update_basket_item(
-    db: Session, basket_id: int, product_id: int, quantity: Decimal
-) -> Basket:
-    with db.begin():
-        basket = _basket_or_raise(db, basket_id, lock=True)
-        item = next(
-            (item for item in basket.items if item.product_id == product_id), None
-        )
-        if item is None:
-            raise ResourceNotFoundError("Produto não encontrado na composição.")
-        product = _product_or_raise(db, item.product_id, lock=True)
-        item.product = product
-        _validate_quantity(product, quantity)
-        item.quantity = quantity
-        _touch(basket)
-        db.flush()
-    return basket
-
-
-def remove_basket_item(db: Session, basket_id: int, product_id: int) -> Basket:
-    with db.begin():
-        basket = _basket_or_raise(db, basket_id, lock=True)
-        item = next(
-            (item for item in basket.items if item.product_id == product_id), None
-        )
-        if item is None:
-            raise ResourceNotFoundError("Produto não encontrado na composição.")
-        basket.items.remove(item)
-        _touch(basket)
-        db.flush()
-    return basket
-
-
-def replace_basket_item(
-    db: Session, basket_id: int, source_product_id: int, target_product_id: int
-) -> Basket:
-    if source_product_id == target_product_id:
-        raise BusinessRuleError("Escolha um produto diferente para a substituição.")
-    with db.begin():
-        basket = _basket_or_raise(db, basket_id, lock=True)
-        source = next(
-            (item for item in basket.items if item.product_id == source_product_id),
-            None,
-        )
-        if source is None:
-            raise ResourceNotFoundError("Produto não encontrado na composição.")
-        target_product = _product_or_raise(db, target_product_id, lock=True)
-        if not target_product.active:
-            raise BusinessRuleError("Produtos inativos não podem ser incluídos.")
-        _validate_quantity(target_product, source.quantity)
-        target = next(
-            (item for item in basket.items if item.product_id == target_product_id),
-            None,
-        )
-        if target:
-            target.quantity += source.quantity
-            _validate_quantity(target_product, target.quantity)
-            basket.items.remove(source)
-        else:
-            source.product = target_product
-        _touch(basket)
-        db.flush()
-    return basket
+    return product.reference_price
 
 
 def _calculate_composition_metrics(
-    db: Session, items: list[BasketTemplateItem] | list[BasketItem]
+    db: Session, items: list[BasketTemplateItem]
 ) -> tuple[list[ProductCompositionRead], Decimal | None, Decimal | None, bool]:
     if not items:
         return [], None, None, False
@@ -440,15 +294,15 @@ def _calculate_composition_metrics(
 
     for item in items:
         product = item.product
-        reference_price = product.reference_price
-        if reference_price is None:
+        base_price = _base_unit_reference_price(product)
+        if base_price is None:
             has_reliable_cost = False
             item_total_cost = None
         else:
-            item_total_cost = (item.quantity * reference_price).quantize(
+            item_total_cost = (item.quantity * base_price).quantize(
                 Decimal("0.01")
             )
-            total_reference_cost += item.quantity * reference_price
+            total_reference_cost += item.quantity * base_price
 
         comp_items.append(
             ProductCompositionRead(
@@ -456,7 +310,7 @@ def _calculate_composition_metrics(
                     product=product,
                     quantity=item.quantity,
                     balance=balances[product.id],
-                    unit_cost=reference_price,
+                    unit_cost=base_price,
                     total_cost=item_total_cost,
                 )
             )
@@ -486,23 +340,6 @@ def template_read(db: Session, template: BasketTemplate) -> BasketTemplateRead:
         has_reliable_cost=has_reliable_cost,
         created_at=template.created_at,
         updated_at=template.updated_at,
-        items=comp_items,
-    )
-
-
-def basket_read(db: Session, basket: Basket) -> BasketRead:
-    comp_items, reference_cost, suggested_price, has_reliable_cost = (
-        _calculate_composition_metrics(db, basket.items)
-    )
-    return BasketRead(
-        id=basket.id,
-        name=basket.name,
-        template_id=basket.template_id,
-        estimated_cost=reference_cost,
-        suggested_price=suggested_price,
-        has_reliable_cost=has_reliable_cost,
-        created_at=basket.created_at,
-        updated_at=basket.updated_at,
         items=comp_items,
     )
 

@@ -106,35 +106,20 @@ Compatibilidade com dados existentes e futura migration Alembic:
 
 Um template pode ser salvo e editado sem itens. Um template vazio permanece ativo, mas não pode ser usado para criar uma cesta até possuir ao menos um item. A forma persistida exata e os metadados técnicos pertencem à implementação e não ampliam o modelo de negócio.
 
-### 4.2 Cesta concreta
+### 4.2 Cesta concreta (removida)
 
-Uma cesta concreta é uma entidade persistida que representa uma composição específica. Seu ciclo de vida no M2 é criar, editar, salvar e continuar editando.
+A entidade "Cesta concreta" foi removida do projeto. Não há caso de uso real para uma cesta persistida fora do contexto de venda.
 
-Campos mínimos:
+Existem apenas **2 tipos de cestas**:
 
-| Campo | Significado |
-|---|---|
-| `id` | Identificador da cesta |
-| `name` | Nome da cesta |
-| `template_id` | Opcional; identifica somente o template que originou a cesta |
-| `created_at` | Data/hora de criação |
-| `updated_at` | Data/hora da última atualização |
+1. **Template de Cesta** (cesta-modelo) — o molde reutilizável com composição + preço
+2. **Cesta da Venda** (`SaleBasket`) — a concretização do template na venda, editável sem alterar o template
 
-Cada item da composição contém:
-
-| Campo | Significado |
-|---|---|
-| `basket_id` | Cesta à qual o item pertence |
-| `product_id` | Identidade do produto |
-| `quantity` | Quantidade na unidade base atual do produto |
-
-Não fazem parte da cesta M2: cliente, venda, destinatário, endereço ou data de entrega, pagamento, custo, estado comercial, reserva ou dedução de estoque.
-
-O preço de venda é atributo da cesta-modelo (template), servindo de origem comercial para integração com M4. A cesta concreta do M2 não cria vínculo estrutural com Sale/Venda.
+A personalização comercial acontece na cesta da venda (`SaleBasket`), não em uma cesta concreta do M2.
 
 ### 4.3 Composição e quantidades
 
-Templates e cestas contêm produtos e quantidades. A quantidade deve respeitar a representação da unidade base de M1. A composição não cria movimentação de estoque.
+Templates contêm produtos e quantidades. A quantidade deve respeitar a representação da unidade base de M1. A composição não cria movimentação de estoque.
 
 Uma composição pode incluir mais de uma unidade/quantidade do mesmo produto. Cada `product_id` pode aparecer no máximo uma vez em uma composição. Ao incluir produto que já esteja presente, a quantidade solicitada é somada à quantidade existente, sem criar uma segunda linha. Ao substituir um item por um produto já presente na composição, as quantidades são somadas e a composição resultante mantém uma única linha para esse produto.
 
@@ -210,7 +195,6 @@ As operações previstas são:
 | Entidade | Operações M2 |
 |---|---|
 | Template | Criar (com preço opcional), listar/consultar, visualizar, editar (inclusive preço), ativar/desativar |
-| Cesta | Criar com/sem template, listar/consultar, visualizar, editar composição, adicionar/remover/substituir produto e alterar quantidade |
 
 Não se presume operação de exclusão, arquivamento ou duplicação.
 
@@ -218,12 +202,13 @@ Não se presume operação de exclusão, arquivamento ou duplicação.
 
 M2 não cria entidade Sale/Venda nem relacionamento estrutural entre cesta e venda. Não adiciona `sale_id`, cliente, pagamento, entrega ou estado de venda.
 
-O M4 definirá como uma venda utiliza uma cesta e se a composição é copiada/congelada naquele contexto.
+O Template de Cesta (cesta-modelo) é a **origem comercial** de uma venda. Ao adicionar uma cesta a uma venda no M4, a composição e o preço do Template são copiados para a cesta da venda (`SaleBasket`), que passa a ser independente.
 
 Para suportar o comportamento aprovado de M4:
-* M2 disponibiliza preço de venda persistido na cesta-modelo.
-* Se a cesta-modelo estiver sem preço definido, M4 bloqueará a sua adição à venda.
+* M2 disponibiliza preço de venda persistido no Template.
+* Se o Template estiver sem preço definido, M4 bloqueará a sua adição à venda.
 * Ao adicionar à venda, M4 copia o preço como snapshot histórico imutável, desacoplando-o de eventuais alterações futuras no template do M2.
+* A cesta da venda pode ser personalizada: adicionar itens, remover itens, alterar quantidades — sem afetar o Template.
 
 ## 12. Fora do escopo
 

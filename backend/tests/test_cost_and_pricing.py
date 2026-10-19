@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.products.models import InventoryMovement, Product
-from app.baskets.models import Basket, BasketItem, BasketTemplate, BasketTemplateItem
+from app.baskets.models import BasketTemplate, BasketTemplateItem
 
 
 def make_product(client: TestClient, register_cleanup: Any, name: str | None = None, unit: str = "UN", reference_price: str | None = None) -> dict:
@@ -235,20 +235,3 @@ def test_price_preservation_when_costs_change(client: TestClient, register_clean
     assert updated_tmpl["suggested_price"] == "40.00"
 
 
-def test_basket_estimated_cost_and_suggested_price(client: TestClient, register_cleanup: Any):
-    p1 = make_product(client, register_cleanup, reference_price="12.00")
-
-    bsk_res = client.post(
-        "/api/v1/baskets",
-        json={
-            "name": "Cesta Avulsa",
-            "items": [{"product_id": p1["id"], "quantity": "3"}],
-        },
-    )
-    assert bsk_res.status_code == 201
-    bsk = bsk_res.json()
-    register_cleanup(bsk_id=bsk["id"])
-
-    assert bsk["has_reliable_cost"] is True
-    assert bsk["estimated_cost"] == "36.00"
-    assert bsk["suggested_price"] == "72.00"

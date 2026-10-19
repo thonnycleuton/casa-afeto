@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.products.models import InventoryMovement, Product
-from app.baskets.models import Basket, BasketItem, BasketTemplate, BasketTemplateItem
+from app.baskets.models import BasketTemplate, BasketTemplateItem
 from app.sales.models import Sale, SaleBasket, SaleBasketItem
 
 
@@ -145,103 +145,6 @@ def test_reference_price_not_affected_by_inventory_entry(client: TestClient, reg
     assert res.status_code == 200
     products = {p["id"]: p for p in res.json()}
     assert products[product["id"]]["reference_price"] == "10.00"
-
-
-# =============================================================================
-# M2 — Basket pricing with reference_price
-# =============================================================================
-
-
-def test_basket_reference_cost_calculation(client: TestClient, register_cleanup: Any):
-    """Basket reference cost = sum of quantity x reference_price."""
-    p1 = make_product(client, register_cleanup, reference_price="10.00")
-    p2 = make_product(client, register_cleanup, reference_price="20.00")
-
-    bsk_res = client.post(
-        "/api/v1/baskets",
-        json={
-            "name": "Cesta Teste",
-            "items": [
-                {"product_id": p1["id"], "quantity": "2"},
-                {"product_id": p2["id"], "quantity": "1"},
-            ],
-        },
-    )
-    assert bsk_res.status_code == 201
-    bsk = bsk_res.json()
-    register_cleanup(bsk_id=bsk["id"])
-
-    # Reference cost: 2*10.00 + 1*20.00 = 40.00
-    # Suggested price: 2 * 40.00 = 80.00
-    assert bsk["has_reliable_cost"] is True
-    assert bsk["estimated_cost"] == "40.00"
-    assert bsk["suggested_price"] == "80.00"
-
-
-def test_basket_no_suggestion_when_reference_price_missing(client: TestClient, register_cleanup: Any):
-    """No suggestion when any product lacks reference_price."""
-    p1 = make_product(client, register_cleanup, reference_price="10.00")
-    p2 = make_product(client, register_cleanup)  # no reference_price
-
-    bsk_res = client.post(
-        "/api/v1/baskets",
-        json={
-            "name": "Cesta Incompleta",
-            "items": [
-                {"product_id": p1["id"], "quantity": "2"},
-                {"product_id": p2["id"], "quantity": "1"},
-            ],
-        },
-    )
-    assert bsk_res.status_code == 201
-    bsk = bsk_res.json()
-    register_cleanup(bsk_id=bsk["id"])
-
-    assert bsk["has_reliable_cost"] is False
-    assert bsk["estimated_cost"] is None
-    assert bsk["suggested_price"] is None
-
-
-def test_basket_no_fallback_to_average_cost(client: TestClient, register_cleanup: Any):
-    """Basket pricing does NOT fall back to average_cost when reference_price is missing."""
-    p1 = make_product(client, register_cleanup)  # no reference_price
-    add_entry(client, p1["id"], "10", "10.00")  # average_cost = 10.00
-
-    bsk_res = client.post(
-        "/api/v1/baskets",
-        json={
-            "name": "Cesta Sem Preço Ref",
-            "items": [{"product_id": p1["id"], "quantity": "2"}],
-        },
-    )
-    assert bsk_res.status_code == 201
-    bsk = bsk_res.json()
-    register_cleanup(bsk_id=bsk["id"])
-
-    # Even though average_cost = 10.00, reference_price is None -> no suggestion
-    assert bsk["has_reliable_cost"] is False
-    assert bsk["estimated_cost"] is None
-    assert bsk["suggested_price"] is None
-
-
-def test_basket_reference_price_zero(client: TestClient, register_cleanup: Any):
-    """Reference price of 0.00 is valid and yields zero cost."""
-    p1 = make_product(client, register_cleanup, reference_price="0.00")
-
-    bsk_res = client.post(
-        "/api/v1/baskets",
-        json={
-            "name": "Cesta Gratuita",
-            "items": [{"product_id": p1["id"], "quantity": "5"}],
-        },
-    )
-    assert bsk_res.status_code == 201
-    bsk = bsk_res.json()
-    register_cleanup(bsk_id=bsk["id"])
-
-    assert bsk["has_reliable_cost"] is True
-    assert bsk["estimated_cost"] == "0.00"
-    assert bsk["suggested_price"] == "0.00"
 
 
 def test_template_reference_cost_calculation(client: TestClient, register_cleanup: Any):

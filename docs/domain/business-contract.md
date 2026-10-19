@@ -157,6 +157,55 @@ O modelo futuro de lote de estoque permitirá que diferentes quantidades do mesm
 
 Um produto pode ter um **preço de referência** (`reference_price`), que é uma propriedade comercial definida deliberadamente pelo Casa Afeto. O preço de referência não varia automaticamente conforme o preço pago em uma compra. Ele pode ser definido antes do produto existir fisicamente no estoque. Quando ausente, o produto não pode participar de um cálculo confiável de precificação de cestas até que o valor seja definido.
 
+O `reference_price` representa o **preço da unidade comercial** do produto — ou seja, o preço da caixa, pacote ou saco que o operador compra. Por exemplo, uma caixa de chocolate com 12 unidades pode ter `reference_price = R$59,90`.
+
+### 6.2 Fator de Conversão Comercial
+
+Um produto pode ter um **fator de conversão comercial** (`commercial_conversion_factor`), que indica quantas unidades-base existem na unidade comercial.
+
+Exemplo:
+
+```text
+Produto: Chocolate
+Unidade base: UN
+Preço de referência: R$ 59,90 (preço da caixa)
+Fator de conversão: 12 (1 caixa = 12 unidades)
+
+Preço por unidade-base = 59,90 / 12 = R$ 4,99
+```
+
+Quando o fator de conversão está definido, o sistema calcula o preço por unidade-base como:
+
+```
+preço_unidade_base = reference_price / commercial_conversion_factor
+```
+
+Quando o fator de conversão **não** está definido, o `reference_price` já é considerado o preço por unidade-base.
+
+O fator de conversão deve ser maior que zero. Valores negativos ou zero são rejeitados.
+
+### 6.3 Uso na Precificação de Cestas
+
+O cálculo do custo de referência da cesta e do preço sugerido usa o **preço por unidade-base** de cada produto, não o `reference_price` bruto.
+
+Exemplo:
+
+```text
+Template com:
+- 2 unidades de chocolate (reference_price=R$59,90, fator=12)
+- 3 unidades de croissant (reference_price=R$63,98, fator=10)
+
+Preço por unidade-base:
+- Chocolate: 59,90 / 12 = R$ 4,99
+- Croissant: 63,98 / 10 = R$ 6,40
+
+Custo de referência da cesta:
+(2 × 4,99) + (3 × 6,40) = 9,98 + 19,20 = R$ 29,18
+
+Preço sugerido:
+2 × 29,18 = R$ 58,36
+```
+
 ---
 
 ## 7. Compra
@@ -383,15 +432,17 @@ A gestão de lotes não faz parte da implementação inicial da Fase 1.
 
 # 13. Template de Cesta
 
-Um **Template de Cesta** representa uma composição padrão reutilizável para uma cesta.
+Um **Template de Cesta** é a **cesta-base** — o molde reutilizável que define a composição padrão e o preço de venda de uma cesta.
 
-Um template possui um nome, uma composição de produtos e quantidades e um estado ativo/inativo. Um template novo nasce ativo por padrão; não há estado DRAFT no M2.
+O Template é a **origem comercial** de uma venda. Ao adicionar uma cesta a uma venda, a composição e o preço do Template são copiados para a cesta da venda (`SaleBasket`), que passa a ser independente.
 
-Um template pode ser salvo sem itens e editado posteriormente. Um template ativo vazio não pode ser usado para criar uma nova cesta até possuir ao menos um item.
+Um template possui um nome, uma composição de produtos e quantidades, um preço de venda e um estado ativo/inativo. Um template novo nasce ativo por padrão; não há estado DRAFT no M2.
 
-Templates podem ser criados, consultados, editados, ativados e desativados. Um template inativo continua persistido e consultável, mas não pode ser usado para criar uma nova cesta.
+Um template pode ser salvo sem itens e editado posteriormente. Um template ativo vazio não pode ser usado para criar uma cesta em venda até possuir ao menos um item.
 
-Um template que contenha um produto inativo não pode ser usado para criar uma nova cesta até que a composição seja corrigida explicitamente pelo usuário. A referência ao produto inativo permanece no template e não é removida nem substituída automaticamente.
+Templates podem ser criados, consultados, editados, ativados e desativados. Um template inativo continua persistido e consultável, mas não pode ser usado para criar uma cesta em venda.
+
+Um template que contenha um produto inativo não pode ser usado para criar uma cesta em venda até que a composição seja corrigida explicitamente pelo usuário. A referência ao produto inativo permanece no template e não é removida nem substituída automaticamente.
 
 Cada produto aparece no máximo uma vez na composição. Ao incluir novamente produto que já exista no template, sua quantidade é incrementada. Ao substituir item por produto já presente, as quantidades são agregadas na linha única do produto.
 
@@ -410,51 +461,24 @@ Templates podem ser ativados ou desativados.
 
 ---
 
-# 14. Cesta
+# 14. Cesta Concreta (removida)
 
-No M2, uma **Cesta concreta** é uma entidade persistida que representa uma composição específica de produtos. Ela não é uma venda e não possui vínculo com cliente, venda, pagamento, destinatário, entrega ou reserva de estoque.
+A entidade "Cesta concreta" foi removida do projeto. Não há caso de uso real para uma cesta persistida fora do contexto de venda.
 
-Uma cesta possui, no mínimo:
+Existem apenas **2 tipos de cestas**:
 
-* `id`;
-* `name`;
-* `template_id` opcional, que registra somente a origem;
-* `created_at`;
-* `updated_at`.
+1. **Template de Cesta** — o molde reutilizável com composição + preço
+2. **Cesta da Venda** (`SaleBasket`) — a concretização do template na venda, editável sem alterar o template
 
-Cada item da composição possui:
-
-* `basket_id`;
-* `product_id`;
-* `quantity`.
-
-Uma cesta pode:
-
-* ser criada a partir de um template;
-* ser criada sem um template;
-* ter sua composição personalizada;
-* conter várias unidades do mesmo produto;
-* permanecer vazia e ser salva.
-
-Uma cesta não possui estado comercial em M2. Seu ciclo de vida é criar, editar, salvar e continuar editando. Estados como confirmada, vendida, entregue, cancelada ou paga pertencem ao domínio futuro de vendas.
-
-Exemplo:
-
-```text
-Chocolate × 3
-Suco × 1
-Bolo × 1
-```
-
-Não é obrigatório que uma cesta mantenha a mesma composição de seu template.
+**A personalização comercial acontece na cesta da venda (`SaleBasket`).**
 
 ---
 
-# 15. Independência entre Cesta e Template
+# 15. Independência entre Template e Cesta da Venda
 
-Quando uma cesta é criada a partir de um template ativo utilizável, a composição é copiada naquele momento. O `template_id` opcional identifica apenas a origem; não é uma referência viva à composição.
+Quando uma cesta é adicionada a uma venda a partir de um Template, a composição e o preço são copiados naquele momento. O `origin_template_id` opcional identifica apenas a origem; não é uma referência viva à composição.
 
-Alterações futuras no template não adicionam, removem ou alteram produtos ou quantidades de cestas existentes. Alterações na cesta também não modificam o template.
+Alterações futuras no Template não adicionam, removem ou alteram produtos, quantidades ou preços das cestas já adicionadas a vendas. Alterações na cesta da venda também não modificam o Template.
 
 Exemplo:
 
@@ -462,34 +486,40 @@ Exemplo:
 Template:
 Chocolate × 2
 Suco × 1
+Preço: R$ 50,00
 
-        ↓
+        ↓ adicionado à venda
 
-Cesta:
+Cesta da Venda:
 Chocolate × 2
 Suco × 1
+Preço: R$ 50,00
 
         ↓ template alterado
 
 Template:
 Chocolate × 1
 Suco × 2
+Preço: R$ 60,00
 ```
 
-A cesta existente permanece:
+A cesta da venda existente permanece:
 
 ```text
 Chocolate × 2
 Suco × 1
+Preço: R$ 50,00
 ```
+
+A cesta da venda pode ser personalizada independentemente: adicionar itens, remover itens, alterar quantidades — sem afetar o Template.
 
 ---
 
-# 16. Personalização da Cesta
+# 16. Personalização da Cesta da Venda
 
-Uma cesta concreta pode ser personalizada após sua criação.
+A personalização comercial acontece na **cesta da venda** (`SaleBasket`), não na Cesta concreta do M2.
 
-A personalização pode incluir:
+Quando uma cesta é adicionada a uma venda a partir de um Template, o operador pode personalizar a composição da cesta da venda:
 
 * adicionar um produto;
 * remover um produto;
@@ -502,19 +532,23 @@ A personalização pode ser necessária por causa de:
 * disponibilidade de produtos;
 * decisões operacionais.
 
-Uma cesta pode conter um produto mesmo quando o estoque atual é insuficiente, desde que a falta esteja visível.
+A personalização da cesta da venda segue as regras de alteração de composição por estado definidas na seção 26.
 
-Uma cesta que contenha um produto posteriormente desativado continua persistida e editável. O item não é removido automaticamente. O usuário pode mantê-lo na composição ou removê-lo e pode editar os demais itens. Um produto inativo não pode ser incluído em novas composições, inclusive em novas cestas. A interface deve identificar claramente o produto inativo já presente. Não há substituição automática; substituir é uma ação explícita por outro produto ativo.
+Uma cesta da venda pode conter um produto mesmo quando o estoque atual é insuficiente, desde que a falta esteja visível.
+
+Uma cesta da venda que contenha um produto posteriormente desativado continua persistida e editável. O item não é removido automaticamente. O usuário pode mantê-lo na composição ou removê-lo e pode editar os demais itens. Um produto inativo não pode ser incluído em novas composições. A interface deve identificar claramente o produto inativo já presente. Não há substituição automática; substituir é uma ação explícita por outro produto ativo.
 
 O usuário também pode alterar a quantidade de um item já existente cujo produto foi desativado. Cada produto aparece no máximo uma vez por composição; incluir novamente um produto ativo já presente incrementa sua quantidade. Ao substituir item por produto já presente, as quantidades são agregadas em uma única linha.
 
 ---
 
-# 17. Cesta sem Template
+# 17. Venda sem Template
 
-Uma cesta pode ser criada sem usar um Template de Cesta.
+Uma cesta pode ser adicionada a uma venda sem usar um Template de Cesta.
 
-Isso permite que a Casa Afeto crie cestas personalizadas ou excepcionais sem antes criar um template reutilizável.
+Isso permite que a Casa Afeto crie cestas personalizadas ou excepcionais diretamente na venda, sem antes criar um template reutilizável.
+
+A cesta da venda criada sem Template possui `origin_template_id = NULL`.
 
 ---
 
@@ -532,7 +566,7 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 
 1. **Custo de aquisição nas entradas:** nas entradas de estoque (tipo ENTRY), é registrado opcionalmente o custo unitário de aquisição do produto com precisão de duas casas decimais. Valores negativos são rejeitados.
 2. **Custo médio ponderado (controle interno):** o custo médio unitário do produto é calculado ponderando quantidades e custos das entradas com custo registrado. Custos desconhecidos (ausentes) são ignorados no cálculo da média e não são tratados como zero. Este valor é mantido para controle interno de custos e não é usado para precificação de cestas.
-3. **Custo de referência da cesta:** obtido pela soma de `quantidade × reference_price` de cada produto na composição. Se algum produto não possuir `reference_price` definido, o custo de referência da cesta é considerado indisponível / não confiável.
+3. **Custo de referência da cesta:** obtido pela soma de `quantidade × preço_por_unidade_base` de cada produto na composição, onde `preço_por_unidade_base = reference_price / commercial_conversion_factor` (ou `reference_price` quando o fator não está definido). Se algum produto não possuir `reference_price` definido, o custo de referência da cesta é considerado indisponível / não confiável.
 4. **Preço sugerido:** calculado como 2 × custo de referência da cesta quando todos os itens possuem `reference_price` definido e a composição não está vazia.
 5. **Autonomia de precificação e persistência:** o preço de venda da cesta é definido ou aceito pelo operador. O preço salvo não é sobrescrito automaticamente quando o preço de referência muda. Ao editar a composição ou solicitar nova sugestão, o custo de referência e a sugestão são recalculados dinamicamente sem alterar o preço já fixado.
 6. **Precisão monetária:** o preço possui precisão de duas casas decimais. Valores negativos são estritamente rejeitados. O preço zero (`0.00`) é permitido para brindes/cortesias e é semanticamente distinto de preço não informado (`null`).
@@ -586,11 +620,11 @@ O destinatário não precisa ser modelado como entidade independente na implemen
 
 # 22. Composição e Preço Acordado da Cesta na Venda
 
-Ao adicionar uma cesta à venda, sua composição é copiada naquele momento e passa a ser independente da origem.
+Ao adicionar uma cesta à venda, a composição e o preço do Template de origem são copiados naquele momento e passam a ser independentes do Template.
 
-O preço vigente da origem também é copiado no momento da adição.
+O preço vigente do Template é copiado no momento da adição.
 
-Alterações posteriores na venda não modificam a origem. Alterações posteriores na origem também não modificam a cesta já adicionada à venda.
+Alterações posteriores na cesta da venda não modificam o Template. Alterações posteriores no Template também não modificam a cesta já adicionada à venda.
 
 O preço acordado de cada cesta pode ser ajustado manualmente somente enquanto a venda estiver em `RASCUNHO`.
 
@@ -864,13 +898,9 @@ Uma cesta pode conter várias unidades do mesmo produto.
 
 Alterar um Template de Cesta não deve modificar cestas existentes criadas a partir desse template.
 
-### BASKET-004 — Personalização de Cesta
+### BASKET-005 — Cesta concreta removida
 
-Uma cesta concreta pode ser personalizada após sua criação.
-
-### BASKET-005 — Cesta persistida independente de venda
-
-No M2, uma cesta concreta é uma entidade persistida de composição, editável e sem vínculo estrutural com cliente, venda, pagamento, destinatário, entrega ou estado de venda.
+A entidade "Cesta concreta" foi removida do projeto. Existem apenas Template de Cesta (molde reutilizável) e Cesta da Venda (SaleBasket). A personalização comercial acontece na cesta da venda.
 
 ### BASKET-006 — Cesta vazia
 
@@ -878,7 +908,7 @@ Uma cesta sem itens pode ser criada e salva. Remover todos os itens de uma cesta
 
 ### BASKET-007 — Cópia da composição do template
 
-Ao criar uma cesta a partir de um template ativo utilizável, os itens e quantidades do template são copiados naquele momento. As composições passam a ser independentes, embora a cesta possa guardar o identificador do template de origem.
+Ao adicionar uma cesta a uma venda a partir de um template ativo utilizável, os itens, quantidades e preço do template são copiados naquele momento. A cesta da venda passa a ser independente do template, embora possa guardar o identificador do template de origem (`origin_template_id`). Alterações no template não afetam cestas de venda existentes.
 
 ### BASKET-008 — Produtos inativos em composições
 
@@ -946,7 +976,7 @@ Cada cesta da venda possui composição, destinatário, endereço, data de entre
 
 ### SALE-005 — Cópia Independente da Composição na Venda
 
-Ao adicionar uma cesta à venda, sua composição é copiada e passa a ser independente da origem.
+Ao adicionar uma cesta à venda a partir de um Template, a composição e o preço do Template são copiados e passam a ser independentes do Template. A cesta da venda pode ser personalizada sem afetar o Template.
 
 ### SALE-006 — Preço Acordado por Cesta
 
@@ -1154,7 +1184,7 @@ A implementação exata do cálculo de custos será definida quando a gestão de
 
 ### Custo e Precificação de Cestas
 
-M1 fornece `reference_price` como propriedade comercial do produto. M2 calcula o custo de referência da cesta a partir de `reference_price × quantidade` e sugere preço igual a 2 × custo de referência. O `unit_cost` em entradas de estoque permanece para controle interno de custos.
+M1 fornece `reference_price` como propriedade comercial do produto, representando o preço da unidade comercial (caixa, pacote, saco). O `commercial_conversion_factor` indica quantas unidades-base há na unidade comercial. M2 calcula o custo de referência da cesta a partir de `preço_por_unidade_base × quantidade`, onde `preço_por_unidade_base = reference_price / commercial_conversion_factor` (ou `reference_price` quando o fator não está definido). O preço sugerido é 2 × custo de referência. O `unit_cost` em entradas de estoque permanece para controle interno de custos.
 
 ### Gestão de Compras
 

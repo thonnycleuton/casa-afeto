@@ -94,44 +94,6 @@ class BasketTemplateUpdate(BaseModel):
         return self
 
 
-class BasketCreate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    name: str
-    template_id: int | None = None
-    items: list[BasketItemInput] = Field(default_factory=list)
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("O nome da cesta é obrigatório.")
-        return value
-
-    @model_validator(mode="after")
-    def reject_items_with_template(self) -> "BasketCreate":
-        if self.template_id is not None and self.items:
-            raise ValueError(
-                "A composição da cesta é copiada do template selecionado."
-            )
-        return self
-
-
-class BasketUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    name: str
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("O nome da cesta é obrigatório.")
-        return value
-
-
 class ProductCompositionRead(BaseModel):
     product_id: int
     product_name: str
@@ -160,15 +122,3 @@ class BasketTemplateRead(BaseModel):
     items: list[ProductCompositionRead]
 
 
-class BasketRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    name: str
-    template_id: int | None
-    estimated_cost: Decimal | None = None
-    suggested_price: Decimal | None = None
-    has_reliable_cost: bool = False
-    created_at: datetime
-    updated_at: datetime
-    items: list[ProductCompositionRead]
