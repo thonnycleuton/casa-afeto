@@ -38,6 +38,7 @@ from app.sales.models import (
     SaleCancellationInspection,
 )
 from app.payments.models import Payment
+from app.inventory.models import StockBatch
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +152,9 @@ def _cleanup_test_data(
         ).delete(synchronize_session=False)
         db.query(BasketTemplate).filter(
             BasketTemplate.id.in_(template_ids)
+        ).delete(synchronize_session=False)
+        db.query(StockBatch).filter(
+            StockBatch.product_id.in_(product_ids)
         ).delete(synchronize_session=False)
         db.query(Customer).filter(Customer.id.in_(customer_ids)).delete(synchronize_session=False)
         db.query(Product).filter(Product.id.in_(product_ids)).delete(synchronize_session=False)

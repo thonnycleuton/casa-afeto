@@ -3,6 +3,7 @@ import type {
   InventoryMovement,
   Product,
   ProductInput,
+  StockBatch,
 } from './types'
 
 export function fetchProducts(search?: string): Promise<Product[]> {
@@ -59,4 +60,8 @@ export function adjustInventory(
 
 export function fetchInventoryHistory(id: number): Promise<InventoryMovement[]> {
   return apiClient<InventoryMovement[]>(`/api/v1/products/${id}/inventory/movements`)
+}
+
+export function fetchStockBatches(id: number): Promise<StockBatch[]> {
+  return apiClient<StockBatch[]>(`/api/v1/products/${id}/batches`)
 }

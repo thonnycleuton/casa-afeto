@@ -11,6 +11,7 @@ from app.core.database import SessionLocal
 from app.products.models import InventoryMovement, Product
 from app.baskets.models import BasketTemplate, BasketTemplateItem
 from app.sales.models import Sale, SaleBasket, SaleBasketItem
+from app.inventory.models import StockBatch
 
 
 def make_product(client: TestClient, register_cleanup: Any, name: str | None = None, unit: str = "UN", reference_price: str | None = None) -> dict:
@@ -66,6 +67,7 @@ def register_cleanup() -> Any:
             db.query(BasketTemplateItem).filter(BasketTemplateItem.template_id.in_(template_ids)).delete(synchronize_session=False)
             db.query(BasketTemplate).filter(BasketTemplate.id.in_(template_ids)).delete(synchronize_session=False)
         if product_ids:
+            db.query(StockBatch).filter(StockBatch.product_id.in_(product_ids)).delete(synchronize_session=False)
             db.query(InventoryMovement).filter(InventoryMovement.product_id.in_(product_ids)).delete(synchronize_session=False)
             db.query(Product).filter(Product.id.in_(product_ids)).delete(synchronize_session=False)
         db.commit()

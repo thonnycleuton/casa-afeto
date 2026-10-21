@@ -23,6 +23,7 @@ from app.sales.models import (
     SaleCancellationInspection,
 )
 from app.payments.models import Payment
+from app.inventory.models import StockBatch
 
 
 @pytest.fixture
@@ -104,6 +105,9 @@ def sample_customer_and_template(
 
     # Cleanup
     with SessionLocal() as db:
+        db.query(StockBatch).filter(
+            StockBatch.product_id.in_([p1["id"], p2["id"]])
+        ).delete(synchronize_session=False)
         db.query(InventoryMovement).filter(
             InventoryMovement.product_id.in_([p1["id"], p2["id"]])
         ).delete(synchronize_session=False)

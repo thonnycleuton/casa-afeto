@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -15,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Numeric
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.inventory.models import StockBatch
 
 
 class BaseUnit(StrEnum):
@@ -109,8 +113,12 @@ class InventoryMovement(Base):
     purchase_id: Mapped[int | None] = mapped_column(
         ForeignKey("purchases.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    batch_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stock_batches.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     product: Mapped[Product] = relationship(back_populates="movements")
+    batch: Mapped["StockBatch | None"] = relationship(back_populates="movements")

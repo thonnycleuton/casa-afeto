@@ -51,7 +51,6 @@ export interface Product extends ProductInput {
   reference_price?: string | null
   commercial_conversion_factor?: string | null
   inventory_balance: string
-  average_cost?: string | null
   created_at: string
   updated_at: string
 }
@@ -60,8 +59,23 @@ export interface InventoryMovement {
   id: number
   product_id: number
   quantity: string
-  type: 'ENTRY' | 'ADJUSTMENT'
+  type: 'ENTRY' | 'ADJUSTMENT' | 'OUTPUT'
   unit_cost?: string | null
+  sale_id?: number | null
+  purchase_id?: number | null
+  batch_id?: number | null
+  created_at: string
+}
+
+export interface StockBatch {
+  id: number
+  product_id: number
+  purchase_id?: number | null
+  purchase_item_id?: number | null
+  quantity_original: string
+  quantity_remaining: string
+  unit_cost?: string | null
+  status: 'ACTIVE' | 'EXHAUSTED'
   created_at: string
 }
 

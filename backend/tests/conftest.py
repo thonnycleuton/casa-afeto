@@ -8,6 +8,7 @@ from app.core.database import SessionLocal
 from app.main import app
 from app.products.models import InventoryMovement, Product
 from app.purchases.models import PurchaseItem, Purchase
+from app.inventory.models import StockBatch
 
 
 @pytest.fixture(scope="session")
@@ -33,6 +34,10 @@ def register_product_for_cleanup() -> Iterator[Callable[[int], None]]:
             db.query(Purchase).filter(
                 Purchase.id.in_(purchase_id_list)
             ).delete(synchronize_session=False)
+        # Clean up stock batches first (RESTRICT FK from movements)
+        db.query(StockBatch).filter(
+            StockBatch.product_id.in_(product_ids)
+        ).delete(synchronize_session=False)
         # Clean up inventory movements
         db.query(InventoryMovement).filter(
             InventoryMovement.product_id.in_(product_ids)

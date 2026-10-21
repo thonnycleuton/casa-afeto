@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.batches import router as batches_router
 from app.api.v1.baskets import router as baskets_router
 from app.api.v1.customers import router as customers_router
 from app.api.v1.health import router as health_router
@@ -46,6 +47,7 @@ def create_application() -> FastAPI:
     app.include_router(payments_router, prefix="/api/v1")
     app.include_router(inspections_router, prefix="/api/v1")
     app.include_router(purchases_router, prefix="/api/v1")
+    app.include_router(batches_router, prefix="/api/v1")
     register_error_handlers(app)
 
     return app

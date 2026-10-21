@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import BaseModal from '../ui/BaseModal.vue'
-import type { InventoryMovement, Product } from '../../api/types'
+import type { InventoryMovement, Product, StockBatch } from '../../api/types'
 
 const props = defineProps<{
   open: boolean
   product: Product | null
   movements: InventoryMovement[]
+  batches: StockBatch[]
 }>()
 
 const emit = defineEmits<{
@@ -101,9 +102,6 @@ function submitAdjustment(): void {
           <span class="balance-label">Saldo atual</span>
           <strong>{{ formatQuantity(product.inventory_balance) }} {{ product.base_unit }}</strong>
         </div>
-        <span v-if="product.average_cost" class="field-hint">
-          Custo médio: {{ formatCurrency(product.average_cost) }}
-        </span>
         <span :class="['status-pill', product.active ? 'status-success' : 'status-muted']">
           <span class="status-dot" aria-hidden="true"></span>
           {{ product.active ? 'Ativo' : 'Inativo' }}
@@ -144,7 +142,7 @@ function submitAdjustment(): void {
               :class="{ 'form-input-error': entryCostError }"
             />
             <p v-if="entryCostError" class="field-error">{{ entryCostError }}</p>
-            <p v-else class="field-hint">Usado no cálculo do custo médio ponderado.</p>
+            <p v-else class="field-hint">Custo de aquisição deste lote.</p>
           </div>
           <button class="btn primary" type="submit" :disabled="!product.active">
             Registrar entrada
@@ -177,6 +175,40 @@ function submitAdjustment(): void {
           </button>
           <p v-if="!product.active" class="field-hint">Reative este produto para alterar o estoque.</p>
         </form>
+      </div>
+
+      <div v-if="batches.length" class="card table-card">
+        <div class="table-heading">
+          <div>
+            <h2>Lotes ativos</h2>
+            <p>Cada lote representa uma aquisição com custo próprio.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Entrada</th>
+                <th class="numeric">Qtd. original</th>
+                <th class="numeric">Restante</th>
+                <th>Custo un.</th>
+                <th>Origem</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="batch in batches" :key="batch.id">
+                <td>{{ new Date(batch.created_at).toLocaleDateString('pt-BR') }}</td>
+                <td class="numeric">{{ formatQuantity(batch.quantity_original) }}</td>
+                <td class="numeric">{{ formatQuantity(batch.quantity_remaining) }}</td>
+                <td>{{ batch.unit_cost ? formatCurrency(batch.unit_cost) : '—' }}</td>
+                <td>
+                  <span v-if="batch.purchase_id" class="field-hint">Compra #{{ batch.purchase_id }}</span>
+                  <span v-else class="field-hint">Manual</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div v-if="movements.length" class="card table-card">

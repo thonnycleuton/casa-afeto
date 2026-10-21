@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from app.baskets.models import BasketTemplate, BasketTemplateItem
 from app.core.database import SessionLocal
 from app.products.models import InventoryMovement, Product
+from app.inventory.models import StockBatch
 
 
 @pytest.fixture
@@ -27,6 +28,9 @@ def register_m2_cleanup() -> Iterator[Callable[[str, int], None]]:
         ).delete(synchronize_session=False)
         db.query(BasketTemplate).filter(
             BasketTemplate.id.in_(registered["template"])
+        ).delete(synchronize_session=False)
+        db.query(StockBatch).filter(
+            StockBatch.product_id.in_(registered["product"])
         ).delete(synchronize_session=False)
         db.query(InventoryMovement).filter(
             InventoryMovement.product_id.in_(registered["product"])

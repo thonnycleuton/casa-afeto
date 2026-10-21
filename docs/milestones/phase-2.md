@@ -55,15 +55,53 @@ A ordem reflete as dependências naturais:
 
 | Marco | Status | Documentos |
 |-------|--------|------------|
-| M6 — Compras | 📝 Rascunho | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
-| M7 — Lotes de Estoque | ✗ Não planejado | — |
+| M6 — Compras | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
+| M7 — Lotes de Estoque | 📝 Rascunho | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M8 — Vencimentos | ✗ Não planejado | — |
 | M9 — Reposição de Estoque | ✗ Não planejado | — |
 | M10 — Datas Afetivas | ✗ Não planejado | — |
 
 ---
 
-## 4. Marco M6 — Compras e Reposição de Estoque
+## 4. Marco M7 — Lotes de Estoque
+
+### Objetivo
+
+Introduzir o conceito de lote de estoque, permitindo que cada aquisição de produto seja rastreada como um grupo distinto com custo unitário próprio, quantidade restante e data de entrada. O consumo de estoque segue a estratégia FIFO (First-In-First-Out).
+
+### Documentos
+
+```text
+docs/milestones/m7-stock-batches/
+├── specification.md          — Especificação detalhada (v0.1, rascunho)
+├── acceptance-criteria.md    — 24 critérios de aceitação (v0.1, rascunho)
+├── use-cases.md              — 6 casos de uso (v0.1, rascunho)
+└── validation.md             — Plano de validação (v0.1, rascunho)
+```
+
+### Regras de Negócio
+
+10 regras novas (LOT-001 a LOT-010).
+
+### Decisões do Product Owner
+
+- **D-1:** Lote automático por item de compra
+- **D-2:** FIFO como estratégia de consumo
+- **D-3:** Remoção do custo médio ponderado
+
+### Dependências
+
+- M1 — Produtos e Estoque (base)
+- M6 — Compras (lotes surgem das aquisições)
+
+### Status
+
+- Especificação: Rascunho v0.1 — pendente de aprovação final
+- Implementação: Não iniciada
+
+---
+
+## 5. Marco M6 — Compras (Concluído)
 
 ### Objetivo
 
@@ -90,29 +128,11 @@ docs/milestones/m6-purchases/
 
 ### Status
 
-* Especificação: Rascunho v0.3 — pendente de aprovação final
-* Decisões do Product Owner: 4 decisões confirmadas (seção 12 da spec)
-* Implementação: Não iniciada
+* Status: Concluído (COMPLETED) — Implementação, testes e frontend concluídos
 
 ---
 
-## 5. Marcos Futuros (Rascunho)
-
-### M7 — Lotes de Estoque
-
-**Objetivo:** Representar como lotes separados os estoques adquiridos em momentos e preços diferentes.
-
-**Dependência:** M6 (Compras) — os lotes surgem das aquisições.
-
-**Capacidades esperadas:**
-* Vincular ENTRY de compra a um lote.
-* Consultar estoque por lote.
-* Diferenciar custos por lote.
-
-**Fora do escopo (por enquanto):**
-* Estratégia de seleção de lote (FIFO, FEFO) — definida quando entrar em desenvolvimento.
-
----
+## 6. Marcos Futuros (Rascunho)
 
 ### M8 — Vencimentos
 
@@ -156,7 +176,7 @@ docs/milestones/m6-purchases/
 
 ---
 
-## 6. Gates de Início
+## 7. Gates de Início
 
 Cada marco da Fase 2 só pode começar quando:
 

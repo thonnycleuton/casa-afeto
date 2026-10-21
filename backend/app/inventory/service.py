@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BusinessRuleError, ResourceNotFoundError
+from app.inventory.batch_service import consume_fifo, create_batch
 from app.products.models import (
     BaseUnit,
     InventoryMovement,
@@ -137,6 +138,7 @@ def create_movement(
     unit_cost: Decimal | None = None,
     sale_id: int | None = None,
     purchase_id: int | None = None,
+    purchase_item_id: int | None = None,
     *,
     use_savepoint: bool = True,
 ) -> InventoryMovement:
@@ -156,11 +158,11 @@ def create_movement(
     if use_savepoint:
         with db.begin():
             movement = _create_movement_inner(
-                db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id
+                db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id, purchase_item_id
             )
     else:
         movement = _create_movement_inner(
-            db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id
+            db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id, purchase_item_id
         )
 
     return movement
@@ -174,6 +176,7 @@ def _create_movement_inner(
     unit_cost: Decimal | None,
     sale_id: int | None,
     purchase_id: int | None = None,
+    purchase_item_id: int | None = None,
 ) -> InventoryMovement:
     product = _product_or_raise(db, product_id, lock=True)
     if not product.active:
@@ -200,6 +203,27 @@ def _create_movement_inner(
                 f"Saldo resultante: {resulting_balance}, reservas ativas: {active_reservations}."
             )
 
+    batch_id = None
+
+    if movement_type == MovementType.ENTRY:
+        # LOT-001/LOT-002: Create a stock batch for this entry
+        batch = create_batch(
+            db,
+            product_id=product_id,
+            quantity=quantity,
+            unit_cost=unit_cost,
+            purchase_id=purchase_id,
+            purchase_item_id=purchase_item_id,
+        )
+        batch_id = batch.id
+
+    elif movement_type == MovementType.OUTPUT:
+        # LOT-003: Consume batches in FIFO order
+        abs_quantity = abs(quantity)
+        consumed = consume_fifo(db, product_id, abs_quantity)
+        # The OUTPUT movement records the total quantity;
+        # the batch consumption is tracked in the batch quantities.
+
     movement = InventoryMovement(
         product_id=product_id,
         quantity=quantity,
@@ -207,6 +231,7 @@ def _create_movement_inner(
         type=movement_type.value,
         sale_id=sale_id,
         purchase_id=purchase_id,
+        batch_id=batch_id,
     )
     db.add(movement)
     db.flush()

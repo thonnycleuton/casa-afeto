@@ -64,18 +64,6 @@ def get_balance(client: TestClient, product_id: int) -> Decimal:
     return Decimal(response.json()["quantity"])
 
 
-def get_average_cost(client: TestClient, product_id: int) -> Decimal | None:
-    """Get average cost for a product by listing and filtering."""
-    response = client.get("/api/v1/products")
-    assert response.status_code == 200
-    products = response.json()
-    for p in products:
-        if p["id"] == product_id:
-            cost = p.get("average_cost")
-            return Decimal(cost) if cost is not None else None
-    return None
-
-
 def get_movements(client: TestClient, product_id: int) -> list[dict[str, Any]]:
     """Get inventory movements for a product."""
     response = client.get(f"/api/v1/products/{product_id}/inventory/movements")
@@ -328,36 +316,7 @@ def test_atomicity_transaction_failure(
     assert get_balance(client, product_b["id"]) == Decimal("5")
 
 
-# ─── AC-M6-009: Weighted average cost updated ───
-
-def test_weighted_average_cost_updated(
-    client: TestClient, register_product_for_cleanup: Callable[[int], None]
-) -> None:
-    """AC-M6-009: Purchase updates weighted average cost."""
-    product = create_product(client, register_product_for_cleanup)
-    product_id = product["id"]
-
-    # Existing ENTRY: qty 100, unit_cost 2.00
-    entry_resp = client.post(
-        f"/api/v1/products/{product_id}/inventory/entries",
-        json={"quantity": "100", "unit_cost": "2.00"},
-    )
-    assert entry_resp.status_code == 201
-
-    # Purchase: qty 50, unit_cost 3.00
-    create_purchase(client, [
-        {
-            "product_id": product_id,
-            "conversion_factor": "1",
-            "commercial_quantity": "50",
-            "commercial_unit_price": "3.00",
-        }
-    ])
-
-    avg_cost = get_average_cost(client, product_id)
-    # (100 * 2.00 + 50 * 3.00) / 150 = 350 / 150 = 2.33
-    assert avg_cost == Decimal("2.33")
-
+# AC-M6-009 removed in M7: average_cost is no longer calculated; cost is per-batch.
 
 # ─── AC-M6-010: Reference price unchanged ───
 

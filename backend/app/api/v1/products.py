@@ -24,7 +24,6 @@ router = APIRouter(prefix="/products", tags=["products", "inventory"])
 
 def _product_response(db: Session, product: Product) -> ProductRead:
     balances = inventory_service.product_balances(db, [product])
-    avg_costs = inventory_service.product_average_costs(db, [product])
     return ProductRead(
         id=product.id,
         name=product.name,
@@ -35,7 +34,6 @@ def _product_response(db: Session, product: Product) -> ProductRead:
         created_at=product.created_at,
         updated_at=product.updated_at,
         inventory_balance=balances[product.id],
-        average_cost=avg_costs.get(product.id),
     )
 
 
@@ -53,7 +51,6 @@ def list_products(
 ) -> list[ProductRead]:
     products = product_service.list_products(db, search)
     balances = inventory_service.product_balances(db, products)
-    avg_costs = inventory_service.product_average_costs(db, products)
     return [
         ProductRead(
             id=product.id,
@@ -65,7 +62,6 @@ def list_products(
             created_at=product.created_at,
             updated_at=product.updated_at,
             inventory_balance=balances[product.id],
-            average_cost=avg_costs.get(product.id),
         )
         for product in products
     ]

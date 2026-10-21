@@ -111,7 +111,6 @@ class ProductRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     inventory_balance: Decimal
-    average_cost: Optional[Decimal] = None
 
 
 class MovementRead(BaseModel):
@@ -124,6 +123,7 @@ class MovementRead(BaseModel):
     unit_cost: Optional[Decimal] = None
     sale_id: Optional[int] = None
     purchase_id: Optional[int] = None
+    batch_id: Optional[int] = None
     created_at: datetime
 
 

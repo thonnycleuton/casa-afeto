@@ -61,24 +61,13 @@ def create_purchase(db: Session, data: CreatePurchase) -> PurchaseRead:
     # Sort items by product_id for lock ordering (ADR-002 D-3)
     sorted_items = sorted(data.items, key=lambda i: i.product_id)
 
-    # Process each item: lock product, create ENTRY, create PurchaseItem
+    # Process each item: lock product, create purchase item, create ENTRY
     for item in sorted_items:
         product = products[item.product_id]
         conversion_factor = item.conversion_factor
         base_quantity = item.commercial_quantity * conversion_factor
         unit_cost = (item.commercial_unit_price / conversion_factor).quantize(
             Decimal("0.01")
-        )
-
-        # Create ENTRY movement with purchase_id for traceability
-        create_movement(
-            db,
-            product_id=item.product_id,
-            quantity=base_quantity,
-            movement_type=MovementType.ENTRY,
-            unit_cost=unit_cost,
-            purchase_id=purchase.id,
-            use_savepoint=False,
         )
 
         # Create purchase item
@@ -91,6 +80,21 @@ def create_purchase(db: Session, data: CreatePurchase) -> PurchaseRead:
             commercial_unit_price=item.commercial_unit_price,
         )
         db.add(purchase_item)
+
+        # Create ENTRY movement with purchase_id and purchase_item_id for traceability
+        # This will automatically create a StockBatch (LOT-001)
+        # Note: purchase_item.id is available because create_movement locks the product
+        # and flushes within the same transaction
+        create_movement(
+            db,
+            product_id=item.product_id,
+            quantity=base_quantity,
+            movement_type=MovementType.ENTRY,
+            unit_cost=unit_cost,
+            purchase_id=purchase.id,
+            purchase_item_id=purchase_item.id,
+            use_savepoint=False,
+        )
 
     db.flush()
     db.refresh(purchase)

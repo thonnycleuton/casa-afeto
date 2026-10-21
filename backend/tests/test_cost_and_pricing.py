@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.products.models import InventoryMovement, Product
+from app.purchases.models import PurchaseItem, Purchase
 from app.baskets.models import BasketTemplate, BasketTemplateItem
+from app.inventory.models import StockBatch
 
 
 def make_product(client: TestClient, register_cleanup: Any, name: str | None = None, unit: str = "UN", reference_price: str | None = None) -> dict:
@@ -52,6 +54,22 @@ def register_cleanup() -> Any:
             db.query(BasketTemplateItem).filter(BasketTemplateItem.template_id.in_(template_ids)).delete(synchronize_session=False)
             db.query(BasketTemplate).filter(BasketTemplate.id.in_(template_ids)).delete(synchronize_session=False)
         if product_ids:
+            # Clean up purchases first (RESTRICT FK)
+            purchase_ids = db.query(PurchaseItem.purchase_id).filter(
+                PurchaseItem.product_id.in_(product_ids)
+            ).distinct().all()
+            purchase_id_list = [p[0] for p in purchase_ids]
+            if purchase_id_list:
+                db.query(PurchaseItem).filter(
+                    PurchaseItem.purchase_id.in_(purchase_id_list)
+                ).delete(synchronize_session=False)
+                db.query(Purchase).filter(
+                    Purchase.id.in_(purchase_id_list)
+                ).delete(synchronize_session=False)
+            # Clean up stock batches (RESTRICT FK from products)
+            db.query(StockBatch).filter(
+                StockBatch.product_id.in_(product_ids)
+            ).delete(synchronize_session=False)
             db.query(InventoryMovement).filter(InventoryMovement.product_id.in_(product_ids)).delete(synchronize_session=False)
             db.query(Product).filter(Product.id.in_(product_ids)).delete(synchronize_session=False)
         db.commit()
@@ -83,60 +101,7 @@ def test_inventory_entry_unit_cost_validation(client: TestClient, register_clean
     assert res.status_code == 422
 
 
-def test_weighted_average_cost_calculation(client: TestClient, register_cleanup: Any):
-    product = make_product(client, register_cleanup)
-
-    # Entry 1: 10 units @ 5.00
-    add_entry(client, product["id"], "10", "5.00")
-    # Entry 2: 20 units @ 8.00
-    add_entry(client, product["id"], "20", "8.00")
-
-    # Product list / get should return weighted average cost = (50 + 160) / 30 = 7.00
-    res = client.get("/api/v1/products")
-    prods = {p["id"]: p for p in res.json()}
-    assert prods[product["id"]]["average_cost"] == "7.00"
-
-
-def test_weighted_average_cost_ignores_unknown_costs_without_treating_as_zero(client: TestClient, register_cleanup: Any):
-    product = make_product(client, register_cleanup)
-
-    # Historical entry without cost: 100 units
-    add_entry(client, product["id"], "100")
-
-    # New entry with known cost: 10 units @ 50.00
-    add_entry(client, product["id"], "10", "50.00")
-
-    # If unknown cost was treated as 0, avg would be (100*0 + 10*50)/110 = 4.55.
-    # But because unknown is ignored from average calculation: avg is 50.00.
-    res = client.get("/api/v1/products")
-    prods = {p["id"]: p for p in res.json()}
-    assert prods[product["id"]]["average_cost"] == "50.00"
-
-
-def test_product_with_no_known_cost_has_none_average_cost(client: TestClient, register_cleanup: Any):
-    product = make_product(client, register_cleanup)
-    add_entry(client, product["id"], "10")  # no cost
-
-    res = client.get("/api/v1/products")
-    prods = {p["id"]: p for p in res.json()}
-    assert prods[product["id"]]["average_cost"] is None
-
-
-def test_adjustments_do_not_alter_weighted_average_cost(client: TestClient, register_cleanup: Any):
-    product = make_product(client, register_cleanup)
-    add_entry(client, product["id"], "10", "10.00")
-
-    # Adjustment of +5
-    res = client.post(
-        f"/api/v1/products/{product['id']}/inventory/adjustments",
-        json={"quantity": "5"},
-    )
-    assert res.status_code == 201
-    assert res.json()["unit_cost"] is None
-
-    res = client.get("/api/v1/products")
-    prods = {p["id"]: p for p in res.json()}
-    assert prods[product["id"]]["average_cost"] == "10.00"
+# average_cost tests removed in M7: cost is tracked per-batch, not as a weighted average.
 
 
 def test_template_estimated_cost_and_suggested_price(client: TestClient, register_cleanup: Any):
