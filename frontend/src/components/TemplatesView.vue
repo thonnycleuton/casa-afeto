@@ -11,6 +11,7 @@ import { fetchProducts } from '../api/products'
 import type { BasketTemplate, Product } from '../api/types'
 
 const templates = ref<BasketTemplate[]>([])
+const templatesPage = ref(1)
 const products = ref<Product[]>([])
 const loading = ref(false)
 const error = ref('')
@@ -127,6 +128,10 @@ async function handleChangeActive(template: BasketTemplate): Promise<void> {
   })
 }
 
+function handleTemplatesPageChange(page: number): void {
+  templatesPage.value = page
+}
+
 onMounted(() => { void load() })
 </script>
 
@@ -155,7 +160,9 @@ onMounted(() => { void load() })
         :columns="columns"
         :rows="templates"
         :page-size="10"
+        :page="templatesPage"
         :loading="loading"
+        @page-change="handleTemplatesPageChange"
       >
         <template #cell-status="{ row }: { row: BasketTemplate }">
           <span :class="['status-pill', row.active ? 'status-success' : 'status-muted']">

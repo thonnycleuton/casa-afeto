@@ -17,6 +17,7 @@ import type {
 } from '../api/types'
 
 const customers = ref<Customer[]>([])
+const customersPage = ref(1)
 const search = ref('')
 const statusFilter = ref<CustomerStatus | 'ALL'>('ACTIVE')
 const loading = ref(false)
@@ -113,6 +114,10 @@ function openDatesModal(customer: Customer): void {
   showDatesModal.value = true
 }
 
+function handleCustomersPageChange(page: number): void {
+  customersPage.value = page
+}
+
 onMounted(() => {
   void run(loadCustomers)
 })
@@ -168,7 +173,9 @@ onMounted(() => {
         :columns="columns"
         :rows="customers"
         :page-size="10"
+        :page="customersPage"
         :loading="loading"
+        @page-change="handleCustomersPageChange"
       >
         <template #cell-status="{ row }: { row: Customer }">
           <span :class="['status-pill', row.status === 'ACTIVE' ? 'status-success' : 'status-muted']">

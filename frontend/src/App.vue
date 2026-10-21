@@ -15,9 +15,10 @@ import {
   deactivateProduct,
   fetchInventoryHistory,
   fetchProducts,
+  fetchStockBatches,
   updateProduct,
 } from './api/products'
-import type { InventoryMovement, Product, ProductUnit } from './api/types'
+import type { InventoryMovement, Product, ProductUnit, StockBatch } from './api/types'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
 const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases'>('products')
@@ -67,6 +68,7 @@ function initTheme(): void {
 const products = ref<Product[]>([])
 const searchResults = ref<Product[]>([])
 const movements = ref<InventoryMovement[]>([])
+const batches = ref<StockBatch[]>([])
 const search = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -205,6 +207,7 @@ async function openInventory(product: Product): Promise<void> {
   await runAction(async () => {
     inventoryProduct.value = product
     movements.value = await fetchInventoryHistory(product.id)
+    batches.value = await fetchStockBatches(product.id)
     showInventoryModal.value = true
   })
 }
@@ -223,6 +226,7 @@ async function handleInventoryEntry(quantity: string, unitCost: string | null): 
     if (product) {
       inventoryProduct.value = product
       movements.value = await fetchInventoryHistory(product.id)
+      batches.value = await fetchStockBatches(product.id)
     }
     notice.value = 'Entrada de estoque registrada.'
   })
@@ -237,6 +241,7 @@ async function handleInventoryAdjustment(quantity: string): Promise<void> {
     if (product) {
       inventoryProduct.value = product
       movements.value = await fetchInventoryHistory(product.id)
+      batches.value = await fetchStockBatches(product.id)
     }
     notice.value = 'Ajuste de estoque registrado.'
   })
@@ -510,6 +515,8 @@ watch(section, (newSection) => {
               :columns="inventoryColumns"
               :rows="products"
               :page-size="10"
+              :page="productsPage"
+              @page-change="handleProductsPageChange"
               @row-click="openInventory($event as Product)"
             >
               <template #cell-inventory_balance="{ row }: { row: Product }">
@@ -552,6 +559,7 @@ watch(section, (newSection) => {
           v-model:open="showInventoryModal"
           :product="inventoryProduct"
           :movements="movements"
+          :batches="batches"
           @entry="handleInventoryEntry"
           @adjustment="handleInventoryAdjustment"
         />

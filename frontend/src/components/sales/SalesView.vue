@@ -55,6 +55,7 @@ const availableTemplates = computed(() =>
 const availableProducts = computed(() => loadedProducts.value)
 
 const sales = ref<Sale[]>([])
+const salesPage = ref(1)
 const statusFilter = ref<string>('ALL')
 const showCreateModal = ref(false)
 const loading = ref(false)
@@ -103,6 +104,10 @@ async function loadSales(): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+function handleSalesPageChange(page: number): void {
+  salesPage.value = page
 }
 
 async function loadPaymentData(saleId: number): Promise<void> {
@@ -296,7 +301,9 @@ onMounted(async () => {
         :columns="columns"
         :rows="sales"
         :page-size="10"
+        :page="salesPage"
         :loading="loading"
+        @page-change="handleSalesPageChange"
       >
         <template #cell-id="{ row }: { row: Sale }">
           <span class="col-id">#{{ row.id }}</span>
