@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -16,4 +16,20 @@ class StockBatchRead(BaseModel):
     quantity_remaining: Decimal
     unit_cost: Optional[Decimal] = None
     status: str
+    expiry_date: Optional[date] = None
+    expiry_status: Optional[str] = None
     created_at: datetime
+
+
+class ExpiryAlertRead(BaseModel):
+    """Expiry alert for a stock batch."""
+
+    batch_id: int
+    product_id: int
+    product_name: str
+    quantity_remaining: Decimal
+    unit_cost: Optional[Decimal] = None
+    expiry_date: date
+    expiry_status: str
+    days_until_expiry: int
+    purchase_id: Optional[int] = None

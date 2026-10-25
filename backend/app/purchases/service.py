@@ -78,6 +78,7 @@ def create_purchase(db: Session, data: CreatePurchase) -> PurchaseRead:
             conversion_factor=conversion_factor,
             commercial_quantity=item.commercial_quantity,
             commercial_unit_price=item.commercial_unit_price,
+            expiry_date=item.expiry_date,
         )
         db.add(purchase_item)
 
@@ -93,6 +94,7 @@ def create_purchase(db: Session, data: CreatePurchase) -> PurchaseRead:
             unit_cost=unit_cost,
             purchase_id=purchase.id,
             purchase_item_id=purchase_item.id,
+            expiry_date=item.expiry_date,
             use_savepoint=False,
         )
 
@@ -145,6 +147,7 @@ def _purchase_to_read(db: Session, purchase: Purchase) -> PurchaseRead:
             conversion_factor=item.conversion_factor,
             commercial_quantity=item.commercial_quantity,
             commercial_unit_price=item.commercial_unit_price,
+            expiry_date=item.expiry_date,
         ))
     return PurchaseRead(
         id=purchase.id,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Optional
 
@@ -138,6 +138,7 @@ class InventoryEntryRequest(BaseModel):
 
     quantity: Annotated[Decimal, Field(gt=0)]
     unit_cost: Optional[Decimal] = None
+    expiry_date: Optional[date] = None
 
     @field_validator("unit_cost")
     @classmethod

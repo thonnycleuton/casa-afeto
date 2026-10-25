@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -18,6 +18,7 @@ class CreatePurchaseItem(BaseModel):
     conversion_factor: Decimal
     commercial_quantity: Decimal
     commercial_unit_price: Decimal
+    expiry_date: Optional[date] = None
 
     @field_validator("commercial_unit")
     @classmethod
@@ -84,6 +85,7 @@ class PurchaseItemRead(BaseModel):
     conversion_factor: Decimal
     commercial_quantity: Decimal
     commercial_unit_price: Decimal
+    expiry_date: Optional[date] = None
 
 
 class PurchaseRead(BaseModel):

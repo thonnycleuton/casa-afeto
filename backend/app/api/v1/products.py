@@ -112,6 +112,7 @@ def add_inventory_entry(
         payload.quantity,
         MovementType.ENTRY,
         unit_cost=payload.unit_cost,
+        expiry_date=payload.expiry_date,
     )
 
 

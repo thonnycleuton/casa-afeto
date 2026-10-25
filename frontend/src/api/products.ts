@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import type {
+  ExpiryAlert,
   InventoryMovement,
   Product,
   ProductInput,
@@ -37,10 +38,14 @@ export function createInventoryEntry(
   id: number,
   quantity: string,
   unit_cost?: string | null,
+  expiry_date?: string | null,
 ): Promise<InventoryMovement> {
   const body: Record<string, unknown> = { quantity }
   if (unit_cost !== undefined && unit_cost !== null && unit_cost !== '') {
     body.unit_cost = unit_cost
+  }
+  if (expiry_date !== undefined && expiry_date !== null && expiry_date !== '') {
+    body.expiry_date = expiry_date
   }
   return apiClient<InventoryMovement>(`/api/v1/products/${id}/inventory/entries`, {
     method: 'POST',
@@ -64,4 +69,15 @@ export function fetchInventoryHistory(id: number): Promise<InventoryMovement[]> 
 
 export function fetchStockBatches(id: number): Promise<StockBatch[]> {
   return apiClient<StockBatch[]>(`/api/v1/products/${id}/batches`)
+}
+
+export function fetchExpiryAlerts(
+  thresholdDays = 7,
+  includeExpired = true,
+): Promise<ExpiryAlert[]> {
+  const params = new URLSearchParams({
+    threshold_days: String(thresholdDays),
+    include_expired: String(includeExpired),
+  })
+  return apiClient<ExpiryAlert[]>(`/api/v1/inventory/expiry-alerts?${params}`)
 }

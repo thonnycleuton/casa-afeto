@@ -13,15 +13,16 @@ import {
   createProduct,
   createInventoryEntry,
   deactivateProduct,
+  fetchExpiryAlerts,
   fetchInventoryHistory,
   fetchProducts,
   fetchStockBatches,
   updateProduct,
 } from './api/products'
-import type { InventoryMovement, Product, ProductUnit, StockBatch } from './api/types'
+import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, StockBatch } from './api/types'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
-const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases'>('products')
+const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry'>('products')
 
 // Theme management
 const isLightTheme = ref(false)
@@ -69,6 +70,7 @@ const products = ref<Product[]>([])
 const searchResults = ref<Product[]>([])
 const movements = ref<InventoryMovement[]>([])
 const batches = ref<StockBatch[]>([])
+const expiryAlerts = ref<ExpiryAlert[]>([])
 const search = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -93,6 +95,7 @@ const sectionTitle = computed(() => ({
   customers: 'Clientes',
   sales: 'Vendas',
   purchases: 'Compras',
+  expiry: 'Vencimentos',
 })[section.value])
 
 const productColumns = computed(() => [
@@ -212,14 +215,16 @@ async function openInventory(product: Product): Promise<void> {
   })
 }
 
-async function handleInventoryEntry(quantity: string, unitCost: string | null): Promise<void> {
+async function handleInventoryEntry(
+  quantity: string, unitCost: string | null, expiryDate: string | null
+): Promise<void> {
   if (!inventoryProduct.value) return
   await runAction(async () => {
     const cost = unitCost || ''
     if (cost) {
-      await createInventoryEntry(inventoryProduct.value!.id, quantity, cost)
+      await createInventoryEntry(inventoryProduct.value!.id, quantity, cost, expiryDate)
     } else {
-      await createInventoryEntry(inventoryProduct.value!.id, quantity)
+      await createInventoryEntry(inventoryProduct.value!.id, quantity, undefined, expiryDate)
     }
     await loadProducts()
     const product = products.value.find((p) => p.id === inventoryProduct.value?.id)
@@ -256,9 +261,16 @@ onMounted(() => {
   void runAction(loadProducts)
 })
 
+async function loadExpiryAlerts(): Promise<void> {
+  expiryAlerts.value = await fetchExpiryAlerts()
+}
+
 watch(section, (newSection) => {
   if (newSection === 'products' || newSection === 'inventory') {
     void runAction(loadProducts)
+  }
+  if (newSection === 'expiry') {
+    void runAction(loadExpiryAlerts)
   }
 })
 </script>
@@ -350,6 +362,18 @@ watch(section, (newSection) => {
             <path d="M3 5h14v10H3zM3 8h14M7 5v10" />
           </svg>
           <span>Compras</span>
+        </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'expiry' }"
+          :aria-current="section === 'expiry' ? 'page' : undefined"
+          @click="section = 'expiry'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2v4.5l3 2" />
+          </svg>
+          <span>Vencimentos</span>
         </button>
       </nav>
 
@@ -538,6 +562,74 @@ watch(section, (newSection) => {
                 <span>Crie produtos na seção Produtos para gerenciar o estoque.</span>
               </template>
             </DataTable>
+          </div>
+        </section>
+
+        <!-- Expiry Alerts Section -->
+        <section v-if="section === 'expiry'" aria-labelledby="expiry-heading">
+          <div class="page-heading">
+            <div>
+              <p class="page-eyebrow">Alertas de vencimento</p>
+              <h1 id="expiry-heading">Vencimentos</h1>
+              <p class="page-description">Lotes com vencimento próximo ou já vencidos, ordenados por urgência.</p>
+            </div>
+          </div>
+
+          <div v-if="expiryAlerts.length === 0" class="card">
+            <div class="empty-state">
+              <span class="empty-icon" aria-hidden="true">✓</span>
+              <strong>Nenhum vencimento pendente.</strong>
+              <span>Todos os lotes estão dentro do prazo ou sem data de vencimento.</span>
+            </div>
+          </div>
+
+          <div v-else class="card table-card">
+            <div class="table-heading">
+              <div>
+                <h2>Lotes com alerta</h2>
+                <p>{{ expiryAlerts.length }} lote(s) com vencimento próximo ou vencido.</p>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Vencimento</th>
+                  <th>Dias restantes</th>
+                  <th>Quantidade</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="alert in expiryAlerts" :key="alert.batch_id">
+                  <td><strong>{{ alert.product_name }}</strong></td>
+                  <td>{{ new Date(alert.expiry_date + 'T00:00:00').toLocaleDateString('pt-BR') }}</td>
+                  <td>
+                    <span v-if="alert.days_until_expiry < 0" class="expiry-expired">
+                      {{ Math.abs(alert.days_until_expiry) }}d vencido(s)
+                    </span>
+                    <span v-else-if="alert.days_until_expiry === 0" class="expiry-warning">
+                      Vence hoje
+                    </span>
+                    <span v-else>
+                      {{ alert.days_until_expiry }}d
+                    </span>
+                  </td>
+                  <td>{{ Number(alert.quantity_remaining).toLocaleString('pt-BR') }}</td>
+                  <td>
+                    <span
+                      :class="[
+                        'status-pill',
+                        alert.expiry_status === 'EXPIRED' ? 'status-error' : 'status-warning',
+                      ]"
+                    >
+                      <span class="status-dot" aria-hidden="true"></span>
+                      {{ alert.expiry_status === 'EXPIRED' ? 'Vencido' : 'Próximo do vencimento' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 

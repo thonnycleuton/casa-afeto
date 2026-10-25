@@ -1,6 +1,7 @@
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import case, nulls_last, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BusinessRuleError
@@ -15,6 +16,7 @@ def create_batch(
     unit_cost: Decimal | None,
     purchase_id: int | None = None,
     purchase_item_id: int | None = None,
+    expiry_date: date | None = None,
 ) -> StockBatch:
     """Create a new stock batch from an ENTRY movement.
     
@@ -27,6 +29,7 @@ def create_batch(
         quantity_original=quantity,
         quantity_remaining=quantity,
         unit_cost=unit_cost,
+        expiry_date=expiry_date,
         status="ACTIVE",
     )
     db.add(batch)
@@ -64,25 +67,34 @@ def consume_fifo(
     product_id: int,
     quantity: Decimal,
 ) -> list[tuple[StockBatch, Decimal]]:
-    """Consume stock batches in FIFO order.
+    """Consume stock batches in FEFO order (First Expired, First Out).
     
     Returns a list of (batch, consumed_quantity) tuples showing how much
     was consumed from each batch.
     
-    This follows LOT-003: consume from the oldest batch first.
+    EXP-005: Batches with expiry_date are consumed first (soonest expiry first).
+    Batches without expiry_date fall back to FIFO (created_at ASC).
     If a batch doesn't have enough quantity, consume the rest and continue
-    to the next oldest batch.
+    to the next batch.
     
     LOT-010: Uses SELECT FOR UPDATE for concurrency safety.
     """
     if quantity <= 0:
         raise BusinessRuleError("A quantidade de consumo deve ser positiva.")
     
-    # Lock batches in FIFO order to prevent concurrent consumption issues
+    # FEFO ordering: batches with expiry_date first (soonest expiry),
+    # then batches without expiry_date (by created_at ASC)
     stmt = (
         select(StockBatch)
         .where(StockBatch.product_id == product_id, StockBatch.status == "ACTIVE")
-        .order_by(StockBatch.created_at, StockBatch.id)
+        .order_by(
+            # Batches with expiry_date come first (NULLs last)
+            nulls_last(StockBatch.expiry_date),
+            # Within same expiry group, order by expiry_date ASC, then created_at ASC
+            StockBatch.expiry_date.asc(),
+            StockBatch.created_at.asc(),
+            StockBatch.id.asc(),
+        )
         .with_for_update()
     )
     batches = list(db.scalars(stmt).all())
@@ -133,3 +145,28 @@ def get_active_batch_quantity(db: Session, product_id: int) -> Decimal:
         )
     )
     return Decimal(value)
+
+
+def calculate_expiry_status(expiry_date: date | None, threshold_days: int = 7) -> str | None:
+    """Calculate the expiry status of a batch.
+    
+    EXP-006: Returns "EXPIRED" if past expiry date, "WARNING" if within threshold,
+    "OK" if plenty of time remaining, or None if no expiry date is set.
+    """
+    if expiry_date is None:
+        return None
+    
+    today = datetime.now().date()
+    days_until = (expiry_date - today).days
+    
+    if days_until < 0:
+        return "EXPIRED"
+    elif days_until <= threshold_days:
+        return "WARNING"
+    else:
+        return "OK"
+
+
+def get_expiry_status_for_batch(batch: StockBatch, threshold_days: int = 7) -> str | None:
+    """Get the expiry status for a batch with the calculated field."""
+    return calculate_expiry_status(batch.expiry_date, threshold_days)

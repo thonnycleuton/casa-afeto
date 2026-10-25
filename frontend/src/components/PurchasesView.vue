@@ -23,6 +23,7 @@ const formItems = ref<Array<{
   conversion_factor: string
   commercial_quantity: string
   commercial_unit_price: string
+  expiry_date: string
 }>>([])
 
 // Detail view
@@ -91,6 +92,7 @@ function beginCreate(): void {
     conversion_factor: '1',
     commercial_quantity: '',
     commercial_unit_price: '',
+    expiry_date: '',
   }]
 }
 
@@ -101,6 +103,7 @@ function addItem(): void {
     conversion_factor: '1',
     commercial_quantity: '',
     commercial_unit_price: '',
+    expiry_date: '',
   })
 }
 
@@ -125,6 +128,7 @@ async function submitPurchase(): Promise<void> {
         conversion_factor: item.conversion_factor,
         commercial_quantity: item.commercial_quantity,
         commercial_unit_price: item.commercial_unit_price,
+        expiry_date: item.expiry_date || null,
       }))
 
     if (items.length === 0) {
@@ -319,6 +323,15 @@ onMounted(async () => {
               required
             />
             <span class="field-hint">Preço pago por unidade comercial</span>
+          </div>
+          <div class="form-field">
+            <label :for="`item-expiry-${index}`">Vencimento</label>
+            <input
+              :id="`item-expiry-${index}`"
+              v-model="item.expiry_date"
+              type="date"
+            />
+            <span class="field-hint">Opcional. Data de vencimento do produto</span>
           </div>
         </div>
         <div class="purchase-item-calculated">

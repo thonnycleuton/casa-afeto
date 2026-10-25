@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -57,6 +58,9 @@ class StockBatch(Base):
     )
     status: Mapped[str] = mapped_column(
         String(10), nullable=False, default="ACTIVE", server_default="ACTIVE"
+    )
+    expiry_date: Mapped[date | None] = mapped_column(
+        Date, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

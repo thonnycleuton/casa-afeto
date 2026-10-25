@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -139,6 +140,7 @@ def create_movement(
     sale_id: int | None = None,
     purchase_id: int | None = None,
     purchase_item_id: int | None = None,
+    expiry_date: date | None = None,
     *,
     use_savepoint: bool = True,
 ) -> InventoryMovement:
@@ -158,11 +160,11 @@ def create_movement(
     if use_savepoint:
         with db.begin():
             movement = _create_movement_inner(
-                db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id, purchase_item_id
+                db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id, purchase_item_id, expiry_date
             )
     else:
         movement = _create_movement_inner(
-            db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id, purchase_item_id
+            db, product_id, quantity, movement_type, unit_cost, sale_id, purchase_id, purchase_item_id, expiry_date
         )
 
     return movement
@@ -177,6 +179,7 @@ def _create_movement_inner(
     sale_id: int | None,
     purchase_id: int | None = None,
     purchase_item_id: int | None = None,
+    expiry_date: date | None = None,
 ) -> InventoryMovement:
     product = _product_or_raise(db, product_id, lock=True)
     if not product.active:
@@ -214,6 +217,7 @@ def _create_movement_inner(
             unit_cost=unit_cost,
             purchase_id=purchase_id,
             purchase_item_id=purchase_item_id,
+            expiry_date=expiry_date,
         )
         batch_id = batch.id
 

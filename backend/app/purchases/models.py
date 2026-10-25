@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -66,6 +67,9 @@ class PurchaseItem(Base):
     )
     commercial_unit_price: Mapped[Decimal] = mapped_column(
         Numeric(10, 2, asdecimal=True), nullable=False
+    )
+    expiry_date: Mapped[date | None] = mapped_column(
+        Date, nullable=True
     )
 
     purchase: Mapped[Purchase] = relationship(back_populates="items")

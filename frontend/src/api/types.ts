@@ -76,7 +76,21 @@ export interface StockBatch {
   quantity_remaining: string
   unit_cost?: string | null
   status: 'ACTIVE' | 'EXHAUSTED'
+  expiry_date?: string | null
+  expiry_status?: 'OK' | 'WARNING' | 'EXPIRED' | null
   created_at: string
+}
+
+export interface ExpiryAlert {
+  batch_id: number
+  product_id: number
+  product_name: string
+  quantity_remaining: string
+  unit_cost?: string | null
+  expiry_date: string
+  expiry_status: 'WARNING' | 'EXPIRED'
+  days_until_expiry: number
+  purchase_id?: number | null
 }
 
 export interface CompositionItem {
@@ -214,6 +228,7 @@ export interface PurchaseItemInput {
   conversion_factor: string
   commercial_quantity: string
   commercial_unit_price: string
+  expiry_date?: string | null
 }
 
 export interface PurchaseCreateInput {
@@ -230,6 +245,7 @@ export interface PurchaseItem {
   conversion_factor: string
   commercial_quantity: string
   commercial_unit_price: string
+  expiry_date?: string | null
 }
 
 export interface Purchase {

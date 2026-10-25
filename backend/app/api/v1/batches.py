@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.exceptions import ResourceNotFoundError
-from app.inventory.batch_service import get_batch, list_batches
+from app.inventory.batch_service import calculate_expiry_status, get_batch, list_batches
 from app.inventory.schemas import StockBatchRead
 
 router = APIRouter(prefix="/products/{product_id}/batches", tags=["stock batches"])
@@ -27,6 +27,8 @@ def get_product_batches(
             quantity_remaining=batch.quantity_remaining,
             unit_cost=batch.unit_cost,
             status=batch.status,
+            expiry_date=batch.expiry_date,
+            expiry_status=calculate_expiry_status(batch.expiry_date),
             created_at=batch.created_at,
         )
         for batch in batches
@@ -52,5 +54,7 @@ def get_batch_detail(
         quantity_remaining=batch.quantity_remaining,
         unit_cost=batch.unit_cost,
         status=batch.status,
+        expiry_date=batch.expiry_date,
+        expiry_status=calculate_expiry_status(batch.expiry_date),
         created_at=batch.created_at,
     )
