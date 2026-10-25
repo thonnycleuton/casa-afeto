@@ -178,9 +178,34 @@ def check_acceptance_criteria(ac_path):
     ac_count = 0
     testable_count = 0
     gherkin_count = 0
+    tagged_count = 0
+    frontend_ac_count = 0
+    backend_frontend_ac_count = 0
+    has_frontend_section = False
+
+    # Check for ## Frontend section
+    for ln in lines:
+        if re.match(r"^##\s+Frontend\s*$", ln.strip(), re.IGNORECASE):
+            has_frontend_section = True
+            break
 
     for i, ln in enumerate(lines, start=1):
         stripped = ln.strip()
+
+        # Detecta critérios de aceitação (headings ### AC-*)
+        ac_heading_match = re.match(r"^#{2,4}\s+AC-[A-Z]+-\d+\s*(.*)$", stripped)
+        if ac_heading_match:
+            rest = ac_heading_match.group(1).strip()
+
+            # Check for [Frontend] or [Backend + Frontend] tags
+            if "[Frontend]" in rest:
+                frontend_ac_count += 1
+                tagged_count += 1
+            elif "[Backend + Frontend]" in rest:
+                backend_frontend_ac_count += 1
+                tagged_count += 1
+            elif "[Backend]" in rest:
+                tagged_count += 1
 
         # Detecta critérios de aceitação (itens numerados ou list items com conteúdo)
         m = re.match(r"^\s*(\d+[.)]\s+|- \[.\] )(.+)$", ln)
@@ -200,6 +225,43 @@ def check_acceptance_criteria(ac_path):
             # Verifica se usa formato Given/When/Then
             if GHERKIN_PATTERN.search(content):
                 gherkin_count += 1
+
+    # Frontend guardrails
+    total_frontend_acs = frontend_ac_count + backend_frontend_ac_count
+    if total_frontend_acs > 0 and not has_frontend_section:
+        errors.append(
+            f"{total_frontend_acs} critério(s) de aceitação com tag [Frontend] ou [Backend + Frontend] "
+            f"encontrado(s), mas nenhuma seção '## Frontend' no acceptance-criteria.md — "
+            f"o frontend pode ser esquecido ao fechar o milestone"
+        )
+    elif has_frontend_section and frontend_ac_count == 0:
+        # Frontend section exists but no [Frontend] ACs found — might be untagged
+        # Check if there are ACs inside the frontend section
+        frontend_section_acs = 0
+        in_frontend = False
+        for ln in lines:
+            if re.match(r"^##\s+Frontend\s*$", ln.strip(), re.IGNORECASE):
+                in_frontend = True
+                continue
+            elif re.match(r"^##\s+\S", ln.strip()):
+                in_frontend = False
+                continue
+            if in_frontend and re.match(r"^#{2,4}\s+AC-", ln.strip()):
+                frontend_section_acs += 1
+        if frontend_section_acs == 0:
+            warnings.append(
+                "Seção '## Frontend' existe mas não contém critérios de aceitação — "
+                "verifique se os ACs de frontend estão presentes"
+            )
+
+    # Tag warnings
+    total_acs = ac_count + frontend_ac_count + backend_frontend_ac_count + tagged_count
+    if total_acs > 0 and tagged_count < total_acs:
+        untagged = total_acs - tagged_count
+        warnings.append(
+            f"{untagged} critério(s) de aceitação sem tag [Backend]/[Frontend] — "
+            f"tags ajudam a detectar omissão de frontend"
+        )
 
     if ac_count > 0:
         testable_ratio = testable_count / ac_count * 100

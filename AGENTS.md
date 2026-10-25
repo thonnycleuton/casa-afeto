@@ -1,8 +1,10 @@
 # Casa Afeto — Agent & Developer Protocol
 
-**Document version:** 0.3
+**Document version:** 0.4
 **Status:** Active
-**Last updated:** 2026-10-17
+**Last updated:** 2026-10-25
+
+**Changes in 0.4:** Added frontend guardrails: mandatory `[Frontend]` tags in acceptance criteria, frontend section requirement in specs, updated Definition of Done, and `validate_spec_casa.py` frontend detection.
 
 **Changes in 0.3:** Added TLC-Spec-Driven validation components: deterministic gates scripts, Test Coverage Matrix, Test Adequacy Review, Discrimination Sensor, and Lessons Layer.
 
@@ -37,14 +39,15 @@ The fundamental principle is:
 9. [Parallel Work](#9-parallel-work)
 10. [Documentation as Permanent Memory](#10-documentation-as-permanent-memory)
 11. [Traceability](#11-traceability)
-12. [Tests](#12-tests)
-13. [Validation](#13-validation)
-19. [TLC Validation Components](#19-tlc-validation-components)
-14. [Milestones](#14-milestones)
-15. [Agent Final Report](#15-agent-final-report)
-16. [Product Owner Authority](#16-product-owner-authority)
-17. [Technical Principles](#17-technical-principles)
-18. [Final Principles](#18-final-principles)
+12. [Acceptance Criteria Format](#12-acceptance-criteria-format)
+13. [Tests](#13-tests)
+14. [Validation](#14-validation)
+15. [TLC Validation Components](#15-tlc-validation-components)
+16. [Milestones](#16-milestones)
+17. [Agent Final Report](#17-agent-final-report)
+18. [Product Owner Authority](#18-product-owner-authority)
+19. [Technical Principles](#19-technical-principles)
+20. [Final Principles](#20-final-principles)
 
 ---
 
@@ -547,7 +550,56 @@ There should be one authoritative location for each type of information.
 
 ---
 
-# 12. Tests
+# 12. Acceptance Criteria Format
+
+Every `acceptance-criteria.md` must follow these rules so the agent and validation gates can distinguish backend work from frontend work.
+
+### 12.1 Tags on Every AC
+
+Each acceptance criterion heading must include a tag that indicates which layer it affects:
+
+- `[Backend]` — only backend code (models, services, APIs, migrations)
+- `[Frontend]` — only frontend code (types, components, templates, styles)
+- `[Backend + Frontend]` — both layers are affected
+
+**Example:**
+```markdown
+### AC-M8-001 [Backend] — Vencimento opcional no lote
+### AC-M8-015 [Backend + Frontend] — Vencimento na entrada manual
+### AC-M8-017 [Frontend] — Badge visual no modal de estoque
+```
+
+**Why:** Without tags, the validation gate cannot detect that a `[Frontend]` AC has no corresponding implementation. The agent may close the milestone thinking "all ACs are covered" while the frontend ACs were never implemented.
+
+### 12.2 Mandatory Frontend Section
+
+If a milestone has any `[Frontend]` or `[Backend + Frontend]` ACs, the `acceptance-criteria.md` must contain a dedicated section:
+
+```markdown
+## Frontend
+```
+
+All `[Frontend]` ACs must be grouped under this section. `[Backend + Frontend]` ACs may appear in either the backend section or the frontend section, but must appear in at least one.
+
+**Why:** Mixing frontend and backend ACs in the same section makes it easy to skip the frontend ACs when the agent focuses on backend implementation.
+
+### 12.3 Validation Gate
+
+The `validate_spec_casa.py` script checks:
+
+1. If any AC contains `[Frontend]` or `[Backend + Frontend]`, there must be a `## Frontend` section in the acceptance criteria file.
+2. If a `## Frontend` section exists, it must contain at least one AC heading.
+3. ACs without tags receive a warning (future versions may make tags mandatory).
+
+A missing frontend section when frontend ACs exist produces an **ERROR** that blocks milestone closure.
+
+### 12.4 Backward Compatibility
+
+Existing milestones (M1–M8) are exempt from the tag requirement until they are revisited. The tag requirement applies to new milestones created after this rule is adopted.
+
+---
+
+# 13. Tests
 
 Tests are part of the implementation, not an optional final step.
 
@@ -582,11 +634,11 @@ Do not create large numbers of tests that merely test framework behavior or triv
 
 ### Test Coverage Matrix
 
-For each new milestone, generate a Test Coverage Matrix that maps every Acceptance Criterion to a specific test with an exact `file:line` reference. See [Section 19.2](#192-test-coverage-matrix) for format.
+For each new milestone, generate a Test Coverage Matrix that maps every Acceptance Criterion to a specific test with an exact `file:line` reference. See [Section 15.2](#152-test-coverage-matrix) for format.
 
 ### Test Adequacy Review
 
-After each task, execute the 4 checks defined in [Section 19.3](#193-test-adequacy-review). The evidence-or-zero rule applies: each covered AC must cite the exact `file:line` of its test assertion.
+After each task, execute the 4 checks defined in [Section 15.3](#153-test-adequacy-review). The evidence-or-zero rule applies: each covered AC must cite the exact `file:line` of its test assertion.
 
 ### Test the Business Rules
 
@@ -602,7 +654,7 @@ Then the sale has reached the confirmation threshold.
 
 ---
 
-# 13. Validation
+# 14. Validation
 
 Before declaring a task complete:
 
@@ -627,15 +679,21 @@ Requirement understood
 Specification defined
         ↓
 Implementation complete
+  ├─ Backend: endpoints, models, services, tests
+  └─ Frontend: types, components, fields, visual elements
         ↓
 Automated tests pass
         ↓
 Relevant checks pass
+  ├─ Backend: pytest suite, lint
+  └─ Frontend: vue-tsc --noEmit, visual verification
         ↓
 Human validation performed
         ↓
 Business behavior approved
 ```
+
+**Frontend is not optional.** If the milestone specification describes any user-facing behavior — new fields, new sections, new visual elements, new interactions — the frontend implementation is part of "Implementation complete." A milestone cannot be closed with pending frontend ACs.
 
 Only then should the feature be considered complete.
 
@@ -643,7 +701,7 @@ Passing automated tests is not equivalent to business validation.
 
 ---
 
-# 14. Milestones
+# 16. Milestones
 
 The roadmap defines the macro sequence of the product.
 
@@ -684,7 +742,7 @@ Read those documents to determine current scope before beginning any work.
 
 ---
 
-# 15. Agent Final Report
+# 17. Agent Final Report
 
 When completing a task, the agent must report:
 
@@ -726,7 +784,7 @@ and explain why.
 
 ---
 
-# 16. Product Owner Authority
+# 18. Product Owner Authority
 
 The product owner has final authority over:
 
@@ -754,7 +812,7 @@ The agent must not:
 
 ---
 
-# 17. Technical Principles
+# 19. Technical Principles
 
 ### Simplicity First
 
@@ -1030,7 +1088,7 @@ The agent must not assume that generated code is correct merely because it compi
 
 ---
 
-# 19. TLC Validation Components
+# 15. TLC Validation Components
 
 This section describes the deterministic validation tools adopted from [TLC-Spec-Driven](https://github.com/tech-leads-club/agent-skills) and integrated into the Casa Afeto workflow.
 
@@ -1038,7 +1096,7 @@ Scripts are located in `scripts/tlc/`. See `scripts/tlc/README.md` for usage det
 
 ---
 
-## 19.1 Deterministic Gates
+## 15.1 Deterministic Gates
 
 The agent must execute validation scripts at key points instead of relying on memory to remember checks.
 
@@ -1053,7 +1111,7 @@ A script failure (non-zero exit code) means the gate is not passed. The agent mu
 
 ---
 
-## 19.2 Test Coverage Matrix
+## 15.2 Test Coverage Matrix
 
 For each new milestone, the agent must generate a Test Coverage Matrix before implementation.
 
@@ -1072,7 +1130,7 @@ Each Acceptance Criterion must be mapped to a specific test with an exact `file:
 
 ---
 
-## 19.3 Test Adequacy Review
+## 15.3 Test Adequacy Review
 
 After each task, the agent must execute 4 quality checks on the tests:
 
@@ -1088,7 +1146,7 @@ The **evidence-or-zero rule** requires that each covered criterion cites an exac
 
 ---
 
-## 19.4 Discrimination Sensor
+## 15.4 Discrimination Sensor
 
 For critical features (payments, inventory, auth), the agent must run mutation testing after writing tests to verify they actually detect regressions.
 
@@ -1106,7 +1164,7 @@ The sensor injects intentional faults (inverting conditions, changing return val
 
 ---
 
-## 19.5 Lessons Layer
+## 15.5 Lessons Layer
 
 The project learns from past validation failures. Lessons are stored in `scripts/tlc/lessons.json` and managed by `scripts/tlc/lessons.py`.
 
@@ -1134,7 +1192,7 @@ The project learns from past validation failures. Lessons are stored in `scripts
 
 ---
 
-# 18. Final Principles
+# 20. Final Principles
 
 > **Do not build what has not been decided.**
 
