@@ -396,13 +396,9 @@ Uma funcionalidade futura poderá identificar produtos que precisam ser comprado
 
 # 12. Lotes de Estoque
 
-O modelo futuro de estoque deve oferecer suporte a vários lotes do mesmo produto.
+O estoque físico de cada produto é gerenciado por meio de **lotes** (`stock_batches`).
 
-Lotes diferentes podem ter:
-
-* custos de aquisição diferentes;
-* quantidades diferentes;
-* datas de vencimento diferentes.
+Cada lote representa uma entrada de estoque com quantidade, custo unitário e data de criação. Lotes diferentes do mesmo produto podem ter custos de aquisição diferentes.
 
 Exemplo:
 
@@ -412,25 +408,105 @@ Chocolate
 Lote A
 Quantidade: 10
 Custo unitário: R$ 2,50
-Vencimento: 2026-11-10
 
 Lote B
 Quantidade: 20
 Custo unitário: R$ 1,80
-Vencimento: 2026-10-20
 ```
 
-A política de negócio provisória atual é preferir o lote com vencimento mais próximo ao selecionar estoque para consumo.
+### LOT-001 — Criação automática do lote (compra)
 
-Conceitualmente, isso é semelhante a FEFO.
+Cada item de compra registrada gera automaticamente um lote de estoque. O lote recebe a quantidade convertida para unidade-base e o custo unitário calculado a partir do preço comercial e fator de conversão.
 
-Esta política é provisória e poderá mudar conforme o negócio evoluir.
+### LOT-002 — Entrada manual gera lote
 
-A gestão de lotes não faz parte da implementação inicial da Fase 1.
+Cada movimentação de estoque do tipo ENTRY, quando não vinculada a uma compra, gera um lote com referência de compra nula.
+
+### LOT-003 — FEFO no consumo
+
+Ao registrar saída de estoque (OUTPUT), o sistema consome primeiro os lotes com vencimento mais próximo (First Expired, First Out). Lotes sem vencimento são consumidos por último, em ordem FIFO (mais antigo primeiro). Se um lote não tiver quantidade suficiente, o consumo continua no próximo lote.
+
+### LOT-004 — Lote esgotado é arquivado
+
+Quando a quantidade restante de um lote chega a zero, o lote muda para status `EXHAUSTED`. O lote não é deletado — permanece no histórico para rastreabilidade.
+
+### LOT-005 — Lote não é deletável
+
+Um lote de estoque não pode ser excluído. Correções são feitas por ajustes de estoque (ADJUSTMENT), não por alteração ou exclusão do lote.
+
+### LOT-006 — Rastreabilidade até a compra
+
+Cada lote vinculado a uma compra preserva os identificadores da compra e do item de compra para rastreabilidade completa da origem.
+
+### LOT-007 — Custo do lote é imutável
+
+O custo unitário do lote não é alterado após a criação. Ele reflete o custo real de aquisição naquele momento.
+
+### LOT-008 — Estoque físico = soma dos lotes ativos
+
+O saldo físico disponível de um produto é a soma das quantidades restantes de todos os lotes com status `ACTIVE`.
+
+### LOT-009 — Remoção do custo médio ponderado
+
+O cálculo de custo médio ponderado do produto é removido. O preço de referência do produto (`reference_price`) serve como preço de referência comercial. O custo unitário de cada lote serve para rastreabilidade de custo de aquisição.
+
+### LOT-010 — Concorrência segura
+
+As operações que modificam lotes seguem as mesmas regras de concorrência do estoque: travamento por `SELECT FOR UPDATE` com ordenação por `product_id` para evitar deadlocks. O estoque físico nunca se torna negativo, mesmo sob operações concorrentes.
 
 ---
 
-# 13. Template de Cesta
+# 13. Gestão de Vencimentos
+
+Cada lote de estoque pode ter uma **data de vencimento** (`expiry_date`) opcional. Produtos perecíveis ou com prazo de validade devem ter o vencimento informado na compra ou na entrada manual.
+
+### EXP-001 — Vencimento opcional
+
+O campo `expiry_date` é opcional. Lotes sem vencimento são válidos e representam produtos não perecíveis.
+
+### EXP-002 — Vencimento herdado da compra
+
+Quando um item de compra inclui `expiry_date`, o lote criado automaticamente herda essa data.
+
+### EXP-003 — Vencimento na entrada manual
+
+Quando uma entrada manual de estoque inclui `expiry_date`, o lote criado herda essa data.
+
+### EXP-004 — Vencimento imutável
+
+A data de vencimento de um lote não pode ser alterada após a criação.
+
+### EXP-005 — FEFO no consumo
+
+Ao registrar saída de estoque, o sistema consome primeiro os lotes com vencimento mais próximo (First Expired, First Out). Lotes sem vencimento são consumidos por último, em ordem FIFO (mais antigo primeiro).
+
+### EXP-006 — Status de vencimento
+
+Cada lote com `expiry_date` tem um status calculado:
+- **EXPIRED** — a data de vencimento já passou.
+- **WARNING** — o vencimento está dentro do período de alerta configurável (padrão: 7 dias).
+- **OK** — o vencimento está fora do período de alerta.
+- **Nulo** — lote sem `expiry_date` não possui status de vencimento.
+
+### EXP-007 — Lote vencido permanece ativo
+
+Um lote com data de vencimento passada mantém status `ACTIVE` no sistema. O vencimento é uma informação de alerta, não um gatilho automático de desativação.
+
+### EXP-008 — Lista global de alertas
+
+O sistema expõe um endpoint que retorna todos os lotes com status `EXPIRED` ou `WARNING`, ordenados por urgência (vencidos primeiro, depois os que vencem mais cedo).
+
+### EXP-009 — Threshold configurável
+
+O período de alerta (`threshold_days`) é configurável via parâmetro da API. O padrão é 7 dias.
+
+### EXP-010 — Dias até vencimento
+
+Cada alerta de vencimento inclui `days_until_expiry`: número inteiro positivo para lotes que ainda não venceram, zero para vencimento no dia atual, e negativo para lotes já vencidos.
+
+---
+
+# 14. Template de Cesta
 
 Um **Template de Cesta** é a **cesta-base** — o molde reutilizável que define a composição padrão e o preço de venda de uma cesta.
 
@@ -461,7 +537,7 @@ Templates podem ser ativados ou desativados.
 
 ---
 
-# 14. Cesta Concreta (removida)
+# 15. Cesta Concreta (removida)
 
 A entidade "Cesta concreta" foi removida do projeto. Não há caso de uso real para uma cesta persistida fora do contexto de venda.
 
@@ -474,7 +550,7 @@ Existem apenas **2 tipos de cestas**:
 
 ---
 
-# 15. Independência entre Template e Cesta da Venda
+# 16. Independência entre Template e Cesta da Venda
 
 Quando uma cesta é adicionada a uma venda a partir de um Template, a composição e o preço são copiados naquele momento. O `origin_template_id` opcional identifica apenas a origem; não é uma referência viva à composição.
 
@@ -515,7 +591,7 @@ A cesta da venda pode ser personalizada independentemente: adicionar itens, remo
 
 ---
 
-# 16. Personalização da Cesta da Venda
+# 17. Personalização da Cesta da Venda
 
 A personalização comercial acontece na **cesta da venda** (`SaleBasket`), não na Cesta concreta do M2.
 
@@ -542,7 +618,7 @@ O usuário também pode alterar a quantidade de um item já existente cujo produ
 
 ---
 
-# 17. Venda sem Template
+# 18. Venda sem Template
 
 Uma cesta pode ser adicionada a uma venda sem usar um Template de Cesta.
 
@@ -552,7 +628,7 @@ A cesta da venda criada sem Template possui `origin_template_id = NULL`.
 
 ---
 
-# 18. Unidade base e identificação de produtos nas composições
+# 19. Unidade base e identificação de produtos nas composições
 
 As composições de templates e cestas referenciam produtos por sua identidade (`product_id`), não pelo nome. Renomear um produto não cria outro produto, não duplica referências, não altera quantidades e não cria histórico de nomes no M2. A interface pode apresentar o nome atual do produto.
 
@@ -562,7 +638,7 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 
 ---
 
-# 19. Custo e precificação
+# 20. Custo e precificação
 
 1. **Custo de aquisição nas entradas:** nas entradas de estoque (tipo ENTRY), é registrado opcionalmente o custo unitário de aquisição do produto com precisão de duas casas decimais. Valores negativos são rejeitados.
 2. **Custo médio ponderado (controle interno):** o custo médio unitário do produto é calculado ponderando quantidades e custos das entradas com custo registrado. Custos desconhecidos (ausentes) são ignorados no cálculo da média e não são tratados como zero. Este valor é mantido para controle interno de custos e não é usado para precificação de cestas.
@@ -575,7 +651,7 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 
 ---
 
-# 20. Venda
+# 21. Venda
 
 Uma **Venda** representa a transação comercial operacional vinculada a um Cliente.
 
@@ -599,7 +675,7 @@ docs/milestones/m4-sales/specification.md
 
 ---
 
-# 21. Cestas da Venda e Informações de Entrega
+# 22. Cestas da Venda e Informações de Entrega
 
 Uma venda pode conter várias cestas, inclusive várias baseadas na mesma origem.
 
@@ -618,7 +694,7 @@ O destinatário não precisa ser modelado como entidade independente na implemen
 
 ---
 
-# 22. Composição e Preço Acordado da Cesta na Venda
+# 23. Composição e Preço Acordado da Cesta na Venda
 
 Ao adicionar uma cesta à venda, a composição e o preço do Template de origem são copiados naquele momento e passam a ser independentes do Template.
 
@@ -634,7 +710,7 @@ Renegociações excepcionais posteriores à confirmação não fazem parte do fl
 
 ---
 
-# 23. Total da Venda
+# 24. Total da Venda
 
 O total da venda é a soma dos preços registrados de todas as cestas que a compõem.
 
@@ -644,7 +720,7 @@ Alterar a composição de uma cesta sem alterar seu preço não recalcula automa
 
 ---
 
-# 24. Ciclo Operacional da Venda
+# 25. Ciclo Operacional da Venda
 
 Os estados operacionais oficiais da venda são:
 
@@ -676,7 +752,7 @@ No fluxo normal, a venda não deve pular etapas.
 
 ---
 
-# 25. `RASCUNHO` e Confirmação Financeira
+# 26. `RASCUNHO` e Confirmação Financeira
 
 `RASCUNHO` é o estado inicial da venda.
 
@@ -699,7 +775,7 @@ O M4 não registra pagamentos, não calcula valores pagos e não implementa uma 
 
 ---
 
-# 26. Alterações de Composição por Estado
+# 27. Alterações de Composição por Estado
 
 Em `CONFIRMADA`, é permitido adicionar itens, remover itens e alterar quantidades na composição das cestas da venda.
 
@@ -720,7 +796,7 @@ Quando uma venda possui reserva ou baixa ativa, as alterações de composição 
 
 ---
 
-# 27. Preparação por Cesta e Venda `PRONTA`
+# 28. Preparação por Cesta e Venda `PRONTA`
 
 Cada cesta pode ser marcada individualmente como preparada.
 
@@ -738,7 +814,7 @@ Quando a composição de uma cesta é alterada durante `EM PREPARAÇÃO` e a ces
 
 ---
 
-# 28. Reabertura de Venda `PRONTA`
+# 29. Reabertura de Venda `PRONTA`
 
 Uma venda `PRONTA` pode ser reaberta somente por ação explícita do usuário.
 
@@ -760,7 +836,7 @@ A reabertura não repete baixas físicas já realizadas durante a preparação a
 
 ---
 
-# 29. Entrega por Cesta e Venda `ENTREGUE`
+# 30. Entrega por Cesta e Venda `ENTREGUE`
 
 Cada cesta é marcada como entregue por ação explícita do usuário.
 
@@ -780,7 +856,7 @@ O fluxo normal do M4 não inclui assinatura, fotografia ou comprovante adicional
 
 ---
 
-# 30. Cancelamento da Venda
+# 31. Cancelamento da Venda
 
 O cancelamento é permitido em `RASCUNHO`, `CONFIRMADA`, `EM PREPARAÇÃO` e `PRONTA`, desde que nenhuma cesta tenha sido entregue.
 
@@ -803,7 +879,7 @@ Uma venda `ENTREGUE` não pode ser cancelada pelo fluxo normal.
 
 ---
 
-# 31. Pagamentos
+# 32. Pagamentos
 
 Pagamentos pertencem ao escopo funcional do M5.
 
@@ -817,7 +893,7 @@ As regras detalhadas de pagamento e sua futura especificação pertencem ao marc
 
 ---
 
-# 32. Venda de Produtos Individuais
+# 33. Venda de Produtos Individuais
 
 Vendas de produtos individuais estão fora do escopo inicial.
 
@@ -827,7 +903,7 @@ O sistema não deve implementar um fluxo separado de venda de produtos, a menos 
 
 ---
 
-# 33. Produtos Produzidos Internamente
+# 34. Produtos Produzidos Internamente
 
 A Casa Afeto pode produzir produtos internamente, como bolos.
 
@@ -848,7 +924,7 @@ A arquitetura atual não deve implementá-las prematuramente.
 
 ---
 
-# 34. Perdas, Quebras, Vencimentos e Uso Interno
+# 35. Perdas, Quebras, Vencimentos e Uso Interno
 
 No futuro, produtos podem ser:
 
@@ -866,7 +942,7 @@ Fluxos detalhados devem ser introduzidos somente quando os requisitos de negóci
 
 ---
 
-# 35. Datas Afetivas
+# 36. Datas Afetivas
 
 A Casa Afeto pretende, futuramente, manter datas relevantes associadas a clientes ou destinatários.
 
@@ -882,7 +958,7 @@ Essa funcionalidade está fora do escopo inicial da Fase 1.
 
 ---
 
-# 36. Regras de Negócio Estabelecidas
+# 37. Regras de Negócio Estabelecidas
 
 As regras a seguir foram estabelecidas explicitamente.
 
@@ -1072,7 +1148,7 @@ A busca de produtos não diferencia maiúsculas de minúsculas e corresponde a s
 
 ---
 
-# 37. Política de Reserva e Baixa de Estoque Associada às Vendas
+# 38. Política de Reserva e Baixa de Estoque Associada às Vendas
 
 Esta seção formaliza a política aprovada pelo Product Owner sobre reserva, baixa física, alterações de composição e cancelamento de vendas.
 
@@ -1168,7 +1244,7 @@ Manutenção da proibição vigente: o cancelamento de uma venda é bloqueado qu
 
 ---
 
-# 38. Decisões de Negócio em Aberto
+# 39. Decisões de Negócio em Aberto
 
 Os tópicos a seguir permanecem intencionalmente sem resolução e não devem ser transformados em suposições pela implementação.
 
@@ -1200,7 +1276,7 @@ Fluxos detalhados para perdas, danos, vencimentos e consumo interno ainda não f
 
 ---
 
-# 39. Oportunidades de Negócio Futuras
+# 40. Oportunidades de Negócio Futuras
 
 As capacidades a seguir poderão ser consideradas após a estabilização do sistema operacional central:
 
@@ -1226,7 +1302,7 @@ Cada capacidade futura exige sua própria decisão de negócio e escopo de imple
 
 ---
 
-# 40. Política de Mudanças
+# 41. Política de Mudanças
 
 Este documento representa o entendimento atual do negócio.
 
@@ -1245,7 +1321,7 @@ O agente não deve alterar silenciosamente o comportamento de negócio com base 
 
 ---
 
-# 41. Princípio Orientador de Negócio
+# 42. Princípio Orientador de Negócio
 
 O sistema existe para apoiar a operação real da Casa Afeto.
 

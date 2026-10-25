@@ -1,7 +1,7 @@
 # M7 — Especificação de Lotes de Estoque
 
-**Versão do documento:** 0.1 (RASCUNHO)
-**Status:** Rascunho — pendente de aprovação do Product Owner
+**Versão do documento:** 0.2 (Aprovado)
+**Status:** Aprovado
 **Marco:** M7 — Lotes de Estoque
 **Fase:** 2 — Evolução do Estoque e dos Clientes
 

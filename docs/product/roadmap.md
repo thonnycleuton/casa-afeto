@@ -611,9 +611,9 @@ O sistema deve preservar o preço real de aquisição, em vez de substituir cust
 
 ## 14.2 Lotes de Estoque
 
-Capacidade potencial:
+**Status: Implementado no M7 (Fase 2).**
 
-Representar como lotes separados os estoques adquiridos em momentos e preços diferentes.
+O sistema representa como lotes separados os estoques adquiridos em momentos e preços diferentes.
 
 Exemplo:
 
@@ -627,14 +627,17 @@ Quantidade: 20
 Lote B
 Custo: R$ 1,80
 Quantidade: 15
-Vencimento: mais próximo
 ```
 
 Isso permite que o sistema diferencie contextos distintos de aquisição.
 
-A estratégia exata de seleção de lote deve ser definida como uma regra de negócio quando essa funcionalidade entrar em desenvolvimento ativo.
+A estratégia de seleção de lote é FEFO (First Expired, First Out), definida como regra LOT-003 e EXP-005. Lotes com vencimento são consumidos primeiro (por data de vencimento ASC). Lotes sem vencimento são consumidos por último, em ordem FIFO.
 
 ## 14.3 Gestão de Vencimentos
+
+**Status: Implementado no M8 (Fase 2).**
+
+Cada lote de estoque pode ter uma data de vencimento opcional. O sistema consome primeiro os lotes com vencimento mais próximo (FEFO — First Expired, First Out). Lotes sem vencimento são consumidos por último, em ordem FIFO.
 
 Capacidades potenciais:
 

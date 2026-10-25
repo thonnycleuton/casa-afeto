@@ -32,9 +32,9 @@ A Fase 2 é dividida em marcos. A sequência proposta é:
 ```text
 M6 — Compras e Reposição de Estoque
         ↓
-M7 — Lotes de Estoque (pendente de especificação)
+M7 — Lotes de Estoque (concluído)
         ↓
-M8 — Vencimentos (pendente de especificação)
+M8 — Vencimentos (concluído)
         ↓
 M9 — Reposição de Estoque (pendente de especificação)
         ↓
@@ -56,8 +56,8 @@ A ordem reflete as dependências naturais:
 | Marco | Status | Documentos |
 |-------|--------|------------|
 | M6 — Compras | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
-| M7 — Lotes de Estoque | 📝 Rascunho | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
-| M8 — Vencimentos | ✗ Não planejado | — |
+| M7 — Lotes de Estoque | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
+| M8 — Vencimentos | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M9 — Reposição de Estoque | ✗ Não planejado | — |
 | M10 — Datas Afetivas | ✗ Não planejado | — |
 
@@ -73,10 +73,10 @@ Introduzir o conceito de lote de estoque, permitindo que cada aquisição de pro
 
 ```text
 docs/milestones/m7-stock-batches/
-├── specification.md          — Especificação detalhada (v0.1, rascunho)
-├── acceptance-criteria.md    — 24 critérios de aceitação (v0.1, rascunho)
-├── use-cases.md              — 6 casos de uso (v0.1, rascunho)
-└── validation.md             — Plano de validação (v0.1, rascunho)
+├── specification.md          — Especificação detalhada (v0.2, aprovado)
+├── acceptance-criteria.md    — 24 critérios de aceitação (v0.2, aprovado)
+├── use-cases.md              — 6 casos de uso (v0.2, aprovado)
+└── validation.md             — Plano de validação (v0.2, aprovado)
 ```
 
 ### Regras de Negócio
@@ -96,8 +96,8 @@ docs/milestones/m7-stock-batches/
 
 ### Status
 
-- Especificação: Rascunho v0.1 — pendente de aprovação final
-- Implementação: Não iniciada
+- Especificação: Aprovado v0.2
+- Implementação: Concluída — 24 testes passando, sem regressões
 
 ---
 

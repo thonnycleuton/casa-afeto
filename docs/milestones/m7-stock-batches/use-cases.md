@@ -1,6 +1,6 @@
 # M7 — Casos de Uso
 
-**Versão do documento:** 0.1 (RASCUNHO)
+**Versão do documento:** 0.2 (Aprovado)
 **Marco:** M7 — Lotes de Estoque
 **Fase:** 2 — Evolução do Estoque e dos Clientes
 
