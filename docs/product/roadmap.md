@@ -1,8 +1,8 @@
 # Casa Afeto — Roadmap do Produto
 
-**Versão do documento:** 0.4
+**Versão do documento:** 0.5
 **Status:** Ativo
-**Última atualização:** 2026-10-15
+**Última atualização:** 2026-10-26
 
 ---
 
@@ -66,8 +66,9 @@ O roadmap, portanto, distingue entre:
 
 1. **Fase 1 — Operações Centrais (Core Operations)**
 2. **Fase 2 — Evolução do Estoque e dos Clientes (Inventory & Customer Evolution)**
-3. **Fase 3 — Automação Operacional (Operational Automation)**
-4. **Oportunidades Futuras**
+3. **Fase 3 — Infraestrutura & Acesso (Infrastructure & Access)**
+4. **Fase 4 — Automação Operacional (Operational Automation)**
+5. **Oportunidades Futuras**
 
 As fronteiras das fases são intencionalmente flexíveis.
 
@@ -682,7 +683,7 @@ Capacidades implementadas:
 
 Capacidades futuras (fora do escopo do M10):
 
-* notificar o negócio sobre datas afetivas próximas (Fase 3);
+* notificar o negócio sobre datas afetivas próximas (Fase 4);
 * apoiar o contato proativo com clientes;
 * registro de "contato realizado" para datas afetivas.
 
@@ -690,9 +691,55 @@ O sistema segue o princípio "visibilidade antes de automação" — o M10 ofere
 
 ---
 
-# 15. Fase 3 — Automação Operacional
+# 15. Fase 3 — Infraestrutura & Acesso
 
-Depois que a operação central e a evolução de estoque/clientes estiverem estáveis, o sistema poderá evoluir para reduzir o trabalho repetitivo.
+Após a Fase 2, o próximo passo é colocar o sistema em produção e habilitar acesso controlado por usuários autenticados.
+
+Esta fase prepara o sistema para ser usado por pessoas fora do ambiente de desenvolvimento.
+
+## 15.1 M11 — Deploy & Ambiente de Produção
+
+O primeiro marco da Fase 3 foca em tornar o sistema acessível em um ambiente de produção.
+
+Capacidades planejadas:
+
+* configuração de ambiente de produção (Nginx, Docker Compose, CI/CD básico);
+* domínio e SSL;
+* variáveis de ambiente seguras;
+* backup de banco de dados;
+* monitoramento básico.
+
+Este marco não introduz novas funcionalidades de negócio — prepara a infraestrutura para o sistema operar em produção.
+
+## 15.2 M12 — Autenticação & Área de Usuários
+
+O segundo marco da Fase 3 habilita o acesso controlado ao sistema.
+
+Capacidades planejadas:
+
+* cadastro de usuários com login/senha;
+* recuperação de senha por email;
+* roles: admin e operador;
+* proteção de rotas no frontend e backend;
+* página de login e área de perfil.
+
+M12 depende de M11, pois o sistema precisa estar em produção para que o acesso autenticado seja útil para usuários externos.
+
+## 15.3 Sequência de Desenvolvimento
+
+```text
+M11 — Deploy & Ambiente de Produção
+        ↓
+M12 — Autenticação & Área de Usuários
+```
+
+A ordem é intencional: o deploy precede a autenticação, pois o sistema precisa estar acessível antes de proteger o acesso.
+
+---
+
+# 16. Fase 4 — Automação Operacional
+
+Depois que a operação central, a evolução de estoque/clientes e a infraestrutura de acesso estiverem estáveis, o sistema poderá evoluir para reduzir o trabalho repetitivo.
 
 Áreas potenciais incluem:
 
@@ -734,13 +781,13 @@ Relatórios devem ser introduzidos conforme as necessidades reais do negócio, e
 
 ---
 
-# 16. Oportunidades Futuras
+# 17. Oportunidades Futuras
 
 As capacidades a seguir poderão se tornar relevantes conforme a Casa Afeto crescer.
 
 Elas estão registradas aqui como possibilidades, não como compromissos.
 
-## 16.1 Produção Interna
+## 17.1 Produção Interna
 
 Alguns produtos podem ser produzidos internamente.
 
@@ -769,7 +816,7 @@ Estoque
 
 Isso só deve ser introduzido quando o negócio definir um processo real de produção.
 
-## 16.2 Precificação Avançada
+## 17.2 Precificação Avançada
 
 Funcionalidades futuras de precificação podem incluir:
 
@@ -782,7 +829,7 @@ Funcionalidades futuras de precificação podem incluir:
 
 O sistema atual não deve implementar esses conceitos de forma especulativa.
 
-## 16.3 Gestão Avançada de Clientes
+## 17.3 Gestão Avançada de Clientes
 
 Possíveis capacidades futuras:
 
@@ -795,24 +842,28 @@ Possíveis capacidades futuras:
 
 Elas só devem ser introduzidas se oferecerem valor operacional ou comercial mensurável.
 
-## 16.4 Análises de Negócio
-
-Relatórios futuros potenciais podem incluir:
-
-* receita;
-* custo;
-* margens;
-* vendas por cesta;
-* consumo de produtos;
-* giro de estoque;
-* comportamento de pagamento;
-* recorrência de clientes.
+## 17.4 Análises de Negócio
 
 As análises devem evoluir a partir de dados reais e de perguntas do negócio.
 
+## 17.5 Multi-tenancy
+
+O sistema pode evoluir para atender múltiplos clientes (tenants) em uma única instância, com isolamento de dados entre eles.
+
+Capacidades potenciais:
+
+* uma instância atendendo múltiplos clientes isolados;
+* isolamento de dados por tenant;
+* configuração específica por tenant;
+* gestão de tenants.
+
+Essa capacidade só deve ser introduzida quando o negócio definir claramente a necessidade de operar múltiplos clientes na mesma infraestrutura.
+
+O termo **multi-tenancy** refere-se à arquitetura onde uma única instância do sistema atende múltiplos clientes com isolamento lógico de dados entre eles.
+
 ---
 
-# 17. Classificação do Backlog
+# 18. Classificação do Backlog
 
 Ideias identificadas durante o desenvolvimento devem ser classificadas, em vez de implementadas automaticamente.
 
@@ -844,7 +895,7 @@ Ela não deve ser implementada.
 
 ---
 
-# 18. Política de Mudanças do Roadmap
+# 19. Política de Mudanças do Roadmap
 
 O roadmap não é imutável.
 
@@ -866,7 +917,7 @@ O projeto deve evitar ampliar um marco apenas porque um agente identificou uma c
 
 ---
 
-# 19. Relação entre Roadmap e Especificações
+# 20. Relação entre Roadmap e Especificações
 
 O roadmap define **o que está planejado e aproximadamente quando**.
 
@@ -918,7 +969,7 @@ As regras detalhadas pertencem à documentação do marco.
 
 ---
 
-# 20. Encerramento de M1 e Estado Atual dos Marcos
+# 21. Encerramento de M1 e Estado Atual dos Marcos
 
 O Product Owner realizou a aceitação humana de **M1 — Produtos e Estoque**. Todas as etapas do marco foram concluídas:
 
@@ -958,12 +1009,24 @@ M5 — Pagamentos está concluído (COMPLETED) após implementação backend e f
 Produto → Estoque → Cesta → Cliente → Venda → Pagamento → Confirmação → Entrega
 ```
 
----
-
-# 21. Resumo do Roadmap
+**A Fase 2 está concluída.** As capacidades de evolução de estoque e clientes estão funcionais:
 
 ```text
-FASE 1 — OPERAÇÕES CENTRAIS
+Compras → Lotes → Vencimentos → Reposição → Datas Afetivas
+```
+
+M6 — Compras está concluído (COMPLETED).
+M7 — Lotes de Estoque está concluído (COMPLETED).
+M8 — Vencimentos está concluído (COMPLETED).
+M9 — Reposição de Estoque está concluído (COMPLETED).
+M10 — Datas Afetivas está concluído (COMPLETED).
+
+---
+
+# 22. Resumo do Roadmap
+
+```text
+FASE 1 — OPERAÇÕES CENTRAIS (Concluída)
 ─────────────────────────────────────
 
 M1  Produtos e Estoque
@@ -977,17 +1040,29 @@ M4  Vendas
 M5  Pagamentos
 
 
-FASE 2 — EVOLUÇÃO
+FASE 2 — EVOLUÇÃO DO ESTOQUE E DOS CLIENTES (Concluída)
 ─────────────────────────────────────
 
-Compras
-Lotes de Estoque
-Vencimentos
-Reposição
-Datas Afetivas
+M6  Compras
+ ↓
+M7  Lotes de Estoque
+ ↓
+M8  Vencimentos
+ ↓
+M9  Reposição de Estoque
+ ↓
+M10 Datas Afetivas
 
 
-FASE 3 — AUTOMAÇÃO
+FASE 3 — INFRAESTRUTURA & ACESSO
+─────────────────────────────────────
+
+M11 Deploy & Ambiente de Produção
+ ↓
+M12 Autenticação & Área de Usuários
+
+
+FASE 4 — AUTOMAÇÃO OPERACIONAL
 ─────────────────────────────────────
 
 Comunicação
@@ -1002,6 +1077,7 @@ Produção Interna
 Precificação Avançada
 Gestão Avançada de Clientes
 Análises de Negócio
+Multi-tenancy
 ```
 
 O roadmap existe para fornecer direção sem se tornar uma restrição ao aprendizado.
