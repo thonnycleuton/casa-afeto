@@ -136,3 +136,23 @@ class ImportantDateRead(BaseModel):
     status: ImportantDateStatus
     created_at: datetime
     updated_at: datetime
+
+
+class UpcomingDateRead(BaseModel):
+    """Schema de resposta para datas próximas (M10)."""
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    id: int
+    customer_id: int
+    customer_name: str
+    description: str
+    recurring: bool
+    next_occurrence: DateValue
+    status: ImportantDateStatus
+
+
+class UpcomingDatesListRead(BaseModel):
+    """Schema de resposta para a lista de datas próximas (M10)."""
+
+    items: list[UpcomingDateRead]
+    total: int

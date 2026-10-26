@@ -5,6 +5,7 @@ import type {
   CustomerStatus,
   ImportantDate,
   ImportantDateInput,
+  UpcomingDatesList,
 } from './types'
 
 export interface CustomerListFilters {
@@ -89,4 +90,11 @@ export function setImportantDateStatus(
       body: JSON.stringify({ status }),
     },
   )
+}
+
+export function fetchUpcomingDates(days?: number): Promise<UpcomingDatesList> {
+  const params = new URLSearchParams()
+  if (days !== undefined) params.set('days', String(days))
+  const query = params.toString()
+  return apiClient<UpcomingDatesList>(`/api/v1/important-dates/upcoming${query ? `?${query}` : ''}`)
 }

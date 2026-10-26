@@ -93,6 +93,22 @@ export interface ExpiryAlert {
   purchase_id?: number | null
 }
 
+export interface ReplenishmentItem {
+  product_id: number
+  product_name: string
+  stock_quantity: string
+  estimated_need: string
+  urgent_need: string
+  total_need: string
+  shortage: string
+  status: 'OK' | 'BAIXO' | 'CRÍTICO'
+}
+
+export interface ReplenishmentList {
+  items: ReplenishmentItem[]
+  total: number
+}
+
 export interface CompositionItem {
   product_id: number
   product_name: string
@@ -252,5 +268,22 @@ export interface Purchase {
   id: number
   purchased_at: string
   items: PurchaseItem[]
+}
+
+// --- M10: Important Dates (Upcoming) ---
+
+export interface UpcomingDate {
+  id: number
+  customer_id: number
+  customer_name: string
+  description: string
+  recurring: boolean
+  next_occurrence: string
+  status: string
+}
+
+export interface UpcomingDatesList {
+  items: UpcomingDate[]
+  total: number
 }
 

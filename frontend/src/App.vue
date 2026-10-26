@@ -16,13 +16,15 @@ import {
   fetchExpiryAlerts,
   fetchInventoryHistory,
   fetchProducts,
+  fetchReplenishmentList,
   fetchStockBatches,
   updateProduct,
 } from './api/products'
-import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, StockBatch } from './api/types'
+import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate } from './api/types'
+import { fetchUpcomingDates } from './api/customers'
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
-const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry'>('products')
+const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates'>('products')
 
 // Theme management
 const isLightTheme = ref(false)
@@ -71,6 +73,10 @@ const searchResults = ref<Product[]>([])
 const movements = ref<InventoryMovement[]>([])
 const batches = ref<StockBatch[]>([])
 const expiryAlerts = ref<ExpiryAlert[]>([])
+const replenishmentItems = ref<ReplenishmentItem[]>([])
+const replenishmentFilter = ref('')
+const upcomingDates = ref<UpcomingDate[]>([])
+const upcomingDaysFilter = ref(7)
 const search = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -96,6 +102,8 @@ const sectionTitle = computed(() => ({
   sales: 'Vendas',
   purchases: 'Compras',
   expiry: 'Vencimentos',
+  replenishment: 'Reposição',
+  importantDates: 'Datas Afetivas',
 })[section.value])
 
 const productColumns = computed(() => [
@@ -265,12 +273,40 @@ async function loadExpiryAlerts(): Promise<void> {
   expiryAlerts.value = await fetchExpiryAlerts()
 }
 
+async function loadReplenishment(): Promise<void> {
+  const list = await fetchReplenishmentList(replenishmentFilter.value || undefined)
+  replenishmentItems.value = list.items
+}
+
+async function loadUpcomingDates(): Promise<void> {
+  const list = await fetchUpcomingDates(upcomingDaysFilter.value)
+  upcomingDates.value = list.items
+}
+
 watch(section, (newSection) => {
   if (newSection === 'products' || newSection === 'inventory') {
     void runAction(loadProducts)
   }
   if (newSection === 'expiry') {
     void runAction(loadExpiryAlerts)
+  }
+  if (newSection === 'replenishment') {
+    void runAction(loadReplenishment)
+  }
+  if (newSection === 'importantDates') {
+    void runAction(loadUpcomingDates)
+  }
+})
+
+watch(replenishmentFilter, () => {
+  if (section.value === 'replenishment') {
+    void runAction(loadReplenishment)
+  }
+})
+
+watch(upcomingDaysFilter, () => {
+  if (section.value === 'importantDates') {
+    void runAction(loadUpcomingDates)
   }
 })
 </script>
@@ -374,6 +410,31 @@ watch(section, (newSection) => {
             <path d="M10 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 2v4.5l3 2" />
           </svg>
           <span>Vencimentos</span>
+        </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'replenishment' }"
+          :aria-current="section === 'replenishment' ? 'page' : undefined"
+          @click="section = 'replenishment'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="M10 3l1.5 3.5H15l-2.5 2.5.5 3.5L10 10.5 6 12.5l.5-3.5L4 6.5h3.5z" />
+          </svg>
+          <span>Reposição</span>
+        </button>
+        <button
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'importantDates' }"
+          :aria-current="section === 'importantDates' ? 'page' : undefined"
+          @click="section = 'importantDates'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5Z"/>
+            <path d="M7 14v2l3 3 3-3v-2M4 7H2l1 3 1-3M16 7h2l-1 3-1-3"/>
+          </svg>
+          <span>Datas Afetivas</span>
         </button>
       </nav>
 
@@ -625,6 +686,194 @@ watch(section, (newSection) => {
                     >
                       <span class="status-dot" aria-hidden="true"></span>
                       {{ alert.expiry_status === 'EXPIRED' ? 'Vencido' : 'Próximo do vencimento' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Replenishment Section -->
+        <section v-if="section === 'replenishment'" aria-labelledby="replenishment-heading">
+          <div class="page-heading">
+            <div>
+              <p class="page-eyebrow">Reposição de estoque</p>
+              <h1 id="replenishment-heading">Reposição</h1>
+              <p class="page-description">Produtos com estoque insuficiente para cestas e vendas confirmadas.</p>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': !replenishmentFilter }"
+                @click="replenishmentFilter = ''"
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': replenishmentFilter === 'CRÍTICO' }"
+                @click="replenishmentFilter = 'CRÍTICO'"
+              >
+                Crítico
+              </button>
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': replenishmentFilter === 'BAIXO' }"
+                @click="replenishmentFilter = 'BAIXO'"
+              >
+                Baixo
+              </button>
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': replenishmentFilter === 'OK' }"
+                @click="replenishmentFilter = 'OK'"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+
+          <div v-if="replenishmentItems.length === 0" class="card">
+            <div class="empty-state">
+              <span class="empty-icon" aria-hidden="true">✓</span>
+              <strong>Nenhum produto precisa de reposição.</strong>
+              <span>Todos os produtos têm estoque suficiente.</span>
+            </div>
+          </div>
+
+          <div v-else class="card table-card">
+            <div class="table-heading">
+              <div>
+                <h2>Lista de reposição</h2>
+                <p>{{ replenishmentItems.length }} produto(s).</p>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Estoque</th>
+                  <th>Necessidade estimada</th>
+                  <th>Necessidade urgente</th>
+                  <th>Falta</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in replenishmentItems" :key="item.product_id">
+                  <td><strong>{{ item.product_name }}</strong></td>
+                  <td>{{ Number(item.stock_quantity).toLocaleString('pt-BR') }}</td>
+                  <td>{{ Number(item.estimated_need).toLocaleString('pt-BR') }}</td>
+                  <td>{{ Number(item.urgent_need).toLocaleString('pt-BR') }}</td>
+                  <td>
+                    <span v-if="Number(item.shortage) > 0" class="expiry-expired">
+                      {{ Number(item.shortage).toLocaleString('pt-BR') }}
+                    </span>
+                    <span v-else>—</span>
+                  </td>
+                  <td>
+                    <span
+                      :class="[
+                        'status-pill',
+                        item.status === 'CRÍTICO' ? 'status-error' : item.status === 'BAIXO' ? 'status-warning' : 'status-success',
+                      ]"
+                    >
+                      <span class="status-dot" aria-hidden="true"></span>
+                      {{ item.status }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Important Dates Section -->
+        <section v-if="section === 'importantDates'" aria-labelledby="important-dates-heading">
+          <div class="page-heading">
+            <div>
+              <p class="page-eyebrow">Relacionamento com clientes</p>
+              <h1 id="important-dates-heading">Datas Afetivas</h1>
+              <p class="page-description">Datas importantes dos clientes que estão chegando.</p>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': upcomingDaysFilter === 1 }"
+                @click="upcomingDaysFilter = 1"
+              >
+                Hoje
+              </button>
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': upcomingDaysFilter === 7 }"
+                @click="upcomingDaysFilter = 7"
+              >
+                7 dias
+              </button>
+              <button
+                type="button"
+                class="button compact"
+                :class="{ 'button-primary': upcomingDaysFilter === 30 }"
+                @click="upcomingDaysFilter = 30"
+              >
+                30 dias
+              </button>
+            </div>
+          </div>
+
+          <div v-if="upcomingDates.length === 0" class="card">
+            <div class="empty-state">
+              <span class="empty-icon" aria-hidden="true">📅</span>
+              <strong>Nenhuma data afetiva próxima.</strong>
+              <span>Não há datas importantes na janela selecionada.</span>
+            </div>
+          </div>
+
+          <div v-else class="card table-card">
+            <div class="table-heading">
+              <div>
+                <h2>Datas próximas</h2>
+                <p>{{ upcomingDates.length }} data(s).</p>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Próxima ocorrência</th>
+                  <th>Cliente</th>
+                  <th>Descrição</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in upcomingDates" :key="item.id">
+                  <td>
+                    <strong>{{ new Date(item.next_occurrence + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }) }}</strong>
+                  </td>
+                  <td>{{ item.customer_name }}</td>
+                  <td>{{ item.description }}</td>
+                  <td>
+                    <span v-if="item.recurring" class="status-pill status-info">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      Recorrente
+                    </span>
+                    <span v-else class="status-pill">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      Único
                     </span>
                   </td>
                 </tr>

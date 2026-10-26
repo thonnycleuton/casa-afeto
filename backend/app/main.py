@@ -6,10 +6,12 @@ from app.api.v1.baskets import router as baskets_router
 from app.api.v1.customers import router as customers_router
 from app.api.v1.expiry_alerts import router as expiry_alerts_router
 from app.api.v1.health import router as health_router
+from app.api.v1.important_dates import router as important_dates_router
 from app.api.v1.inspections import router as inspections_router
 from app.api.v1.payments import router as payments_router
 from app.api.v1.products import router as products_router
 from app.api.v1.purchases import router as purchases_router
+from app.api.v1.replenishment import router as replenishment_router
 from app.api.v1.sales import router as sales_router
 from app.core.config import settings
 from app.core.errors import register_error_handlers
@@ -50,6 +52,8 @@ def create_application() -> FastAPI:
     app.include_router(purchases_router, prefix="/api/v1")
     app.include_router(batches_router, prefix="/api/v1")
     app.include_router(expiry_alerts_router, prefix="/api/v1")
+    app.include_router(replenishment_router, prefix="/api/v1")
+    app.include_router(important_dates_router, prefix="/api/v1")
     register_error_handlers(app)
 
     return app
