@@ -653,14 +653,19 @@ Ela deve permanecer uma regra de negócio substituível, em vez de se tornar uma
 
 ## 14.4 Reposição de Estoque
 
-Capacidades potenciais:
+**Status: Implementado no M9 (Fase 2).**
+
+O sistema calcula, para cada produto, o estoque atual (soma dos lotes ativos), a necessidade estimada (templates de cesta ativos) e a necessidade urgente (vendas confirmadas). Cada produto é classificado como OK, BAIXO ou CRÍTICO.
+
+Capacidades implementadas:
 
 * identificar produtos necessários para cestas futuras;
 * identificar estoque insuficiente;
 * destacar produtos que precisam ser repostos;
-* distinguir necessidades normais de estoque das necessidades urgentes criadas por vendas confirmadas.
+* distinguir necessidades normais de estoque das necessidades urgentes criadas por vendas confirmadas;
+* filtros por status (BAIXO, CRÍTICO) e por produto.
 
-O sistema deve primeiro oferecer visibilidade antes de tentar automatizar as compras.
+O sistema oferece visibilidade antes de automatizar as compras. A automação de compras é explicitamente fora do escopo do M9.
 
 ## 14.5 Datas Afetivas
 

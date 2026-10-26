@@ -5,7 +5,7 @@
 
 ---
 
-## 1. Finalidade
+## 15.Finalidade
 
 Este documento descreve o comportamento atual de negócio da Casa Afeto que deve orientar o desenvolvimento do Sistema de Gestão de Vendas.
 
@@ -17,7 +17,7 @@ Quando forem necessários detalhes de implementação, as especificações de ma
 
 ---
 
-## 2. Visão Geral do Negócio
+## 16.Visão Geral do Negócio
 
 Casa Afeto vende cestas de café da manhã personalizadas e cestas de presente.
 
@@ -51,7 +51,7 @@ O sistema vai suportar esta operação por meio de:
 
 ---
 
-## 3. Cliente
+## 17.Cliente
 
 Um **Cliente** é a pessoa que realiza a compra.
 
@@ -63,7 +63,7 @@ Informações do destinatário não precisam ser representadas como uma entidade
 
 ---
 
-## 4. Produto
+## 18.Produto
 
 Um **Produto** é um item que pode ser usado como parte de uma cesta.
 
@@ -121,7 +121,7 @@ O fator de conversão pode variar conforme a aquisição.
 
 ---
 
-## 5. Ativação do Produto
+## 19.Ativação do Produto
 
 Produtos podem ser ativados ou desativados.
 
@@ -133,7 +133,7 @@ A desativação não exclui informações históricas envolvendo o produto.
 
 ---
 
-## 6. Custo do Produto
+## 20.Custo do Produto
 
 Um produto pode ser adquirido a preços diferentes ao longo do tempo.
 
@@ -208,7 +208,7 @@ Preço sugerido:
 
 ---
 
-## 7. Compra
+## 21.Compra
 
 Uma **Compra** representa uma aquisição de produtos pela Casa Afeto.
 
@@ -235,7 +235,7 @@ Gestão de compras não faz parte da implementação inicial da Fase 1.
 
 ---
 
-## 8. Estoque
+## 22.Estoque
 
 Estoque representa o material físico disponível para produtos.
 
@@ -266,7 +266,7 @@ Regras:
 
 ---
 
-## 9. Correção de Estoque
+## 23.Correção de Estoque
 
 O estoque pode precisar ser corrigido quando a quantidade registrada no sistema difere da quantidade física.
 
@@ -300,7 +300,7 @@ As movimentações originais permanecem inalteradas.
 
 ---
 
-## 10. Disponibilidade do Estoque
+## 24.Disponibilidade do Estoque
 
 A disponibilidade do estoque é relevante quando os produtos são usados em cestas e vendas.
 
@@ -320,7 +320,7 @@ O produto permanece válido, mas o usuário precisa saber que ele não tem estoq
 
 ---
 
-## 11. Política para Estoque Negativo
+## 25.Política para Estoque Negativo
 
 O sistema **não deve permitir que o estoque físico se torne negativo** (`INV-006`).
 
@@ -506,7 +506,56 @@ Cada alerta de vencimento inclui `days_until_expiry`: número inteiro positivo p
 
 ---
 
-# 14. Template de Cesta
+# 14. Reposição de Estoque
+
+O sistema oferece **visibilidade de reposição** — calcula quanto produto falta para atender às cestas templates e vendas confirmadas, sem automatizar compras.
+
+### REP-001 — Estoque atual por produto
+
+O estoque atual de um produto é a soma das quantidades restantes de todos os lotes com status `ACTIVE` (LOT-008).
+
+### REP-002 — Necessidade estimada por cesta template
+
+A necessidade estimada de um produto é a soma das quantidades desse produto em todos os templates de cesta ativos.
+
+### REP-003 — Necessidade urgente por venda confirmada
+
+A necessidade urgente de um produto é a soma das quantidades desse produto em todas as vendas com status CONFIRMADA, EM_PREPARAÇÃO ou PRONTA.
+
+### REP-004 — Status de reposição
+
+Cada produto recebe um status de reposição:
+- **OK:** Estoque suficiente para cobrir todas as necessidades.
+- **BAIXO:** Estoque insuficiente para necessidades estimadas, mas sem necessidade urgente.
+- **CRÍTICO:** Estoque insuficiente para necessidades urgentes (vendas confirmadas).
+
+### REP-005 — Venda cancelada não gera necessidade
+
+Uma venda com status CANCELADA não contribui para a necessidade urgente.
+
+### REP-006 — Venda entregue não gera necessidade
+
+Uma venda com status ENTREGUE não contribui para a necessidade urgente — o produto já foi baixado.
+
+### REP-007 — Template inativo não gera necessidade
+
+Um template de cesta com estado inativo não contribui para a necessidade estimada.
+
+### REP-008 — Lista de reposição é cálculo em tempo real
+
+A lista de reposição não é persistida. É calculada sob demanda a partir do estado atual do banco de dados.
+
+### REP-009 — Produto sem estoque é BAIXO ou CRÍTICO
+
+Se um produto tem estoque zero e há necessidade (estimada ou urgente), ele aparece como BAIXO ou CRÍTICO.
+
+### REP-010 — Produto sem necessidade é OK
+
+Se um produto não aparece em nenhum template ativo e não tem vendas confirmadas, ele é classificado como OK independentemente do estoque.
+
+---
+
+# 15. Template de Cesta
 
 Um **Template de Cesta** é a **cesta-base** — o molde reutilizável que define a composição padrão e o preço de venda de uma cesta.
 
@@ -537,7 +586,7 @@ Templates podem ser ativados ou desativados.
 
 ---
 
-# 15. Cesta Concreta (removida)
+# 16. Cesta Concreta (removida)
 
 A entidade "Cesta concreta" foi removida do projeto. Não há caso de uso real para uma cesta persistida fora do contexto de venda.
 
@@ -550,7 +599,7 @@ Existem apenas **2 tipos de cestas**:
 
 ---
 
-# 16. Independência entre Template e Cesta da Venda
+# 17. Independência entre Template e Cesta da Venda
 
 Quando uma cesta é adicionada a uma venda a partir de um Template, a composição e o preço são copiados naquele momento. O `origin_template_id` opcional identifica apenas a origem; não é uma referência viva à composição.
 
@@ -591,7 +640,7 @@ A cesta da venda pode ser personalizada independentemente: adicionar itens, remo
 
 ---
 
-# 17. Personalização da Cesta da Venda
+# 18. Personalização da Cesta da Venda
 
 A personalização comercial acontece na **cesta da venda** (`SaleBasket`), não na Cesta concreta do M2.
 
@@ -618,7 +667,7 @@ O usuário também pode alterar a quantidade de um item já existente cujo produ
 
 ---
 
-# 18. Venda sem Template
+# 19. Venda sem Template
 
 Uma cesta pode ser adicionada a uma venda sem usar um Template de Cesta.
 
@@ -628,7 +677,7 @@ A cesta da venda criada sem Template possui `origin_template_id = NULL`.
 
 ---
 
-# 19. Unidade base e identificação de produtos nas composições
+# 20. Unidade base e identificação de produtos nas composições
 
 As composições de templates e cestas referenciam produtos por sua identidade (`product_id`), não pelo nome. Renomear um produto não cria outro produto, não duplica referências, não altera quantidades e não cria histórico de nomes no M2. A interface pode apresentar o nome atual do produto.
 
@@ -638,7 +687,7 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 
 ---
 
-# 20. Custo e precificação
+# 21. Custo e precificação
 
 1. **Custo de aquisição nas entradas:** nas entradas de estoque (tipo ENTRY), é registrado opcionalmente o custo unitário de aquisição do produto com precisão de duas casas decimais. Valores negativos são rejeitados.
 2. **Custo médio ponderado (controle interno):** o custo médio unitário do produto é calculado ponderando quantidades e custos das entradas com custo registrado. Custos desconhecidos (ausentes) são ignorados no cálculo da média e não são tratados como zero. Este valor é mantido para controle interno de custos e não é usado para precificação de cestas.
@@ -651,7 +700,7 @@ Templates e cestas podem conter produtos sem estoque suficiente. A disponibilida
 
 ---
 
-# 21. Venda
+# 22. Venda
 
 Uma **Venda** representa a transação comercial operacional vinculada a um Cliente.
 
@@ -675,7 +724,7 @@ docs/milestones/m4-sales/specification.md
 
 ---
 
-# 22. Cestas da Venda e Informações de Entrega
+# 23. Cestas da Venda e Informações de Entrega
 
 Uma venda pode conter várias cestas, inclusive várias baseadas na mesma origem.
 
@@ -694,7 +743,7 @@ O destinatário não precisa ser modelado como entidade independente na implemen
 
 ---
 
-# 23. Composição e Preço Acordado da Cesta na Venda
+# 24. Composição e Preço Acordado da Cesta na Venda
 
 Ao adicionar uma cesta à venda, a composição e o preço do Template de origem são copiados naquele momento e passam a ser independentes do Template.
 
@@ -710,7 +759,7 @@ Renegociações excepcionais posteriores à confirmação não fazem parte do fl
 
 ---
 
-# 24. Total da Venda
+# 25. Total da Venda
 
 O total da venda é a soma dos preços registrados de todas as cestas que a compõem.
 
@@ -720,7 +769,7 @@ Alterar a composição de uma cesta sem alterar seu preço não recalcula automa
 
 ---
 
-# 25. Ciclo Operacional da Venda
+# 26. Ciclo Operacional da Venda
 
 Os estados operacionais oficiais da venda são:
 
@@ -752,7 +801,7 @@ No fluxo normal, a venda não deve pular etapas.
 
 ---
 
-# 26. `RASCUNHO` e Confirmação Financeira
+# 27. `RASCUNHO` e Confirmação Financeira
 
 `RASCUNHO` é o estado inicial da venda.
 
@@ -775,7 +824,7 @@ O M4 não registra pagamentos, não calcula valores pagos e não implementa uma 
 
 ---
 
-# 27. Alterações de Composição por Estado
+# 28. Alterações de Composição por Estado
 
 Em `CONFIRMADA`, é permitido adicionar itens, remover itens e alterar quantidades na composição das cestas da venda.
 
@@ -796,7 +845,7 @@ Quando uma venda possui reserva ou baixa ativa, as alterações de composição 
 
 ---
 
-# 28. Preparação por Cesta e Venda `PRONTA`
+# 29. Preparação por Cesta e Venda `PRONTA`
 
 Cada cesta pode ser marcada individualmente como preparada.
 
@@ -814,7 +863,7 @@ Quando a composição de uma cesta é alterada durante `EM PREPARAÇÃO` e a ces
 
 ---
 
-# 29. Reabertura de Venda `PRONTA`
+# 30. Reabertura de Venda `PRONTA`
 
 Uma venda `PRONTA` pode ser reaberta somente por ação explícita do usuário.
 
@@ -836,7 +885,7 @@ A reabertura não repete baixas físicas já realizadas durante a preparação a
 
 ---
 
-# 30. Entrega por Cesta e Venda `ENTREGUE`
+# 31. Entrega por Cesta e Venda `ENTREGUE`
 
 Cada cesta é marcada como entregue por ação explícita do usuário.
 
@@ -856,7 +905,7 @@ O fluxo normal do M4 não inclui assinatura, fotografia ou comprovante adicional
 
 ---
 
-# 31. Cancelamento da Venda
+# 32. Cancelamento da Venda
 
 O cancelamento é permitido em `RASCUNHO`, `CONFIRMADA`, `EM PREPARAÇÃO` e `PRONTA`, desde que nenhuma cesta tenha sido entregue.
 
@@ -879,7 +928,7 @@ Uma venda `ENTREGUE` não pode ser cancelada pelo fluxo normal.
 
 ---
 
-# 32. Pagamentos
+# 33. Pagamentos
 
 Pagamentos pertencem ao escopo funcional do M5.
 
@@ -893,7 +942,7 @@ As regras detalhadas de pagamento e sua futura especificação pertencem ao marc
 
 ---
 
-# 33. Venda de Produtos Individuais
+# 34. Venda de Produtos Individuais
 
 Vendas de produtos individuais estão fora do escopo inicial.
 
@@ -903,7 +952,7 @@ O sistema não deve implementar um fluxo separado de venda de produtos, a menos 
 
 ---
 
-# 34. Produtos Produzidos Internamente
+# 35. Produtos Produzidos Internamente
 
 A Casa Afeto pode produzir produtos internamente, como bolos.
 
@@ -924,7 +973,7 @@ A arquitetura atual não deve implementá-las prematuramente.
 
 ---
 
-# 35. Perdas, Quebras, Vencimentos e Uso Interno
+# 36. Perdas, Quebras, Vencimentos e Uso Interno
 
 No futuro, produtos podem ser:
 
@@ -942,7 +991,7 @@ Fluxos detalhados devem ser introduzidos somente quando os requisitos de negóci
 
 ---
 
-# 36. Datas Afetivas
+# 37. Datas Afetivas
 
 A Casa Afeto pretende, futuramente, manter datas relevantes associadas a clientes ou destinatários.
 
@@ -958,7 +1007,7 @@ Essa funcionalidade está fora do escopo inicial da Fase 1.
 
 ---
 
-# 37. Regras de Negócio Estabelecidas
+# 38. Regras de Negócio Estabelecidas
 
 As regras a seguir foram estabelecidas explicitamente.
 
@@ -1148,7 +1197,7 @@ A busca de produtos não diferencia maiúsculas de minúsculas e corresponde a s
 
 ---
 
-# 38. Política de Reserva e Baixa de Estoque Associada às Vendas
+# 39. Política de Reserva e Baixa de Estoque Associada às Vendas
 
 Esta seção formaliza a política aprovada pelo Product Owner sobre reserva, baixa física, alterações de composição e cancelamento de vendas.
 
@@ -1244,7 +1293,7 @@ Manutenção da proibição vigente: o cancelamento de uma venda é bloqueado qu
 
 ---
 
-# 39. Decisões de Negócio em Aberto
+# 40. Decisões de Negócio em Aberto
 
 Os tópicos a seguir permanecem intencionalmente sem resolução e não devem ser transformados em suposições pela implementação.
 
@@ -1276,7 +1325,7 @@ Fluxos detalhados para perdas, danos, vencimentos e consumo interno ainda não f
 
 ---
 
-# 40. Oportunidades de Negócio Futuras
+# 41. Oportunidades de Negócio Futuras
 
 As capacidades a seguir poderão ser consideradas após a estabilização do sistema operacional central:
 
@@ -1302,7 +1351,7 @@ Cada capacidade futura exige sua própria decisão de negócio e escopo de imple
 
 ---
 
-# 41. Política de Mudanças
+# 42. Política de Mudanças
 
 Este documento representa o entendimento atual do negócio.
 
@@ -1321,7 +1370,7 @@ O agente não deve alterar silenciosamente o comportamento de negócio com base 
 
 ---
 
-# 42. Princípio Orientador de Negócio
+# 43. Princípio Orientador de Negócio
 
 O sistema existe para apoiar a operação real da Casa Afeto.
 

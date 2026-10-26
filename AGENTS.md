@@ -740,6 +740,27 @@ docs/milestones/phase-1.md
 
 Read those documents to determine current scope before beginning any work.
 
+### Milestone Completion
+
+When a milestone reaches the **Completed** stage, the agent must commit all changes to Git before submitting the final report.
+
+**Required steps:**
+
+1. Run relevant tests and confirm they pass.
+2. Stage all changes: `git add .`.
+3. Commit with a Conventional Commits message:
+   ```
+   feat: complete <milestone-id> — <short description>
+   
+   Co-authored-by: Junie <junie@jetbrains.com>
+   ```
+4. Verify the commit using `git log -1` and `git status`.
+5. Push to origin if the remote is available: `git push origin main`.
+
+**Why:** Without commits, work done in a session is lost when the session ends. The repository is the source of truth, and uncommitted changes are not part of the repository.
+
+**Commit message format:** Use Conventional Commits (see `scripts/tlc/check_commit.py`). The message should be in Portuguese if the milestone documentation is in Portuguese.
+
 ---
 
 # 17. Agent Final Report

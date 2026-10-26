@@ -4,6 +4,7 @@ import type {
   InventoryMovement,
   Product,
   ProductInput,
+  ReplenishmentList,
   StockBatch,
 } from './types'
 
@@ -80,4 +81,15 @@ export function fetchExpiryAlerts(
     include_expired: String(includeExpired),
   })
   return apiClient<ExpiryAlert[]>(`/api/v1/inventory/expiry-alerts?${params}`)
+}
+
+export function fetchReplenishmentList(
+  status?: string,
+): Promise<ReplenishmentList> {
+  const params = new URLSearchParams()
+  if (status) {
+    params.set('status', status)
+  }
+  const query = params.toString()
+  return apiClient<ReplenishmentList>(`/api/v1/inventory/replenishment${query ? `?${query}` : ''}`)
 }

@@ -36,7 +36,7 @@ M7 — Lotes de Estoque (concluído)
         ↓
 M8 — Vencimentos (concluído)
         ↓
-M9 — Reposição de Estoque (pendente de especificação)
+M9 — Reposição de Estoque (concluído)
         ↓
 M10 — Datas Afetivas (pendente de especificação)
 ```
@@ -58,7 +58,7 @@ A ordem reflete as dependências naturais:
 | M6 — Compras | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M7 — Lotes de Estoque | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M8 — Vencimentos | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
-| M9 — Reposição de Estoque | ✗ Não planejado | — |
+| M9 — Reposição de Estoque | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M10 — Datas Afetivas | ✗ Não planejado | — |
 
 ---
@@ -148,18 +148,32 @@ docs/milestones/m6-purchases/
 
 ---
 
-### M9 — Reposição de Estoque
+### M9 — Reposição de Estoque (Concluído)
 
 **Objetivo:** Identificar produtos com estoque insuficiente e destacar a necessidade de reposição.
 
-**Dependência:** M6 (Compras) — precisa de contexto de aquisição.
+**Dependência:** M6 (Compras), M7 (Lotes), M8 (Vencimentos).
 
-**Capacidades esperadas:**
-* Identificar produtos necessários para cestas futuras.
-* Destacar produtos com estoque abaixo do necessário.
-* Distinguir necessidades normais de necessidades urgentes (vendas confirmadas).
+**Capacidades implementadas:**
+* Calcular estoque atual a partir dos lotes ativos.
+* Calcular necessidade estimada a partir dos templates de cesta ativos.
+* Calcular necessidade urgente a partir das vendas confirmadas.
+* Classificar cada produto como OK, BAIXO ou CRÍTICO.
+* Filtrar por status e por produto.
+* Seção "Reposição" no frontend com tabela e badges coloridos.
 
 **Princípio:** Visibilidade antes de automação.
+
+**Documentos:**
+```text
+docs/milestones/m9-replenishment/
+├── specification.md          — Especificação detalhada (v0.2, aprovado)
+├── acceptance-criteria.md    — 20 critérios de aceitação (v0.2, aprovado)
+├── use-cases.md              — 6 casos de uso (v0.2, aprovado)
+└── validation.md             — Plano de validação (v0.2, aprovado)
+```
+
+**Regras de Negócio:** 10 regras novas (REP-001 a REP-010).
 
 ---
 
