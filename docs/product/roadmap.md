@@ -669,32 +669,24 @@ O sistema oferece visibilidade antes de automatizar as compras. A automação de
 
 ## 14.5 Datas Afetivas
 
-Funcionalidades potenciais relacionadas a clientes podem incluir:
+**Status: Implementado no M10 (Fase 2).**
 
-```text
-Cliente
-   ↓
-Pessoa / Destinatário
-   ↓
-Ocasião
-   ↓
-Data
-```
+O M3 (Clientes) permite registrar datas importantes vinculadas a clientes específicos (aniversários, ocasiões especiais) com recorrência e status. O M10 adiciona uma visão global: listar todas as datas afetivas próximas de todos os clientes.
 
-Exemplos:
+Capacidades implementadas:
 
-* aniversário;
-* aniversário de casamento;
-* outras ocasiões relevantes.
+* registrar datas importantes por cliente (M3);
+* listar datas próximas via endpoint global `GET /api/v1/important-dates/upcoming?days=7` (M10);
+* visualizar datas afetivas no frontend com filtros (hoje, 7 dias, 30 dias) (M10);
+* cálculo de próxima ocorrência para datas recorrentes e não-recorrentes, incluindo ano bissexto (M10).
 
-Capacidades futuras potenciais:
+Capacidades futuras (fora do escopo do M10):
 
-* registrar datas importantes;
-* listar datas próximas;
-* notificar o negócio;
-* apoiar o contato proativo com clientes.
+* notificar o negócio sobre datas afetivas próximas (Fase 3);
+* apoiar o contato proativo com clientes;
+* registro de "contato realizado" para datas afetivas.
 
-Essa funcionalidade está explicitamente fora da Fase 1.
+O sistema segue o princípio "visibilidade antes de automação" — o M10 oferece visibilidade das datas próximas, mas não automatiza notificações.
 
 ---
 

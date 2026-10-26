@@ -30,7 +30,7 @@ Cada marco deve ser implementado, testado e validado manualmente antes que o pr�
 A Fase 2 é dividida em marcos. A sequência proposta é:
 
 ```text
-M6 — Compras e Reposição de Estoque
+M6 — Compras e Reposição de Estoque (concluído)
         ↓
 M7 — Lotes de Estoque (concluído)
         ↓
@@ -38,7 +38,7 @@ M8 — Vencimentos (concluído)
         ↓
 M9 — Reposição de Estoque (concluído)
         ↓
-M10 — Datas Afetivas (pendente de especificação)
+M10 — Datas Afetivas (concluído)
 ```
 
 A ordem reflete as dependências naturais:
@@ -59,7 +59,7 @@ A ordem reflete as dependências naturais:
 | M7 — Lotes de Estoque | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M8 — Vencimentos | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 | M9 — Reposição de Estoque | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
-| M10 — Datas Afetivas | ✗ Não planejado | — |
+| M10 — Datas Afetivas | Concluído (COMPLETED) | specification.md, acceptance-criteria.md, use-cases.md, validation.md |
 
 ---
 

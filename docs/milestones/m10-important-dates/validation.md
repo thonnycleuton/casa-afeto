@@ -1,7 +1,7 @@
 # M10 — Plano de Validação
 
-**Versão do documento:** 0.1 (Rascunho)
-**Status:** Rascunho — pendente de aprovação pelo Product Owner
+**Versão do documento:** 0.2 (Aprovado)
+**Status:** Aprovado — implementado e validado
 **Marco:** M10 — Datas Afetivas
 
 ---
