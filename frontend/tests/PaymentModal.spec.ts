@@ -18,6 +18,7 @@ Object.defineProperty(global, 'crypto', {
 
 describe('PaymentModal', () => {
   const props = {
+    open: true,
     saleTotal: '200.00',
     totalPaid: '50.00',
   }

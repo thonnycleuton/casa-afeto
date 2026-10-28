@@ -50,7 +50,7 @@ watch(
     apiError.value = ''
     suggestedPrice.value = null
     draftItems.value = []
-    if (isOpen && template) {
+    if (isOpen && template && typeof template === 'object') {
       isEdit.value = true
       name.value = template.name
       price.value = template.price ?? ''
@@ -150,8 +150,8 @@ function submit(): void {
             base_unit: product?.base_unit ?? 'UN',
             quantity: item.quantity,
             inventory_balance: product?.inventory_balance ?? '0',
-            stock_available: (product?.stock_available ?? true),
-            stock_shortage: product?.stock_shortage ?? '0',
+            stock_available: true,
+            stock_shortage: '0',
           }
         })"
         :products="products"

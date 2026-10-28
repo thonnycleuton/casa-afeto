@@ -10,7 +10,7 @@ export interface DataColumn {
 const props = withDefaults(
   defineProps<{
     columns: DataColumn[]
-    rows: unknown[]
+    rows: any[]
     pageSize?: number
     page?: number
     loading?: boolean
@@ -23,7 +23,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'row-click', row: unknown): void
+  (e: 'row-click', row: any): void
   (e: 'page-change', page: number): void
 }>()
 
@@ -60,12 +60,12 @@ function goToPage(page: number): void {
         <tbody>
           <tr v-for="row in pagedRows" :key="(row as any).id" @click="emit('row-click', row)">
             <td v-for="col in columns" :key="col.key" :class="col.align ?? 'left'">
-              <slot :name="'cell-' + col.key" :row="row">
+              <slot :name="'cell-' + col.key" :row="(row as any)">
                 {{ (row as any)[col.key] }}
               </slot>
             </td>
             <td v-if="$slots.actions" class="left row-actions">
-              <slot name="actions" :row="row" />
+              <slot name="actions" :row="(row as any)" />
             </td>
           </tr>
           <tr v-if="pagedRows.length === 0 && !loading">

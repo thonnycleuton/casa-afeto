@@ -5,7 +5,7 @@ import SaleDetailView from './SaleDetailView.vue'
 import type { BasketTemplate, Product, Sale } from '../../api/types'
 import type { Payment, PaymentTotal } from '../../api/payments'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     open: boolean
     sale: Sale | null
@@ -45,6 +45,14 @@ const emit = defineEmits<{
 }>()
 
 const saleDetailRef = ref<InstanceType<typeof SaleDetailView> | null>(null)
+
+function handlePaymentSuccess(): void {
+  if (saleDetailRef.value) {
+    saleDetailRef.value.handlePaymentSuccess()
+  }
+}
+
+defineExpose({ handlePaymentSuccess })
 </script>
 
 <template>

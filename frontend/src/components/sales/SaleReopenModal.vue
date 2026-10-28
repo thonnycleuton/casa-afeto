@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import BaseModal from '../ui/BaseModal.vue'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void

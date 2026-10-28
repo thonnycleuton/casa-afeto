@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import DataTable, { type DataColumn } from '../components/ui/DataTable.vue'
 import CustomerFormModal from '../components/customers/CustomerFormModal.vue'
 import ImportantDatesModal from '../components/customers/ImportantDatesModal.vue'

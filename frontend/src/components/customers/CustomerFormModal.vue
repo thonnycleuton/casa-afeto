@@ -47,7 +47,7 @@ watch(
   ([isOpen, customer]) => {
     submitted.value = false
     apiError.value = ''
-    if (isOpen && customer) {
+    if (isOpen && customer && typeof customer === 'object') {
       isEdit.value = true
       name.value = customer.name
       phone.value = customer.phone

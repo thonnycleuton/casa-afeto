@@ -53,7 +53,7 @@ watch(
   ([isOpen, product]) => {
     submitted.value = false
     apiError.value = ''
-    if (isOpen && product) {
+    if (isOpen && product && typeof product === 'object') {
       isEdit.value = true
       name.value = product.name
       unit.value = product.base_unit

@@ -23,7 +23,6 @@ import {
 import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate } from './api/types'
 import { fetchUpcomingDates } from './api/customers'
 
-const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
 const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates'>('products')
 
 // Theme management
@@ -602,7 +601,7 @@ watch(upcomingDaysFilter, () => {
               :page-size="10"
               :page="productsPage"
               @page-change="handleProductsPageChange"
-              @row-click="openInventory($event as Product)"
+              @row-click="openInventory($event)"
             >
               <template #cell-inventory_balance="{ row }: { row: Product }">
                 {{ formatQuantity((row as Product).inventory_balance) }} {{ (row as Product).base_unit }}
