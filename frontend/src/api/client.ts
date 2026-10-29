@@ -1,6 +1,78 @@
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
 
+const ACCESS_TOKEN_KEY = 'casa_afeto_access_token'
+const REFRESH_TOKEN_KEY = 'casa_afeto_refresh_token'
+
+let isRefreshing = false
+let refreshPromise: Promise<boolean> | null = null
+
+function getAccessToken(): string | null {
+  try {
+    return localStorage.getItem(ACCESS_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function getRefreshToken(): string | null {
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function clearTokens() {
+  try {
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+async function refreshTokenIfNeeded(): Promise<boolean> {
+  if (refreshPromise !== null) {
+    return refreshPromise
+  }
+  if (isRefreshing) {
+    return refreshPromise!
+  }
+
+  isRefreshing = true
+  refreshPromise = (async () => {
+    const rt = getRefreshToken()
+    if (!rt) return false
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+      })
+      if (!resp.ok) {
+        clearTokens()
+        return false
+      }
+      const data = await resp.json()
+      try {
+        localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token)
+        localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
+      } catch {
+        // ignore
+      }
+      return true
+    } catch {
+      clearTokens()
+      return false
+    } finally {
+      isRefreshing = false
+      refreshPromise = null
+    }
+  })()
+  return refreshPromise
+}
+
 function formatApiErrorDetail(detail: unknown): string {
   if (typeof detail === 'string') return detail
   if (!Array.isArray(detail)) return 'Verifique os dados informados.'
@@ -43,14 +115,22 @@ function formatApiErrorDetail(detail: unknown): string {
 
 export async function apiClient<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
+  const token = getAccessToken()
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...options?.headers as Record<string, string>,
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   let response: Response
   try {
     response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...options?.headers,
-      },
+      headers,
       ...options,
     })
   } catch (cause: unknown) {
@@ -62,7 +142,35 @@ export async function apiClient<T>(endpoint: string, options?: RequestInit): Pro
     throw cause
   }
 
+  // If 401, try to refresh token once
+  if (response.status === 401 && token && !endpoint.includes('/auth/')) {
+    const refreshed = await refreshTokenIfNeeded()
+    if (refreshed) {
+      const newToken = getAccessToken()
+      if (newToken) {
+        headers['Authorization'] = `Bearer ${newToken}`
+        try {
+          response = await fetch(url, {
+            headers,
+            ...options,
+          })
+        } catch (cause: unknown) {
+          if (cause instanceof TypeError) {
+            throw new Error(
+              'Não foi possível conectar à API. Verifique sua conexão e tente novamente.',
+            )
+          }
+          throw cause
+        }
+      }
+    }
+  }
+
   if (!response.ok) {
+    // If still 401 after refresh, clear tokens
+    if (response.status === 401) {
+      clearTokens()
+    }
     const body = (await response.json()) as { detail?: unknown }
     throw new Error(
       body.detail === undefined

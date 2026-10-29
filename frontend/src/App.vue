@@ -22,6 +22,10 @@ import {
 } from './api/products'
 import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate } from './api/types'
 import { fetchUpcomingDates } from './api/customers'
+import { useAuth } from './composables/useAuth'
+import LoginView from './components/auth/LoginView.vue'
+
+const { isAuthenticated, user, logout, init } = useAuth()
 
 const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates'>('products')
 
@@ -263,9 +267,12 @@ function handleProductsPageChange(page: number): void {
   productsPage.value = page
 }
 
-onMounted(() => {
+onMounted(async () => {
   initTheme()
-  void runAction(loadProducts)
+  await init()
+  if (isAuthenticated.value) {
+    await loadProducts()
+  }
 })
 
 async function loadExpiryAlerts(): Promise<void> {
@@ -311,7 +318,11 @@ watch(upcomingDaysFilter, () => {
 </script>
 
 <template>
-  <div class="app-shell">
+  <!-- Login screen -->
+  <LoginView v-if="!isAuthenticated" />
+
+  <!-- Main app -->
+  <div v-else class="app-shell">
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true">CA</span>
@@ -452,6 +463,19 @@ watch(upcomingDaysFilter, () => {
         </div>
         <div class="topbar-actions">
           <span class="milestone-label">{{ section === 'sales' ? 'M4 · Vendas' : section === 'customers' ? 'M3 · Clientes' : section === 'purchases' ? 'M6 · Compras' : section === 'templates' ? 'M2 · Cestas' : 'M1 · Produtos e Estoque' }}</span>
+          <div class="user-menu" v-if="user">
+            <span class="user-name">{{ user.full_name }}</span>
+            <span class="user-role-badge" :class="user.role === 'admin' ? 'role-admin' : 'role-operator'">
+              {{ user.role === 'admin' ? 'Admin' : 'Operador' }}
+            </span>
+            <button
+              type="button"
+              class="btn-logout"
+              @click="logout"
+            >
+              Sair
+            </button>
+          </div>
           <button
             type="button"
             class="theme-toggle"

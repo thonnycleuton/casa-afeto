@@ -287,3 +287,47 @@ export interface UpcomingDatesList {
   total: number
 }
 
+// --- M12: Auth ---
+
+export type UserRole = 'admin' | 'operator'
+
+export interface AuthTokens {
+  access_token: string
+  refresh_token: string
+  token_type: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface UserProfile {
+  id: number
+  email: string
+  full_name: string
+  role: UserRole
+}
+
+export interface UserResponse {
+  id: number
+  email: string
+  full_name: string
+  role: UserRole
+  is_active: boolean
+  created_at: string
+}
+
+export interface UserCreateInput {
+  email: string
+  password: string
+  full_name: string
+  role: UserRole
+}
+
+export interface UserUpdateInput {
+  full_name?: string
+  role?: UserRole
+  is_active?: boolean
+}
+
