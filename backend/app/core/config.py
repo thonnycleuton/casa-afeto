@@ -22,6 +22,19 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
+    # Auth
+    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # SMTP (for password reset emails)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@casaafeto.com"
+    SMTP_FROM_NAME: str = "Casa Afeto"
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:

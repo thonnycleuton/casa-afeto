@@ -17,6 +17,7 @@ import app.important_dates.models
 import app.sales.models
 import app.purchases.models
 import app.inventory.models
+import app.auth.models
 
 config = context.config
 

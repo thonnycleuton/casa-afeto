@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.auth import router as auth_router
 from app.api.v1.batches import router as batches_router
 from app.api.v1.baskets import router as baskets_router
 from app.api.v1.customers import router as customers_router
@@ -13,6 +14,7 @@ from app.api.v1.products import router as products_router
 from app.api.v1.purchases import router as purchases_router
 from app.api.v1.replenishment import router as replenishment_router
 from app.api.v1.sales import router as sales_router
+from app.api.v1.users import router as users_router
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 
@@ -43,6 +45,8 @@ def create_application() -> FastAPI:
     app.include_router(health_router)
     # 2. Under /api/v1 for REST API consistency GET /api/v1/health
     app.include_router(health_router, prefix="/api/v1")
+    app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(users_router, prefix="/api/v1")
     app.include_router(products_router, prefix="/api/v1")
     app.include_router(baskets_router, prefix="/api/v1")
     app.include_router(customers_router, prefix="/api/v1")
