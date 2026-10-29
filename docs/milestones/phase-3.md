@@ -1,7 +1,7 @@
 # Casa Afeto — Fase 3
 
-**Versão do documento:** 0.3
-**Status:** Em andamento — M11 concluído, M12 pendente
+**Versão do documento:** 0.4
+**Status:** Em andamento — M11 concluído, M12 especificação aprovada
 **Fase:** 3 — Infraestrutura & Acesso
 
 ---
@@ -46,7 +46,7 @@ A ordem é intencional:
 | Marco | Status | Documentos |
 |-------|--------|------------|
 | M11 — Deploy & Ambiente de Produção | Concluído (11/13 ACs; 2 adiados — SSL) | specification.md, acceptance-criteria.md, validation.md, deploy-oracle-cloud.md |
-| M12 — Autenticação & Área de Usuários | Pendente | A ser criado |
+| M12 — Autenticação & Área de Usuários | Especificação aprovada | specification.md, acceptance-criteria.md, validation.md |
 
 ---
 
@@ -104,23 +104,27 @@ Habilitar o acesso controlado ao sistema através de autenticação de usuários
 
 ### Documentos
 
-A ser criado quando o marco for detalhado:
-
 ```text
 docs/milestones/m12-auth/
-├── specification.md          — Especificação detalhada
-├── acceptance-criteria.md    — Critérios de aceitação
-├── use-cases.md              — Casos de uso
-└── validation.md             — Plano de validação
+├── specification.md          — Especificação detalhada (v0.2, aprovada)
+├── acceptance-criteria.md    — 22 critérios de aceitação (v0.2, aprovado)
+└── validation.md             — Plano de validação (v0.2, aprovado)
 ```
 
 ### Dependências
 
 * M11 — Deploy & Ambiente de Produção
 
+### Decisões Confirmadas
+
+- **Recuperação de senha:** Por email no M12
+- **Cadastro de usuários:** Apenas admin cadastra
+- **Sessão:** JWT com refresh token
+- **Admin inicial:** Endpoint de setup
+
 ### Status
 
-- Especificação: Pendente
+- Especificação: Aprovado v0.2
 - Implementação: Pendente
 
 ---
