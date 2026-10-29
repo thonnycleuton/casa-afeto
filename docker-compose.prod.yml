@@ -129,7 +129,7 @@ services:
     volumes:
       - backups:/backups
       - ./scripts/backup:/backup-scripts:ro
-    entrypoint: ["/backup-scripts/backup.sh"]
+    entrypoint: ["sh", "/backup-scripts/backup.sh"]
     depends_on:
       db:
         condition: service_healthy
