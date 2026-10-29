@@ -1,8 +1,8 @@
 # Casa Afeto — Roadmap do Produto
 
-**Versão do documento:** 0.5
+**Versão do documento:** 0.6
 **Status:** Ativo
-**Última atualização:** 2026-10-26
+**Última atualização:** 2026-10-29
 
 ---
 
@@ -697,17 +697,27 @@ Após a Fase 2, o próximo passo é colocar o sistema em produção e habilitar 
 
 Esta fase prepara o sistema para ser usado por pessoas fora do ambiente de desenvolvimento.
 
-## 15.1 M11 — Deploy & Ambiente de Produção
+## 15.1 M11 — Deploy & Ambiente de Produção ✅
+
+**Status:** Concluído (2026-10-29)
+**Ambiente:** Oracle Cloud Always Free — `http://164.152.48.51`
 
 O primeiro marco da Fase 3 foca em tornar o sistema acessível em um ambiente de produção.
 
-Capacidades planejadas:
+Capacidades entregues:
 
-* configuração de ambiente de produção (Nginx, Docker Compose, CI/CD básico);
-* domínio e SSL;
-* variáveis de ambiente seguras;
-* backup de banco de dados;
-* monitoramento básico.
+* Dockerfiles de produção (backend e frontend);
+* Docker Compose de produção com 5 serviços (PostgreSQL, backend, frontend, Nginx, backup);
+* Nginx como reverse proxy (`/api/` → backend, `/` → frontend);
+* Variáveis de ambiente seguras (`.env.prod.example`);
+* Backup automatizado via `pg_dump` com cron;
+* Healthchecks em todos os serviços;
+* Guia de deploy completo com lições aprendidas.
+
+Capacidades adiadas (pendente domínio):
+
+* SSL/TLS via Let's Encrypt;
+* Redirecionamento HTTP → HTTPS.
 
 Este marco não introduz novas funcionalidades de negócio — prepara a infraestrutura para o sistema operar em produção.
 
@@ -728,7 +738,7 @@ M12 depende de M11, pois o sistema precisa estar em produção para que o acesso
 ## 15.3 Sequência de Desenvolvimento
 
 ```text
-M11 — Deploy & Ambiente de Produção
+M11 — Deploy & Ambiente de Produção ✅
         ↓
 M12 — Autenticação & Área de Usuários
 ```
@@ -1057,7 +1067,7 @@ M10 Datas Afetivas
 FASE 3 — INFRAESTRUTURA & ACESSO
 ─────────────────────────────────────
 
-M11 Deploy & Ambiente de Produção
+M11 Deploy & Ambiente de Produção ✅
  ↓
 M12 Autenticação & Área de Usuários
 

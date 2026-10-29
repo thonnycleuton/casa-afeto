@@ -1,7 +1,7 @@
 # Casa Afeto — Fase 3
 
-**Versão do documento:** 0.2
-**Status:** Em andamento — M11 em implementação
+**Versão do documento:** 0.3
+**Status:** Em andamento — M11 concluído, M12 pendente
 **Fase:** 3 — Infraestrutura & Acesso
 
 ---
@@ -29,7 +29,7 @@ Cada marco deve ser implementado, testado e validado manualmente antes que o pr�
 A Fase 3 é dividida em dois marcos. A sequência proposta é:
 
 ```text
-M11 — Deploy & Ambiente de Produção (pendente)
+M11 — Deploy & Ambiente de Produção (concluído)
         ↓
 M12 — Autenticação & Área de Usuários (pendente)
 ```
@@ -45,7 +45,7 @@ A ordem é intencional:
 
 | Marco | Status | Documentos |
 |-------|--------|------------|
-| M11 — Deploy & Ambiente de Produção | Implementação em andamento | specification.md, acceptance-criteria.md, validation.md |
+| M11 — Deploy & Ambiente de Produção | Concluído (11/13 ACs; 2 adiados — SSL) | specification.md, acceptance-criteria.md, validation.md, deploy-oracle-cloud.md |
 | M12 — Autenticação & Área de Usuários | Pendente | A ser criado |
 
 ---
@@ -68,9 +68,10 @@ Tornar o sistema acessível em um ambiente de produção, permitindo que pessoas
 
 ```text
 docs/milestones/m11-deploy/
-├── specification.md          — Especificação detalhada (v0.1, em revisão)
-├── acceptance-criteria.md    — 13 critérios de aceitação (v0.1, em revisão)
-└── validation.md             — Plano de validação (v0.1, em revisão)
+├── specification.md          — Especificação detalhada (v0.2, aprovada)
+├── acceptance-criteria.md    — 13 critérios de aceitação (v0.3, concluído)
+├── validation.md             — Plano de validação (v0.3, concluído)
+└── deploy-oracle-cloud.md    — Guia de deploy Oracle Cloud (v0.3)
 ```
 
 ### Dependências
@@ -81,7 +82,9 @@ docs/milestones/m11-deploy/
 ### Status
 
 - Especificação: Aprovado v0.2
-- Implementação: Em andamento — arquivos de infraestrutura criados
+- Implementação: Concluída — sistema rodando em `http://164.152.48.51` (Oracle Cloud)
+- Critérios: 11/13 concluídos; 2 adiados (SSL/TLS pendente domínio)
+- Data de conclusão: 2026-10-29
 
 ---
 
