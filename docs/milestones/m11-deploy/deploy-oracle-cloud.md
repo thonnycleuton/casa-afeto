@@ -1,9 +1,10 @@
 # Guia de Deploy — Casa Afeto na Oracle Cloud
 
-**Versão:** 0.2  
+**Versão:** 0.3  
 **Provedor:** Oracle Cloud Always Free  
 **Shape:** VM.Standard.E2.1.Micro (1 OCPU, 1 GB RAM)  
-**Última atualização:** 2026-10-27
+**Última atualização:** 2026-10-29  
+**Status:** Deploy concluído e sistema funcionando
 
 ---
 
@@ -177,6 +178,32 @@ docker compose version
 
 Ambos devem retornar as versões instaladas.
 
+### 4.5 Adicionar swap (obrigatório para 1 GB RAM)
+
+Com apenas 1 GB de RAM, o build do frontend (Node.js + TypeScript) esgota a memória. O swap funciona como memória virtual no disco.
+
+```bash
+# Criar arquivo de swap de 2 GB
+sudo fallocate -l 2G /swapfile
+
+# Proteger o arquivo
+sudo chmod 600 /swapfile
+
+# Configurar como swap
+sudo mkswap /swapfile
+
+# Ativar o swap
+sudo swapon /swapfile
+
+# Tornar permanente (sobrevive ao reboot)
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Verificar se está ativo
+free -h
+```
+
+O `free -h` deve mostrar `Swap: 2.0Gi`.
+
 ---
 
 ## Passo 5: Clonar o repositório
@@ -288,14 +315,11 @@ docker compose -f docker-compose.prod.yml logs db
 ## Passo 8: Executar migrations do banco
 
 ```bash
-# Entrar no container do backend
-docker compose -f docker-compose.prod.yml exec backend bash
+# Executar migrations diretamente no container
+docker exec casa_afeto_backend_prod alembic upgrade head
 
-# Executar migrations
-alembic upgrade head
-
-# Sair do container
-exit
+# Verificar a versão atual
+docker exec casa_afeto_backend_prod alembic current
 ```
 
 ---
@@ -533,6 +557,68 @@ Nenhuma modificação nos Dockerfiles é necessária.
 
 ---
 
+## Problemas encontrados e resolvidos
+
+Durante o deploy inicial, os seguintes problemas foram encontrados e corrigidos. Esta seção serve como referência para futuros deploys.
+
+### 1. Nginx reiniciando em loop
+
+**Sintoma:** Container `casa_afeto_nginx_prod` em estado `Restarting`.
+
+**Causa:** O arquivo `nginx/nginx.conf` continha `worker_processes`, `events` e `http` — mas como ele é montado como `/etc/nginx/conf.d/default.conf`, o Nginx o inclui **dentro** do bloco `http` principal. Essas diretivas não são permitidas nesse contexto.
+
+**Solução:** Removido `worker_processes`, `events` e wrapper `http`. O arquivo contém apenas o bloco `server`.
+
+### 2. API retornando 404 Not Found
+
+**Sintoma:** `curl http://localhost/api/v1/health` retorna 404.
+
+**Causa:** O `proxy_pass http://backend:8000` (sem trailing slash) no Nginx **stripava** o prefixo `/api/`, enviando `/v1/products` ao backend em vez de `/api/v1/products`.
+
+**Solução:** Mudado para `proxy_pass http://backend:8000/api` para preservar o caminho completo.
+
+### 3. URL duplicada `/api/api/v1/products`
+
+**Sintoma:** Console do navegador mostra `GET /api/api/v1/products 404`.
+
+**Causa:** Os endpoints do frontend já incluem `/api/v1/...` (ex: `/api/v1/products`). O `VITE_API_BASE_URL` era `/api`, criando URLs como `/api/api/v1/products`.
+
+**Solução:** O `VITE_API_BASE_URL` agora é string vazia `''` no `vite.config.ts`.
+
+### 4. Fallback `localhost:8000` ativado em produção
+
+**Sintoma:** Navegador tenta conectar a `http://localhost:8000` (computador do usuário).
+
+**Causa:** No `client.ts`, o código usava `|| 'http://localhost:8000'`. Em JavaScript, string vazia `''` é **falsy**, então `'' || 'http://localhost:8000'` retornava `'http://localhost:8000'`.
+
+**Solução:** Mudado para `?? ''` (nullish coalescing), que só usa o fallback quando o valor é `null` ou `undefined`.
+
+### 5. Backup sem permissão de execução
+
+**Sintoma:** Container de backup falha com `permission denied` ao executar `/backup-scripts/backup.sh`.
+
+**Causa:** O volume montado como `:ro` não preserva o bit de execução do arquivo.
+
+**Solução:** Mudado o entrypoint de `["/backup-scripts/backup.sh"]` para `["sh", "/backup-scripts/backup.sh"]`.
+
+### 6. Build do frontend falhando (1 GB RAM)
+
+**Sintoma:** `npm run build` falha com `exit code 2` durante o Docker build.
+
+**Causa:** O compilador TypeScript + Vue.js esgota os 1 GB de RAM.
+
+**Solução:** Adicionar 2 GB de swap ao servidor antes do build.
+
+### 7. Firewall bloqueando acesso externo
+
+**Sintoma:** `curl localhost:80` funciona, mas `http://<IP>` não responde.
+
+**Causa:** As Security Lists da VCN não tinham regras de entrada para HTTP (porta 80).
+
+**Solução:** Adicionar regra de entrada TCP porta 80 com fonte `0.0.0.0/0` nas Security Lists do Oracle Cloud.
+
+---
+
 ## Próximos passos
 
 1. ✅ Criar instância Oracle Cloud
@@ -540,6 +626,8 @@ Nenhuma modificação nos Dockerfiles é necessária.
 3. ✅ Clonar repositório
 4. ✅ Configurar .env
 5. ✅ Subir containers
-6. ⏳ Adquirir domínio
-7. ⏳ Configurar SSL/TLS
-8. ⏳ Configurar renovação automática de certificado
+6. ✅ Executar migrations
+7. ✅ Sistema acessível pelo navegador
+8. ⏳ Adquirir domínio
+9. ⏳ Configurar SSL/TLS
+10. ⏳ Configurar renovação automática de certificado
