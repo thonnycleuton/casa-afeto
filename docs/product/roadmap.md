@@ -1,8 +1,8 @@
 # Casa Afeto — Roadmap do Produto
 
-**Versão do documento:** 0.6
+**Versão do documento:** 0.7
 **Status:** Ativo
-**Última atualização:** 2026-10-29
+**Última atualização:** 2026-10-30
 
 ---
 
@@ -740,7 +740,7 @@ M12 depende de M11, pois o sistema precisa estar em produção para que o acesso
 ```text
 M11 — Deploy & Ambiente de Produção ✅
         ↓
-M12 — Autenticação & Área de Usuários
+M12 — Autenticação & Área de Usuários ✅
 ```
 
 A ordem é intencional: o deploy precede a autenticação, pois o sistema precisa estar acessível antes de proteger o acesso.
@@ -1069,7 +1069,7 @@ FASE 3 — INFRAESTRUTURA & ACESSO
 
 M11 Deploy & Ambiente de Produção ✅
  ↓
-M12 Autenticação & Área de Usuários
+M12 Autenticação & Área de Usuários ✅
 
 
 FASE 4 — AUTOMAÇÃO OPERACIONAL

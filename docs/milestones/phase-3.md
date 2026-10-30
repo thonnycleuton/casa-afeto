@@ -1,7 +1,7 @@
 # Casa Afeto — Fase 3
 
-**Versão do documento:** 0.4
-**Status:** Em andamento — M11 concluído, M12 especificação aprovada
+**Versão do documento:** 0.5
+**Status:** Concluída — M11 e M12 concluídos
 **Fase:** 3 — Infraestrutura & Acesso
 
 ---
@@ -31,7 +31,7 @@ A Fase 3 é dividida em dois marcos. A sequência proposta é:
 ```text
 M11 — Deploy & Ambiente de Produção (concluído)
         ↓
-M12 — Autenticação & Área de Usuários (pendente)
+M12 — Autenticação & Área de Usuários (concluído)
 ```
 
 A ordem é intencional:
@@ -46,7 +46,7 @@ A ordem é intencional:
 | Marco | Status | Documentos |
 |-------|--------|------------|
 | M11 — Deploy & Ambiente de Produção | Concluído (11/13 ACs; 2 adiados — SSL) | specification.md, acceptance-criteria.md, validation.md, deploy-oracle-cloud.md |
-| M12 — Autenticação & Área de Usuários | Especificação aprovada | specification.md, acceptance-criteria.md, validation.md |
+| M12 — Autenticação & Área de Usuários | Concluído (17/22 ACs; 5 adiados — SMTP) | specification.md, acceptance-criteria.md, validation.md |
 
 ---
 
@@ -107,8 +107,8 @@ Habilitar o acesso controlado ao sistema através de autenticação de usuários
 ```text
 docs/milestones/m12-auth/
 ├── specification.md          — Especificação detalhada (v0.2, aprovada)
-├── acceptance-criteria.md    — 22 critérios de aceitação (v0.2, aprovado)
-└── validation.md             — Plano de validação (v0.2, aprovado)
+├── acceptance-criteria.md    — 22 critérios de aceitação (v0.3, concluído)
+└── validation.md             — Plano de validação (v0.3, concluído)
 ```
 
 ### Dependências
@@ -125,7 +125,9 @@ docs/milestones/m12-auth/
 ### Status
 
 - Especificação: Aprovado v0.2
-- Implementação: Pendente
+- Implementação: Concluída — login, JWT, roles, painel de usuários operacionais
+- Critérios: 17/22 concluídos; 5 adiados (recuperação de senha por email — SMTP pendente)
+- Data de conclusão: 2026-10-30
 
 ---
 
