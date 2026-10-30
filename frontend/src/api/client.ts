@@ -171,7 +171,17 @@ export async function apiClient<T>(endpoint: string, options?: RequestInit): Pro
     if (response.status === 401) {
       clearTokens()
     }
-    const body = (await response.json()) as { detail?: unknown }
+
+    // Try to parse JSON; if it fails, the server returned HTML (e.g., 500 error page)
+    let body: { detail?: unknown }
+    try {
+      body = (await response.json()) as { detail?: unknown }
+    } catch {
+      throw new Error(
+        `Erro no servidor (status ${response.status}). Verifique se o backend está funcionando corretamente.`,
+      )
+    }
+
     throw new Error(
       body.detail === undefined
         ? `Erro na API (status ${response.status}).`
