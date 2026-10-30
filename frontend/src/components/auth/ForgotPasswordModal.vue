@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import BaseModal from '../ui/BaseModal.vue'
 import { forgotPassword } from '../../api/auth'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
   (e: 'success'): void

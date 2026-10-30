@@ -20,7 +20,7 @@ import {
   fetchStockBatches,
   updateProduct,
 } from './api/products'
-import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate, UserResponse } from './api/types'
+import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate, UserCreateInput, UserResponse, UserUpdateInput } from './api/types'
 import { fetchUpcomingDates } from './api/customers'
 import { useAuth } from './composables/useAuth'
 import LoginView from './components/auth/LoginView.vue'
@@ -341,13 +341,14 @@ function beginEditUser(userItem: UserResponse): void {
   showUserModal.value = true
 }
 
-async function saveUser(payload: { email?: string; password?: string; full_name: string; role: 'admin' | 'operator' }): Promise<void> {
+async function saveUser(payload: UserCreateInput | UserUpdateInput): Promise<void> {
   await runAction(async () => {
     if (editingUser.value) {
       await updateUser(editingUser.value.id, { full_name: payload.full_name, role: payload.role })
       notice.value = 'Usuário atualizado.'
     } else {
-      await createUser({ email: payload.email!, password: payload.password!, full_name: payload.full_name, role: payload.role })
+      const createPayload = payload as UserCreateInput
+      await createUser({ email: createPayload.email, password: createPayload.password, full_name: createPayload.full_name, role: createPayload.role })
       notice.value = 'Usuário criado.'
     }
     showUserModal.value = false
