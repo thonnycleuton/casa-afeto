@@ -30,6 +30,7 @@ import type { Payment, PaymentTotal } from '../../api/payments'
 import SaleFormModal from './SaleFormModal.vue'
 import SaleDetailModal from './SaleDetailModal.vue'
 import SaleStatusBadge from './SaleStatusBadge.vue'
+import { formatDate } from '../../utils/date'
 
 const props = withDefaults(
   defineProps<{
@@ -321,7 +322,7 @@ onMounted(async () => {
           <span class="col-total">{{ formatCurrency(row.total) }}</span>
         </template>
         <template #cell-date="{ row }: { row: Sale }">
-          <span class="col-date">{{ new Date(row.created_at).toLocaleDateString('pt-BR') }}</span>
+          <span class="col-date">{{ formatDate(row.created_at) }}</span>
         </template>
         <template #actions="{ row }: { row: Sale }">
           <button class="button compact secondary" type="button" @click="openSaleDetail(row.id)">Ver detalhes</button>

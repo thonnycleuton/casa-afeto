@@ -1,6 +1,8 @@
+import os
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -28,6 +30,7 @@ def _product_response(db: Session, product: Product) -> ProductRead:
         id=product.id,
         name=product.name,
         base_unit=product.base_unit,
+        image_url=product.image_url,
         reference_price=product.reference_price,
         commercial_conversion_factor=product.commercial_conversion_factor,
         active=product.active,
@@ -56,6 +59,7 @@ def list_products(
             id=product.id,
             name=product.name,
             base_unit=product.base_unit,
+            image_url=product.image_url,
             reference_price=product.reference_price,
             commercial_conversion_factor=product.commercial_conversion_factor,
             active=product.active,
@@ -146,3 +150,55 @@ def check_inventory_availability(
     db: Session = Depends(get_db),
 ) -> AvailabilityRead:
     return inventory_service.check_availability(db, product_id, payload.quantity)
+
+
+# Image upload endpoint
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "uploads", "products")
+
+
+@router.post(
+    "/{product_id}/image",
+    response_model=ProductRead,
+)
+async def upload_product_image(
+    product_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> ProductRead:
+    """Upload an image for a product."""
+    # Validate file type
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.",
+        )
+
+    # Read and validate file size
+    content = await file.read()
+    if len(content) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem muito grande. Tamanho máximo: 5 MB.",
+        )
+
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    filename = f"{uuid.uuid4().hex}{ext}"
+
+    # Ensure upload directory exists
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    filepath = os.path.join(UPLOAD_DIR, filename)
+
+    # Save file
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    # Update product with image URL
+    from app.products.schemas import ProductUpdate
+
+    product = product_service.update_product(
+        db, product_id, ProductUpdate(image_url=f"/api/v1/products/uploads/{filename}")
+    )
+    return _product_response(db, product)

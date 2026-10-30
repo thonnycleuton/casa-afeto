@@ -45,9 +45,7 @@ function formatQuantity(value: string): string {
   return `${sign}${groupedInteger}${fraction ? `,${fraction}` : ''}`
 }
 
-function formatDateTime(isoString: string): string {
-  return new Date(isoString).toLocaleString('pt-BR')
-}
+import { formatDateTime } from '../utils/date'
 
 function calcBaseQuantity(item: PurchaseItem | typeof formItems.value[number]): string {
   const qty = Number(item.commercial_quantity)

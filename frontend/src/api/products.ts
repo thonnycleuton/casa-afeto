@@ -93,3 +93,12 @@ export function fetchReplenishmentList(
   const query = params.toString()
   return apiClient<ReplenishmentList>(`/api/v1/inventory/replenishment${query ? `?${query}` : ''}`)
 }
+
+export function uploadProductImage(id: number, file: File): Promise<Product> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiClient<Product>(`/api/v1/products/${id}/image`, {
+    method: 'POST',
+    body: formData,
+  })
+}

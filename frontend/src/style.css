@@ -2370,3 +2370,20 @@ td.numeric {
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.3);
 }
+
+/* --- Product image thumbnail in tables --- */
+
+.product-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.product-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}

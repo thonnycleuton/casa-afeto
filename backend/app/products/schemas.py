@@ -44,6 +44,7 @@ class ProductCreate(BaseModel):
     base_unit: BaseUnit
     reference_price: Decimal | None = None
     commercial_conversion_factor: Decimal | None = None
+    image_url: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -71,6 +72,7 @@ class ProductUpdate(BaseModel):
     base_unit: Optional[BaseUnit] = None
     reference_price: Optional[Decimal] = None
     commercial_conversion_factor: Optional[Decimal] = None
+    image_url: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -105,6 +107,7 @@ class ProductRead(BaseModel):
     id: int
     name: str
     base_unit: BaseUnit
+    image_url: Optional[str] = None
     reference_price: Optional[Decimal] = None
     commercial_conversion_factor: Optional[Decimal] = None
     active: bool

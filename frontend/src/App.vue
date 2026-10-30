@@ -23,6 +23,8 @@ import {
 import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate, UserCreateInput, UserResponse, UserUpdateInput } from './api/types'
 import { fetchUpcomingDates } from './api/customers'
 import { useAuth } from './composables/useAuth'
+import { formatDate } from './utils/date'
+import { uploadProductImage } from './api/products'
 import LoginView from './components/auth/LoginView.vue'
 import UserFormModal from './components/auth/UserFormModal.vue'
 import ForgotPasswordModal from './components/auth/ForgotPasswordModal.vue'
@@ -211,9 +213,9 @@ function beginEdit(product: Product): void {
   showProductModal.value = true
 }
 
-async function saveProduct(payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null }): Promise<void> {
+async function saveProduct(payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null; image_url?: string | null }): Promise<void> {
   await runAction(async () => {
-    const p: { name: string; base_unit: ProductUnit; reference_price?: string | null; commercial_conversion_factor?: string | null } = {
+    const p: { name: string; base_unit: ProductUnit; reference_price?: string | null; commercial_conversion_factor?: string | null; image_url?: string | null } = {
       name: payload.name,
       base_unit: payload.base_unit,
     }
@@ -222,6 +224,9 @@ async function saveProduct(payload: { id: number | null; name: string; base_unit
     }
     if (payload.commercial_conversion_factor) {
       p.commercial_conversion_factor = payload.commercial_conversion_factor
+    }
+    if (payload.image_url !== undefined) {
+      p.image_url = payload.image_url
     }
     if (payload.id === null) {
       await createProduct(p)
@@ -233,6 +238,21 @@ async function saveProduct(payload: { id: number | null; name: string; base_unit
     showProductModal.value = false
     editingProduct.value = null
     await loadProducts()
+    if (search.value.trim()) {
+      searchResults.value = await fetchProducts(search.value.trim())
+    }
+  })
+}
+
+async function handleUploadProductImage(productId: number, file: File): Promise<void> {
+  await runAction(async () => {
+    const updated = await uploadProductImage(productId, file)
+    notice.value = 'Foto do produto atualizada.'
+    await loadProducts()
+    // Update the editing product so the modal shows the new image
+    if (editingProduct.value && editingProduct.value.id === productId) {
+      editingProduct.value = updated
+    }
     if (search.value.trim()) {
       searchResults.value = await fetchProducts(search.value.trim())
     }
@@ -665,6 +685,17 @@ watch(upcomingDaysFilter, () => {
               :page="productsPage"
               @page-change="handleProductsPageChange"
             >
+              <template #cell-name="{ row }: { row: Product }">
+                <div class="product-name-cell">
+                  <img
+                    v-if="(row as Product).image_url"
+                    :src="`${import.meta.env.VITE_API_URL || ''}${(row as Product).image_url}`"
+                    alt=""
+                    class="product-thumb"
+                  />
+                  <span>{{ (row as Product).name }}</span>
+                </div>
+              </template>
               <template #cell-reference_price="{ row }: { row: Product }">
                 {{ (row as Product).reference_price ? formatCurrency((row as Product).reference_price) : '—' }}
               </template>
@@ -786,7 +817,7 @@ watch(upcomingDaysFilter, () => {
               <tbody>
                 <tr v-for="alert in expiryAlerts" :key="alert.batch_id">
                   <td><strong>{{ alert.product_name }}</strong></td>
-                  <td>{{ new Date(alert.expiry_date + 'T00:00:00').toLocaleDateString('pt-BR') }}</td>
+                  <td>{{ formatDate(alert.expiry_date) }}</td>
                   <td>
                     <span v-if="alert.days_until_expiry < 0" class="expiry-expired">
                       {{ Math.abs(alert.days_until_expiry) }}d vencido(s)
@@ -984,7 +1015,7 @@ watch(upcomingDaysFilter, () => {
               <tbody>
                 <tr v-for="item in upcomingDates" :key="item.id">
                   <td>
-                    <strong>{{ new Date(item.next_occurrence + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }) }}</strong>
+                    <strong>{{ formatDate(item.next_occurrence) }}</strong>
                   </td>
                   <td>{{ item.customer_name }}</td>
                   <td>{{ item.description }}</td>
@@ -1096,6 +1127,7 @@ watch(upcomingDaysFilter, () => {
           v-model:open="showProductModal"
           :product="editingProduct"
           @save="saveProduct"
+          @upload-image="handleUploadProductImage"
         />
 
         <!-- Inventory Modal -->

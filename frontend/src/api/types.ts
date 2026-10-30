@@ -43,6 +43,7 @@ export interface ProductInput {
   base_unit: ProductUnit
   reference_price?: string | null
   commercial_conversion_factor?: string | null
+  image_url?: string | null
 }
 
 export interface Product extends ProductInput {
@@ -50,6 +51,7 @@ export interface Product extends ProductInput {
   active: boolean
   reference_price?: string | null
   commercial_conversion_factor?: string | null
+  image_url?: string | null
   inventory_balance: string
   created_at: string
   updated_at: string

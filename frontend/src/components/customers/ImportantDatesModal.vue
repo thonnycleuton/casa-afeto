@@ -8,6 +8,7 @@ import {
   updateImportantDate,
 } from '../../api/customers'
 import type { ImportantDate, ImportantDateInput } from '../../api/types'
+import { formatDate } from '../../utils/date'
 
 const props = defineProps<{
   open: boolean
@@ -138,7 +139,7 @@ async function changeDateStatus(date: ImportantDate): Promise<void> {
 
 function displayImportantDate(date: ImportantDate): string {
   if (!date.recurring || date.day == null || date.month == null) {
-    return date.date ? new Date(`${date.date}T00:00:00`).toLocaleDateString('pt-BR') : ''
+    return date.date ? formatDate(date.date) : ''
   }
   return `${String(date.day).padStart(2, '0')}/${String(date.month).padStart(2, '0')} (anual)`
 }

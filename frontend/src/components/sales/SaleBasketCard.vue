@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import type { CompositionItem, Product, SaleBasket, SaleStatus } from '../../api/types'
 import CompositionEditor from '../CompositionEditor.vue'
+import { formatDateTime } from '../../utils/date'
 
 const props = withDefaults(
   defineProps<{
@@ -309,7 +310,7 @@ function formatCurrency(val: string): string {
           <h6>Histórico de Entregas:</h6>
           <ul>
             <li v-for="dh in basket.delivery_histories" :key="dh.id">
-              Entregue por <strong>{{ dh.operator_name }}</strong> em {{ new Date(dh.delivered_at).toLocaleString('pt-BR') }}
+              Entregue por <strong>{{ dh.operator_name }}</strong> em {{ formatDateTime(dh.delivered_at) }}
             </li>
           </ul>
         </div>
@@ -317,7 +318,7 @@ function formatCurrency(val: string): string {
           <h6>Alterações de Composição:</h6>
           <ul>
             <li v-for="ch in basket.composition_histories" :key="ch.id">
-              Alterado por <strong>{{ ch.operator_name }}</strong> em {{ new Date(ch.created_at).toLocaleString('pt-BR') }}
+              Alterado por <strong>{{ ch.operator_name }}</strong> em {{ formatDateTime(ch.created_at) }}
             </li>
           </ul>
         </div>

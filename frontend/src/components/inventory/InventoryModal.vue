@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import BaseModal from '../ui/BaseModal.vue'
 import type { InventoryMovement, Product, StockBatch } from '../../api/types'
+import { formatDate, formatDateTime, formatDateShort } from '../../utils/date'
 
 const props = defineProps<{
   open: boolean
@@ -114,24 +115,6 @@ function formatCurrency(value: string | null | undefined): string {
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
 function submitEntry(): void {
   if (entryQuantityError.value) return
   if (entryCostError.value) return
@@ -187,14 +170,6 @@ function expiryStatusClass(status: string | null | undefined): string {
   if (status === 'EXPIRED') return 'inv-expiry-expired'
   if (status === 'WARNING') return 'inv-expiry-warning'
   return 'inv-expiry-ok'
-}
-
-function formatDateShort(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
 }
 
 function getMoveIconClass(type: string): string {

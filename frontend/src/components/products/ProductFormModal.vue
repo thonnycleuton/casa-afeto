@@ -10,7 +10,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'save', payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null }): void
+  (e: 'save', payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null; image_url?: string | null }): void
+  (e: 'upload-image', productId: number, file: File): void
 }>()
 
 const units: ProductUnit[] = ['UN', 'KG', 'G', 'L', 'ML']
@@ -21,6 +22,8 @@ const referencePrice = ref('')
 const commercialConversionFactor = ref('')
 const apiError = ref('')
 const submitted = ref(false)
+const imagePreview = ref<string | null>(null)
+const imageLoading = ref(false)
 
 const nameError = computed(() => {
   if (!submitted.value) return ''
@@ -59,12 +62,14 @@ watch(
       unit.value = product.base_unit
       referencePrice.value = product.reference_price ?? ''
       commercialConversionFactor.value = product.commercial_conversion_factor ?? ''
+      imagePreview.value = product.image_url ? `${import.meta.env.VITE_API_URL || ''}${product.image_url}` : null
     } else if (isOpen) {
       isEdit.value = false
       name.value = ''
       unit.value = 'UN'
       referencePrice.value = ''
       commercialConversionFactor.value = ''
+      imagePreview.value = null
     }
   },
 )
@@ -87,7 +92,53 @@ function submit(): void {
     base_unit: unit.value,
     reference_price: referencePrice.value.trim() || null,
     commercial_conversion_factor: commercialConversionFactor.value.trim() || null,
+    image_url: props.product?.image_url || undefined,
   })
+}
+
+async function handleImageUpload(event: Event): Promise<void> {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file || !props.product?.id) return
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    apiError.value = 'Selecione uma imagem (JPEG, PNG, WebP ou GIF).'
+    target.value = ''
+    return
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    apiError.value = 'Imagem muito grande. Tamanho máximo: 5 MB.'
+    target.value = ''
+    return
+  }
+
+  // Show preview immediately
+  imagePreview.value = URL.createObjectURL(file)
+  imageLoading.value = true
+  apiError.value = ''
+
+  try {
+    emit('upload-image', props.product.id, file)
+  } finally {
+    imageLoading.value = false
+  }
+}
+
+function removeImage(): void {
+  imagePreview.value = null
+  if (props.product) {
+    emit('save', {
+      id: props.product.id,
+      name: props.product.name,
+      base_unit: props.product.base_unit,
+      reference_price: props.product.reference_price ?? null,
+      commercial_conversion_factor: props.product.commercial_conversion_factor ?? null,
+      image_url: null,
+    })
+  }
 }
 </script>
 
@@ -141,6 +192,23 @@ function submit(): void {
         <p v-if="conversionFactorError" class="field-error" role="alert">{{ conversionFactorError }}</p>
         <p v-else class="field-hint">Quantas unidades-base há na unidade comercial. Ex: 12 para caixa com 12 unidades.</p>
       </div>
+      <div v-if="isEdit" class="form-group">
+        <label>Foto do produto</label>
+        <div v-if="imagePreview" class="product-image-preview">
+          <img :src="imagePreview" alt="Foto do produto" />
+          <button type="button" class="product-image-remove" title="Remover foto" @click="removeImage">✕</button>
+        </div>
+        <div class="product-image-upload">
+          <input
+            id="pf-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="form-input"
+            @change="handleImageUpload"
+          />
+          <p class="field-hint">JPEG, PNG, WebP ou GIF. Máximo 5 MB.</p>
+        </div>
+      </div>
     </template>
     <template #footer>
       <button class="btn" type="button" @click="emit('update:open', false)">Cancelar</button>
@@ -150,3 +218,42 @@ function submit(): void {
     </template>
   </BaseModal>
 </template>
+
+<style scoped>
+.product-image-preview {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+.product-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-image-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+.product-image-remove:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+</style>

@@ -6,6 +6,7 @@ import SaleBasketCard from './SaleBasketCard.vue'
 import PaymentModal from './PaymentModal.vue'
 import SaleReopenModal from './SaleReopenModal.vue'
 import SaleStatusBadge from './SaleStatusBadge.vue'
+import { formatDateTime } from '../../utils/date'
 
 const props = withDefaults(
   defineProps<{
@@ -344,7 +345,7 @@ defineExpose({
               <div v-for="p in payments" :key="p.id" class="payment-item">
                 <span class="payment-method">{{ p.method === 'PIX' ? 'PIX' : 'Cartão' }}</span>
                 <span class="payment-amount">{{ formatCurrency(p.amount) }}</span>
-                <span class="payment-date">{{ new Date(p.created_at).toLocaleString('pt-BR') }}</span>
+                <span class="payment-date">{{ formatDateTime(p.created_at) }}</span>
               </div>
             </div>
           </div>
@@ -367,7 +368,7 @@ defineExpose({
           <div class="panel-body">
             <ul class="reopen-list">
               <li v-for="h in sale.reopen_histories" :key="h.id">
-                <strong>{{ h.operator_name }}</strong> em {{ new Date(h.created_at).toLocaleString('pt-BR') }}:
+                <strong>{{ h.operator_name }}</strong> em {{ formatDateTime(h.created_at) }}:
                 <em>"{{ h.reason }}"</em>
               </li>
             </ul>
