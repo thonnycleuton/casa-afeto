@@ -534,6 +534,70 @@ Esses recursos são explicitamente fora do escopo de M1.
 
 ---
 
+# 11.2. Imagem do produto
+
+## AC-46 — Upload de imagem do produto
+
+**Dado** que existe um produto
+**Quando** o operador envia uma imagem válida (JPEG, PNG, WebP ou GIF, até 5 MB)
+**Então** a imagem é armazenada
+**E** o campo `image_url` do produto é atualizado com o caminho da imagem
+**E** a imagem é acessível pelo caminho armazenado.
+
+---
+
+## AC-47 — Produto sem imagem
+
+**Dado** que um produto foi criado sem imagem
+**Então** o campo `image_url` é `null`
+**E** o produto é criado com sucesso.
+
+---
+
+## AC-48 — Rejeitar imagem com tipo inválido
+
+**Dado** que o operador tenta enviar uma imagem com tipo não permitido (por exemplo, BMP, TIFF)
+**Então** a operação é rejeitada
+**E** o `image_url` do produto não é alterado
+**E** o sistema informa ao operador que o tipo de arquivo não é permitido.
+
+---
+
+## AC-49 — Rejeitar imagem maior que 5 MB
+
+**Dado** que o operador tenta enviar uma imagem maior que 5 MB
+**Então** a operação é rejeitada
+**E** o `image_url` do produto não é alterado
+**E** o sistema informa ao operador que a imagem excede o tamanho máximo.
+
+---
+
+## AC-50 — Substituir imagem existente
+
+**Dado** que um produto já possui uma imagem
+**Quando** o operador envia uma nova imagem
+**Então** o `image_url` é atualizado com o caminho da nova imagem
+**E** a nova imagem é acessível.
+
+---
+
+## AC-51 — Imagem visível na lista de produtos
+
+**Dado** que um produto possui uma imagem
+**Quando** o operador visualiza a lista de produtos
+**Então** a imagem é exibida como thumbnail ao lado do nome do produto.
+
+---
+
+## AC-52 — Imagem preservada após desativação
+
+**Dado** que um produto possui uma imagem
+**Quando** o produto é desativado
+**Então** o `image_url` permanece inalterado
+**E** a imagem continua acessível.
+
+---
+
 # 12. Expectativas de testes automatizados
 
 Cada critério de aceitação envolvendo comportamento de negócio determinístico deve ser coberto por testes automatizados quando tecnicamente apropriado.

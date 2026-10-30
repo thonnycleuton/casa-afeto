@@ -64,7 +64,8 @@ Gestão de Produtos
 ├── UC-M1-03 Ativar Produto
 ├── UC-M1-04 Desativar Produto
 ├── UC-M1-05 Listar Produtos
-└── UC-M1-06 Buscar Produtos
+├── UC-M1-06 Buscar Produtos
+└── UC-M1-12 Upload de Foto do Produto
 
 Gestão de Estoque
 │
@@ -163,6 +164,79 @@ Se o operador informar `reference_price` com mais de duas casas decimais:
 Existe um novo produto ativo com saldo zero de estoque.
 
 Nenhuma movimentação de estoque é criada.
+
+---
+
+# 4.1 UC-M1-12 — Upload de Foto do Produto
+
+## Objetivo
+
+Permitir que o operador envie uma foto para um produto.
+
+## Pré-condições
+
+* O produto existe.
+
+## Fluxo principal
+
+1. O operador abre o produto (na lista ou no modal de edição).
+2. O operador escolhe enviar uma foto.
+3. O sistema solicita um arquivo de imagem.
+4. O operador seleciona um arquivo (JPEG, PNG, WebP ou GIF).
+5. O sistema valida o arquivo:
+   - O tipo deve ser JPEG, PNG, WebP ou GIF (`PROD-003`);
+   - O tamanho não deve exceder 5 MB.
+6. O sistema armazena a imagem.
+7. O sistema atualiza o campo `image_url` do produto com o caminho da imagem.
+8. O sistema confirma o upload com sucesso.
+9. A imagem é exibida como thumbnail na lista de produtos e como preview no modal de edição.
+
+## Exemplo
+
+```
+Produto: Chocolate
+Imagem: chocolate.jpg (200 KB, JPEG)
+```
+
+Resultado:
+
+```
+Produto: Chocolate
+image_url: /api/v1/products/uploads/<uuid>.jpg
+```
+
+## Fluxos alternativos
+
+### A1 — Tipo de arquivo inválido
+
+Se o operador enviar um arquivo com tipo não permitido (por exemplo, BMP, TIFF):
+
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador que apenas JPEG, PNG, WebP e GIF são aceitos.
+3. O `image_url` existente permanece inalterado.
+
+### A2 — Arquivo muito grande
+
+Se o arquivo exceder 5 MB:
+
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador que o tamanho máximo é 5 MB.
+3. O `image_url` existente permanece inalterado.
+
+### A3 — Produto não encontrado
+
+Se o produto referenciado não existir:
+
+1. O sistema rejeita a operação.
+2. O sistema informa ao operador que o produto não foi encontrado.
+
+## Comportamento importante
+
+Se o produto já possui uma imagem, enviar uma nova imagem substitui logicamente a referência anterior (o `image_url` é atualizado). A imagem antiga não é removida fisicamente, mas deixa de ser referenciada pelo produto.
+
+## Pós-condições
+
+O produto possui uma foto associada, visível na lista de produtos e no modal de edição.
 
 ---
 

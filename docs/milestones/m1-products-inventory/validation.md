@@ -331,6 +331,126 @@ Observações:
 
 ---
 
+## VAL-M1-11 — Upload de imagem do produto
+
+### Etapas
+
+1. Abra `Chocolate Test`.
+2. Envie uma foto válida (JPEG, PNG, WebP ou GIF, até 5 MB).
+3. Salve.
+4. Retorne à lista de produtos.
+
+### Resultado esperado
+
+* A imagem é enviada com sucesso.
+* O produto exibe a foto como thumbnail na lista de produtos.
+* A foto é visível no modal de edição do produto.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-12 — Rejeitar imagem com tipo inválido
+
+### Etapas
+
+1. Abra `Chocolate Test`.
+2. Tente enviar um arquivo com tipo não permitido (por exemplo, BMP, TIFF).
+3. Envie a operação.
+
+### Resultado esperado
+
+* O sistema rejeita a operação.
+* O `image_url` existente permanece inalterado.
+* O sistema informa ao operador que o tipo de arquivo não é permitido.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-13 — Rejeitar imagem maior que 5 MB
+
+### Etapas
+
+1. Abra `Chocolate Test`.
+2. Tente enviar uma imagem maior que 5 MB.
+3. Envie a operação.
+
+### Resultado esperado
+
+* O sistema rejeita a operação.
+* O `image_url` existente permanece inalterado.
+* O sistema informa ao operador que a imagem excede o tamanho máximo.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-14 — Substituir imagem existente
+
+### Etapas
+
+1. Abra `Chocolate Test` (que já possui uma imagem).
+2. Envie uma nova foto.
+3. Salve.
+4. Retorne à lista de produtos.
+
+### Resultado esperado
+
+* A nova imagem é exibida como thumbnail na lista de produtos.
+* A imagem anterior não é mais exibida.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
+## VAL-M1-15 — Imagem preservada após desativação
+
+### Etapas
+
+1. Verifique que `Chocolate Test` possui uma imagem.
+2. Desative o produto.
+3. Verifique se a imagem ainda está associada ao produto.
+
+### Resultado esperado
+
+* O `image_url` permanece inalterado.
+* A imagem continua acessível.
+
+### Resultado
+
+* [ ] PASS
+* [ ] FAIL
+* [ ] BLOCKED
+
+Observações:
+
+---
+
 # 6. Entrada de estoque
 
 ## VAL-M1-06 — Adicionar estoque inicial
@@ -855,6 +975,11 @@ Antes de aceitar M1, confirme:
 * [ ] O preço de referência pode ser editado.
 * [ ] Preço de referência negativo é rejeitado.
 * [ ] Preço de referência com mais de duas casas decimais é rejeitado.
+* [ ] É possível enviar uma foto para o produto.
+* [ ] Imagem com tipo inválido é rejeitada.
+* [ ] Imagem maior que 5 MB é rejeitada.
+* [ ] A nova imagem substitui a anterior.
+* [ ] A imagem é preservada após desativação do produto.
 * [ ] Produtos podem ser editados.
 * [ ] Produtos podem ser ativados/desativados.
 * [ ] A desativação não exclui informações históricas.

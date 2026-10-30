@@ -160,6 +160,7 @@ Um produto deve conter, no mínimo:
 | `base_unit`       |         Sim | Unidade controlada usada no estoque (`UN`, `KG`, `G`, `L`, `ML`)     |
 | `active`          |         Sim | Se o produto está disponível para novas operações (inicialmente true) |
 | `reference_price` |          Não | Preço de referência comercial do produto (Decimal, 2 casas, ≥ 0, anulável) |
+| `image_url`       |          Não | Caminho ou URL da foto do produto (String, até 500 caracteres, anulável) |
 
 A implementação pode conter metadados técnicos, como:
 
@@ -256,6 +257,25 @@ Regras:
 5. Valores negativos são rejeitados.
 6. Precisão de exatamente duas casas decimais. Valores com mais de duas casas são rejeitados.
 7. O valor zero (`0.00`) é permitido e distinto de ausência de preço (`null`).
+
+---
+
+# 12.1 Imagem do produto
+
+Um produto pode ter uma foto associada (`image_url`).
+
+A imagem é opcional. Quando ausente (`null`), o produto não exibe foto.
+
+Regras:
+
+1. `image_url` é opcional. Um produto pode ser criado sem imagem.
+2. A imagem é enviada por meio de upload de arquivo (`PROD-003`).
+3. Os tipos de arquivo permitidos são: JPEG, PNG, WebP e GIF.
+4. O tamanho máximo da imagem é 5 MB.
+5. Ao enviar uma nova imagem, a imagem anterior é substituída logicamente (o campo `image_url` é atualizado com o novo caminho).
+6. A imagem é armazenada como arquivo estático e o campo `image_url` contém o caminho de acesso relativo.
+7. Desativar o produto não remove a imagem associada.
+8. A imagem do produto é exibida como thumbnail na lista de produtos e como preview no modal de edição.
 
 ---
 
@@ -713,7 +733,9 @@ No mínimo:
 * tentativa de modificar `base_unit` após a existência de movimentações de estoque;
 * tentativa de usar um produto inativo quando um produto ativo é exigido;
 * `reference_price` negativo;
-* `reference_price` com mais de duas casas decimais.
+* `reference_price` com mais de duas casas decimais;
+* tipo de arquivo de imagem não permitido (apenas JPEG, PNG, WebP, GIF);
+* imagem maior que 5 MB.
 
 ### Estoque
 
@@ -754,6 +776,10 @@ Movimentações existentes de estoque não devem ser reescritas ou excluídas si
 
 A desativação do produto não remove informações históricas.
 
+### Invariante de imagem
+
+A imagem do produto, quando configurada, permanece associada ao produto mesmo após desativação.
+
 ---
 
 # 30. Requisitos de teste
@@ -769,7 +795,10 @@ No mínimo, os testes devem cobrir:
 * ativar produto;
 * desativar produto;
 * listar produtos;
-* buscar produtos.
+* buscar produtos;
+* upload de imagem do produto;
+* rejeitar imagem com tipo inválido;
+* rejeitar imagem maior que 5 MB.
 
 ## Estoque
 
@@ -887,9 +916,11 @@ A ordem de implementação recomendada é:
        ↓
 11. Verificação de Disponibilidade
        ↓
-12. Testes Automatizados
+12. Upload de Imagem do Produto
        ↓
-13. Validação Manual
+13. Testes Automatizados
+       ↓
+14. Validação Manual
 ```
 
 O agente pode ajustar essa sequência se a arquitetura existente do projeto tornar outra ordem mais simples, mas não deve ampliar o escopo de negócio.
@@ -902,6 +933,7 @@ M1 só pode ser considerado concluído quando:
 
 * todas as funcionalidades dentro do escopo estiverem implementadas;
 * todas as regras de negócio estabelecidas para M1 estiverem cobertas;
+* o upload de imagem do produto funcionar corretamente;
 * os testes automatizados passarem;
 * estoque negativo for impedido;
 * movimentações históricas de estoque forem preservadas;
