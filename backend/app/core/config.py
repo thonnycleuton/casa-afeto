@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "noreply@casaafeto.com"
     SMTP_FROM_NAME: str = "Casa Afeto"
 
+    # Frontend URL (for password reset links)
+    FRONTEND_URL: str = "http://localhost:5173"
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:

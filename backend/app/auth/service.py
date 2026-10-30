@@ -30,8 +30,10 @@ from app.auth.utils import (
     decode_token,
     hash_password,
     hash_token,
+    send_password_reset_email,
     verify_password,
 )
+from app.core.config import settings
 from app.core.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -238,13 +240,13 @@ def request_password_reset(
     db.add(prt)
     db.commit()
 
-    # TODO: Send email with reset link
-    # The reset link should include the raw token as a query parameter
-    logger.info(
-        "Password reset requested for user %s. Token: %s",
-        user.email,
-        reset_token,
-    )
+    # Send email with reset link
+    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+    try:
+        send_password_reset_email(user.email, user.full_name, reset_link)
+    except Exception:
+        logger.exception("Failed to send password reset email to %s", user.email)
+        # Don't fail the request if email fails; log and continue
 
     return True
 

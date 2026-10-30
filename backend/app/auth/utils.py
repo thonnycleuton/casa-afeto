@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from jose import JWTError, jwt
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # JWT configuration
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
@@ -69,3 +72,43 @@ def create_reset_token() -> str:
     """Create a random token for password reset."""
     import secrets
     return secrets.token_urlsafe(32)
+
+
+def send_password_reset_email(
+    to_email: str, full_name: str, reset_link: str
+) -> None:
+    """Send a password reset email via SMTP."""
+    import aiosmtplib
+    from email.message import EmailMessage
+
+    from app.core.config import settings
+
+    if not settings.SMTP_HOST:
+        logger.warning(
+            "SMTP not configured. Password reset link for %s: %s",
+            to_email,
+            reset_link,
+        )
+        return
+
+    msg = EmailMessage()
+    msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+    msg["To"] = to_email
+    msg["Subject"] = "Recuperação de senha — Casa Afeto"
+    msg.set_content(
+        f"Olá {full_name},\n\n"
+        f"Clique no link abaixo para redefinir sua senha:\n\n"
+        f"{reset_link}\n\n"
+        f"O link expira em 1 hora.\n"
+        f"Se você não pediu para recuperar a senha, ignore este e-mail."
+    )
+
+    aiosmtplib.send(
+        msg,
+        hostname=settings.SMTP_HOST,
+        port=settings.SMTP_PORT,
+        username=settings.SMTP_USER,
+        password=settings.SMTP_PASSWORD,
+        start_tls=True,
+        timeout=10,
+    )

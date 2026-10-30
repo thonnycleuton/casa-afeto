@@ -8,6 +8,10 @@ const email = ref('')
 const password = ref('')
 const localError = ref('')
 
+const emit = defineEmits<{
+  (e: 'showForgotPassword'): void
+}>()
+
 async function handleSubmit() {
   localError.value = ''
   const success = await login(email.value, password.value)
@@ -57,6 +61,10 @@ async function handleSubmit() {
         <button type="submit" class="btn-login" :disabled="loading">
           <span v-if="loading" class="spinner"></span>
           <span v-else>Entrar</span>
+        </button>
+
+        <button type="button" class="btn-forgot" @click="emit('showForgotPassword')">
+          Esqueci minha senha
         </button>
       </form>
     </div>
@@ -164,6 +172,20 @@ async function handleSubmit() {
 .btn-login:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-forgot {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn-forgot:hover {
+  opacity: 0.8;
 }
 
 .spinner {

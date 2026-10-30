@@ -25,6 +25,8 @@ import { fetchUpcomingDates } from './api/customers'
 import { useAuth } from './composables/useAuth'
 import LoginView from './components/auth/LoginView.vue'
 import UserFormModal from './components/auth/UserFormModal.vue'
+import ForgotPasswordModal from './components/auth/ForgotPasswordModal.vue'
+import ResetPasswordModal from './components/auth/ResetPasswordModal.vue'
 import {
   fetchUsers,
   createUser,
@@ -110,7 +112,27 @@ const showUserModal = ref(false)
 const editingUser = ref<UserResponse | null>(null)
 const userFormRef = ref<InstanceType<typeof UserFormModal> | null>(null)
 
+// Password reset state
+const showForgotPassword = ref(false)
+const showResetPassword = ref(false)
+
 const isAdmin = computed(() => user.value?.role === 'admin')
+
+// Detect reset password token in URL
+const hasResetToken = computed(() => {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return !!params.get('token')
+  } catch {
+    return false
+  }
+})
+
+watch(hasResetToken, (hasToken) => {
+  if (hasToken) {
+    showResetPassword.value = true
+  }
+}, { immediate: true })
 
 const sectionTitle = computed(() => ({
   products: 'Produtos',
@@ -375,7 +397,13 @@ watch(upcomingDaysFilter, () => {
 
 <template>
   <!-- Login screen -->
-  <LoginView v-if="!isAuthenticated" />
+  <LoginView v-if="!isAuthenticated" @show-forgot-password="showForgotPassword = true" />
+
+  <!-- Reset password modal (shown when token in URL) -->
+  <ResetPasswordModal v-if="!isAuthenticated" v-model:open="showResetPassword" @success="showResetPassword = false" />
+
+  <!-- Forgot password modal -->
+  <ForgotPasswordModal v-if="!isAuthenticated" v-model:open="showForgotPassword" />
 
   <!-- Main app -->
   <div v-else class="app-shell">
