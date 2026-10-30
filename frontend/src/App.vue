@@ -20,14 +20,21 @@ import {
   fetchStockBatches,
   updateProduct,
 } from './api/products'
-import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate } from './api/types'
+import type { ExpiryAlert, InventoryMovement, Product, ProductUnit, ReplenishmentItem, StockBatch, UpcomingDate, UserResponse } from './api/types'
 import { fetchUpcomingDates } from './api/customers'
 import { useAuth } from './composables/useAuth'
 import LoginView from './components/auth/LoginView.vue'
+import UserFormModal from './components/auth/UserFormModal.vue'
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deactivateUser,
+} from './api/auth'
 
 const { isAuthenticated, user, logout, init } = useAuth()
 
-const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates'>('products')
+const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates' | 'users'>('products')
 
 // Theme management
 const isLightTheme = ref(false)
@@ -97,6 +104,14 @@ const inventoryProduct = ref<Product | null>(null)
 // DataTable page
 const productsPage = ref(1)
 
+// Users state (admin only)
+const users = ref<UserResponse[]>([])
+const showUserModal = ref(false)
+const editingUser = ref<UserResponse | null>(null)
+const userFormRef = ref<InstanceType<typeof UserFormModal> | null>(null)
+
+const isAdmin = computed(() => user.value?.role === 'admin')
+
 const sectionTitle = computed(() => ({
   products: 'Produtos',
   inventory: 'Estoque',
@@ -107,6 +122,7 @@ const sectionTitle = computed(() => ({
   expiry: 'Vencimentos',
   replenishment: 'Reposição',
   importantDates: 'Datas Afetivas',
+  users: 'Usuários',
 })[section.value])
 
 const productColumns = computed(() => [
@@ -289,6 +305,43 @@ async function loadUpcomingDates(): Promise<void> {
   upcomingDates.value = list.items
 }
 
+async function loadUsers(): Promise<void> {
+  users.value = await fetchUsers()
+}
+
+function beginCreateUser(): void {
+  editingUser.value = null
+  showUserModal.value = true
+}
+
+function beginEditUser(userItem: UserResponse): void {
+  editingUser.value = userItem
+  showUserModal.value = true
+}
+
+async function saveUser(payload: { email?: string; password?: string; full_name: string; role: 'admin' | 'operator' }): Promise<void> {
+  await runAction(async () => {
+    if (editingUser.value) {
+      await updateUser(editingUser.value.id, { full_name: payload.full_name, role: payload.role })
+      notice.value = 'Usuário atualizado.'
+    } else {
+      await createUser({ email: payload.email!, password: payload.password!, full_name: payload.full_name, role: payload.role })
+      notice.value = 'Usuário criado.'
+    }
+    showUserModal.value = false
+    editingUser.value = null
+    await loadUsers()
+  })
+}
+
+async function handleDeactivateUser(userItem: UserResponse): Promise<void> {
+  await runAction(async () => {
+    await deactivateUser(userItem.id)
+    notice.value = 'Usuário desativado.'
+    await loadUsers()
+  })
+}
+
 watch(section, (newSection) => {
   if (newSection === 'products' || newSection === 'inventory') {
     void runAction(loadProducts)
@@ -301,6 +354,9 @@ watch(section, (newSection) => {
   }
   if (newSection === 'importantDates') {
     void runAction(loadUpcomingDates)
+  }
+  if (newSection === 'users') {
+    void runAction(loadUsers)
   }
 })
 
@@ -445,6 +501,20 @@ watch(upcomingDaysFilter, () => {
             <path d="M7 14v2l3 3 3-3v-2M4 7H2l1 3 1-3M16 7h2l-1 3-1-3"/>
           </svg>
           <span>Datas Afetivas</span>
+        </button>
+        <button
+          v-if="isAdmin"
+          type="button"
+          class="nav-item"
+          :class="{ active: section === 'users' }"
+          :aria-current="section === 'users' ? 'page' : undefined"
+          @click="section = 'users'"
+        >
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+            <circle cx="7" cy="6" r="3" />
+            <path d="M2.5 16c0-2.5 1.8-4 4.5-4s4.5 1.5 4.5 4M14 5.5a2.5 2.5 0 0 1 0 5M13 12c2.2.3 3.5 1.6 3.5 4" />
+          </svg>
+          <span>Usuários</span>
         </button>
       </nav>
 
@@ -905,6 +975,87 @@ watch(upcomingDaysFilter, () => {
           </div>
         </section>
 
+        <!-- Users Section (admin only) -->
+        <section v-if="section === 'users'" aria-labelledby="users-heading">
+          <div class="page-heading">
+            <div>
+              <p class="page-eyebrow">Administração</p>
+              <h1 id="users-heading">Usuários</h1>
+              <p class="page-description">Gerencie os usuários do sistema.</p>
+            </div>
+            <button type="button" class="btn primary" @click="beginCreateUser">
+              Novo usuário
+            </button>
+          </div>
+
+          <div v-if="users.length === 0" class="card">
+            <div class="empty-state">
+              <span class="empty-icon" aria-hidden="true">👤</span>
+              <strong>Nenhum usuário encontrado.</strong>
+              <span>Crie o primeiro usuário para começar.</span>
+            </div>
+          </div>
+
+          <div v-else class="card table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Função</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in users" :key="u.id">
+                  <td><strong>{{ u.full_name }}</strong></td>
+                  <td>{{ u.email }}</td>
+                  <td>
+                    <span class="status-pill" :class="u.role === 'admin' ? 'status-info' : ''">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      {{ u.role === 'admin' ? 'Administrador' : 'Operador' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="u.is_active" class="status-pill status-success">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      Ativo
+                    </span>
+                    <span v-else class="status-pill status-error">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      Desativado
+                    </span>
+                  </td>
+                  <td class="row-actions">
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Editar"
+                      @click="beginEditUser(u)"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                        <path d="M11.5 3.5l3 3M3 17l1-4 7-7 4 4-7 7-5 0Z" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="u.is_active && u.id !== user?.id"
+                      type="button"
+                      class="btn-icon btn-icon-danger"
+                      title="Desativar"
+                      @click="handleDeactivateUser(u)"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                        <path d="M5 5l10 10M15 5L5 15" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <TemplatesView v-if="section === 'templates'" />
         <CustomersView v-if="section === 'customers'" />
         <SalesView v-if="section === 'sales'" />
@@ -926,6 +1077,14 @@ watch(upcomingDaysFilter, () => {
           :batches="batches"
           @entry="handleInventoryEntry"
           @adjustment="handleInventoryAdjustment"
+        />
+
+        <!-- User Form Modal -->
+        <UserFormModal
+          ref="userFormRef"
+          v-model:open="showUserModal"
+          :user="editingUser"
+          @save="saveUser"
         />
       </main>
     </div>
