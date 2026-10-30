@@ -113,6 +113,14 @@ def login(db: Session, request: LoginRequest) -> AuthTokens:
             detail="Email ou senha inválidos",
         )
 
+    # Revoke all existing refresh tokens for this user
+    db.execute(
+        RefreshToken.__table__.update().where(
+            RefreshToken.user_id == user.id
+        ).values(is_revoked=True)
+    )
+    db.commit()
+
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)
 
@@ -166,8 +174,12 @@ def refresh_tokens(
             detail="Usuário não encontrado ou desativado",
         )
 
-    # Revoke old refresh token
-    stored.is_revoked = True
+    # Revoke all refresh tokens for this user
+    db.execute(
+        RefreshToken.__table__.update().where(
+            RefreshToken.user_id == user.id
+        ).values(is_revoked=True)
+    )
     db.commit()
 
     # Issue new tokens
@@ -367,13 +379,21 @@ def update_user(
     return UserResponse.model_validate(user)
 
 
-def deactivate_user(db: Session, user_id: int) -> UserResponse:
+def deactivate_user(
+    db: Session, user_id: int, admin_user: Optional[User] = None
+) -> UserResponse:
     """Deactivate a user (soft delete, admin only)."""
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuário não encontrado",
+        )
+
+    if admin_user is not None and user.id == admin_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Você não pode desativar a si mesmo",
         )
 
     user.is_active = False

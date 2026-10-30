@@ -88,4 +88,4 @@ def api_deactivate_user(
     db: Session = Depends(get_db),
 ) -> UserResponse:
     """Deactivate a user (soft delete, admin only)."""
-    return deactivate_user(db, user_id)
+    return deactivate_user(db, user_id, admin_user=admin_user)
