@@ -38,6 +38,8 @@ import {
 
 const { isAuthenticated, user, logout, init } = useAuth()
 
+const apiBaseUrl = computed(() => import.meta.env.VITE_API_URL ?? '')
+
 const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates' | 'users'>('products')
 
 // Theme management
@@ -689,7 +691,7 @@ watch(upcomingDaysFilter, () => {
                 <div class="product-name-cell">
                   <img
                     v-if="(row as Product).image_url"
-                    :src="`${import.meta.env.VITE_API_URL || ''}${(row as Product).image_url}`"
+                    :src="`${apiBaseUrl}${(row as Product).image_url}`"
                     alt=""
                     class="product-thumb"
                   />
