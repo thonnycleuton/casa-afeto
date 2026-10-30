@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
-class UserRoleSchema(BaseModel):
-    ADMIN = "admin"
-    OPERATOR = "operator"
+class UserRoleSchema:
+    """Constants for user roles."""
+    ADMIN: ClassVar[str] = "admin"
+    OPERATOR: ClassVar[str] = "operator"
 
 
 # --- Login ---
