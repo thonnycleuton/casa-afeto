@@ -2387,3 +2387,16 @@ td.numeric {
   border: 1px solid var(--color-border);
   flex-shrink: 0;
 }
+
+.product-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+}
+
+.product-thumb-placeholder svg {
+  width: 18px;
+  height: 18px;
+}

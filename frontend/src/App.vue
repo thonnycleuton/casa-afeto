@@ -215,7 +215,8 @@ function beginEdit(product: Product): void {
   showProductModal.value = true
 }
 
-async function saveProduct(payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null; image_url?: string | null }): Promise<void> {
+async function saveProduct(payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null; image_url?: string | null; pendingImage?: File | null }): Promise<void> {
+  const pendingImage = payload.pendingImage
   await runAction(async () => {
     const p: { name: string; base_unit: ProductUnit; reference_price?: string | null; commercial_conversion_factor?: string | null; image_url?: string | null } = {
       name: payload.name,
@@ -230,12 +231,19 @@ async function saveProduct(payload: { id: number | null; name: string; base_unit
     if (payload.image_url !== undefined) {
       p.image_url = payload.image_url
     }
+    let newProductId: number | undefined
     if (payload.id === null) {
-      await createProduct(p)
+      const created = await createProduct(p)
+      newProductId = created.id
       notice.value = 'Produto criado.'
     } else {
       await updateProduct(payload.id, p)
       notice.value = 'Produto atualizado.'
+    }
+    // If there's a pending image (from new product creation), upload it now
+    if (pendingImage && newProductId) {
+      await uploadProductImage(newProductId, pendingImage)
+      notice.value = 'Produto criado com foto.'
     }
     showProductModal.value = false
     editingProduct.value = null
@@ -695,6 +703,12 @@ watch(upcomingDaysFilter, () => {
                     alt=""
                     class="product-thumb"
                   />
+                  <div v-else class="product-thumb product-thumb-placeholder" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none">
+                      <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                  </div>
                   <span>{{ (row as Product).name }}</span>
                 </div>
               </template>

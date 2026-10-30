@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'save', payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null; image_url?: string | null }): void
+  (e: 'save', payload: { id: number | null; name: string; base_unit: ProductUnit; reference_price: string | null; commercial_conversion_factor: string | null; image_url?: string | null; pendingImage?: File | null }): void
   (e: 'upload-image', productId: number, file: File): void
 }>()
 
@@ -24,6 +24,7 @@ const apiError = ref('')
 const submitted = ref(false)
 const imagePreview = ref<string | null>(null)
 const imageLoading = ref(false)
+const pendingImageFile = ref<File | null>(null)
 
 const nameError = computed(() => {
   if (!submitted.value) return ''
@@ -70,6 +71,7 @@ watch(
       referencePrice.value = ''
       commercialConversionFactor.value = ''
       imagePreview.value = null
+      pendingImageFile.value = null
     }
   },
 )
@@ -93,13 +95,16 @@ function submit(): void {
     reference_price: referencePrice.value.trim() || null,
     commercial_conversion_factor: commercialConversionFactor.value.trim() || null,
     image_url: props.product?.image_url || undefined,
+    pendingImage: pendingImageFile.value,
   })
+  // Reset pending image after submit
+  pendingImageFile.value = null
 }
 
 async function handleImageUpload(event: Event): Promise<void> {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
-  if (!file || !props.product?.id) return
+  if (!file) return
 
   // Validate file type
   if (!file.type.startsWith('image/')) {
@@ -117,19 +122,26 @@ async function handleImageUpload(event: Event): Promise<void> {
 
   // Show preview immediately
   imagePreview.value = URL.createObjectURL(file)
-  imageLoading.value = true
   apiError.value = ''
 
-  try {
-    emit('upload-image', props.product.id, file)
-  } finally {
-    imageLoading.value = false
+  // If editing an existing product, upload immediately
+  if (props.product?.id) {
+    imageLoading.value = true
+    try {
+      emit('upload-image', props.product.id, file)
+    } finally {
+      imageLoading.value = false
+    }
+  } else {
+    // If creating a new product, store the file for later upload
+    pendingImageFile.value = file
   }
 }
 
-function removeImage(): void {
+function clearImage(): void {
   imagePreview.value = null
-  if (props.product) {
+  pendingImageFile.value = null
+  if (props.product && props.product.image_url) {
     emit('save', {
       id: props.product.id,
       name: props.product.name,
@@ -137,6 +149,7 @@ function removeImage(): void {
       reference_price: props.product.reference_price ?? null,
       commercial_conversion_factor: props.product.commercial_conversion_factor ?? null,
       image_url: null,
+      pendingImage: null,
     })
   }
 }
@@ -192,11 +205,11 @@ function removeImage(): void {
         <p v-if="conversionFactorError" class="field-error" role="alert">{{ conversionFactorError }}</p>
         <p v-else class="field-hint">Quantas unidades-base há na unidade comercial. Ex: 12 para caixa com 12 unidades.</p>
       </div>
-      <div v-if="isEdit" class="form-group">
+      <div class="form-group">
         <label>Foto do produto</label>
         <div v-if="imagePreview" class="product-image-preview">
           <img :src="imagePreview" alt="Foto do produto" />
-          <button type="button" class="product-image-remove" title="Remover foto" @click="removeImage">✕</button>
+          <button type="button" class="product-image-remove" title="Remover foto" @click="clearImage">✕</button>
         </div>
         <div class="product-image-upload">
           <input
