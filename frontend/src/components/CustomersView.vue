@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import DataTable, { type DataColumn } from '../components/ui/DataTable.vue'
 import CustomerFormModal from '../components/customers/CustomerFormModal.vue'
 import ImportantDatesModal from '../components/customers/ImportantDatesModal.vue'
@@ -9,6 +9,7 @@ import {
   fetchCustomers,
   setCustomerStatus,
   updateCustomer,
+  uploadCustomerImage,
 } from '../api/customers'
 import type {
   Customer,
@@ -75,24 +76,56 @@ function beginEdit(customer: Customer): void {
   showFormModal.value = true
 }
 
-async function handleSave(payload: CustomerInput): Promise<void> {
+const apiBaseUrl = computed(() => import.meta.env.VITE_API_BASE_URL ?? '')
+
+async function handleSave(payload: { id: number | null; name: string; phone: string; email: string | null; notes: string | null; pendingImage?: File | null }): Promise<void> {
+  const pendingImage = payload.pendingImage
   await run(async () => {
+    const input: CustomerInput = {
+      name: payload.name,
+      phone: payload.phone,
+      email: payload.email,
+      notes: payload.notes,
+    }
+    let newCustomerId: number | undefined
     if (editingCustomer.value) {
-      const saved = await updateCustomer(editingCustomer.value.id, payload)
+      const saved = await updateCustomer(editingCustomer.value.id, input)
       const updated = await fetchCustomer(saved.id)
       const index = customers.value.findIndex((c) => c.id === updated.id)
       if (index !== -1) customers.value[index] = updated
       notice.value = 'Cliente atualizado.'
     } else {
-      const saved = await createCustomer(payload)
+      const saved = await createCustomer(input)
+      newCustomerId = saved.id
       const created = await fetchCustomer(saved.id)
       customers.value.unshift(created)
       notice.value = saved.warning?.code === 'DUPLICATE_PHONE'
         ? 'Cliente criado. Este telefone já está cadastrado em outro cliente.'
         : 'Cliente criado.'
     }
+    // If there's a pending image (from new customer creation), upload it now
+    if (pendingImage && newCustomerId) {
+      await uploadCustomerImage(newCustomerId, pendingImage)
+      const updated = await fetchCustomer(newCustomerId)
+      const index = customers.value.findIndex((c) => c.id === updated.id)
+      if (index !== -1) customers.value[index] = updated
+      notice.value = 'Cliente criado com foto.'
+    }
     showFormModal.value = false
     editingCustomer.value = null
+  })
+}
+
+async function handleUploadImage(customerId: number, file: File): Promise<void> {
+  await run(async () => {
+    const updated = await uploadCustomerImage(customerId, file)
+    const fetched = await fetchCustomer(updated.id)
+    const index = customers.value.findIndex((c) => c.id === fetched.id)
+    if (index !== -1) customers.value[index] = fetched
+    // Update editing customer so the modal preview stays in sync
+    if (editingCustomer.value?.id === customerId) {
+      editingCustomer.value = fetched
+    }
   })
 }
 
@@ -177,6 +210,23 @@ onMounted(() => {
         :loading="loading"
         @page-change="handleCustomersPageChange"
       >
+        <template #cell-name="{ row }: { row: Customer }">
+          <div class="product-name-cell">
+            <img
+              v-if="(row as Customer).image_url"
+              :src="`${apiBaseUrl}${(row as Customer).image_url}`"
+              alt=""
+              class="product-thumb"
+            />
+            <div v-else class="product-thumb product-thumb-placeholder" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none">
+                <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </div>
+            <span>{{ (row as Customer).name }}</span>
+          </div>
+        </template>
         <template #cell-status="{ row }: { row: Customer }">
           <span :class="['status-pill', row.status === 'ACTIVE' ? 'status-success' : 'status-muted']">
             <span class="status-dot" aria-hidden="true"></span>
@@ -202,6 +252,7 @@ onMounted(() => {
       v-model:open="showFormModal"
       :customer="editingCustomer"
       @save="handleSave"
+      @upload-image="handleUploadImage"
     />
 
     <ImportantDatesModal

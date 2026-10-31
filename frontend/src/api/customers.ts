@@ -98,3 +98,12 @@ export function fetchUpcomingDates(days?: number): Promise<UpcomingDatesList> {
   const query = params.toString()
   return apiClient<UpcomingDatesList>(`/api/v1/important-dates/upcoming${query ? `?${query}` : ''}`)
 }
+
+export function uploadCustomerImage(customerId: number, file: File): Promise<Customer> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiClient<Customer>(`/api/v1/customers/${customerId}/image`, {
+    method: 'POST',
+    body: formData,
+  })
+}

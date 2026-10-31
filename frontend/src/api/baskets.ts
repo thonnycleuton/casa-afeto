@@ -86,3 +86,12 @@ export function replaceTemplateItem(
   })
 }
 
+export function uploadBasketTemplateImage(templateId: number, file: File): Promise<BasketTemplate> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiClient<BasketTemplate>(`/api/v1/basket-templates/${templateId}/image`, {
+    method: 'POST',
+    body: formData,
+  })
+}
+

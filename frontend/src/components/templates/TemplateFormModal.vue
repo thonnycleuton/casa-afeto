@@ -12,11 +12,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'save', payload: { name: string; price: string | null; items: { product_id: number; quantity: string }[] }): void
+  (e: 'save', payload: { id: number | null; name: string; price: string | null; items: { product_id: number; quantity: string }[]; pendingImage?: File | null }): void
   (e: 'add-item', productId: number, quantity: string): void
   (e: 'update-item', productId: number, quantity: string): void
   (e: 'remove-item', productId: number): void
   (e: 'replace-item', productId: number, replacementId: number): void
+  (e: 'upload-image', templateId: number, file: File): void
 }>()
 
 const isEdit = ref(false)
@@ -26,6 +27,9 @@ const suggestedPrice = ref<string | null>(null)
 const apiError = ref('')
 const submitted = ref(false)
 const draftItems = ref<{ product_id: number; quantity: string }[]>([])
+const imagePreview = ref<string | null>(null)
+const imageLoading = ref(false)
+const pendingImageFile = ref<File | null>(null)
 
 const nameError = computed(() => {
   if (!submitted.value) return ''
@@ -55,10 +59,13 @@ watch(
       name.value = template.name
       price.value = template.price ?? ''
       suggestedPrice.value = template.suggested_price ?? null
+      imagePreview.value = template.image_url ? `${import.meta.env.VITE_API_BASE_URL || ''}${template.image_url}` : null
     } else if (isOpen) {
       isEdit.value = false
       name.value = ''
       price.value = ''
+      imagePreview.value = null
+      pendingImageFile.value = null
     }
   },
 )
@@ -75,12 +82,67 @@ function submit(): void {
   if (!name.value.trim()) return
   if (priceError.value) return
   emit('save', {
+    id: props.template?.id ?? null,
     name: name.value.trim(),
     price: price.value.trim() || null,
     items: draftItems.value,
+    pendingImage: pendingImageFile.value,
   })
+  // Reset pending image after submit
+  pendingImageFile.value = null
   if (!isEdit.value) {
     draftItems.value = []
+  }
+}
+
+async function handleImageUpload(event: Event): Promise<void> {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    apiError.value = 'Selecione uma imagem (JPEG, PNG, WebP ou GIF).'
+    target.value = ''
+    return
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    apiError.value = 'Imagem muito grande. Tamanho máximo: 5 MB.'
+    target.value = ''
+    return
+  }
+
+  // Show preview immediately
+  imagePreview.value = URL.createObjectURL(file)
+  apiError.value = ''
+
+  // If editing an existing template, upload immediately
+  if (props.template?.id) {
+    imageLoading.value = true
+    try {
+      emit('upload-image', props.template.id, file)
+    } finally {
+      imageLoading.value = false
+    }
+  } else {
+    // If creating a new template, store the file for later upload
+    pendingImageFile.value = file
+  }
+}
+
+function clearImage(): void {
+  imagePreview.value = null
+  pendingImageFile.value = null
+  if (props.template && props.template.image_url) {
+    emit('save', {
+      id: props.template.id,
+      name: props.template.name,
+      price: props.template.price ?? null,
+      items: [],
+      pendingImage: null,
+    })
   }
 }
 </script>
@@ -118,6 +180,23 @@ function submit(): void {
         />
         <p v-if="priceError" class="field-error" role="alert">{{ priceError }}</p>
         <p v-else class="field-hint">Opcional. Preço de venda da cesta.</p>
+      </div>
+      <div class="form-group">
+        <label>Foto da cesta</label>
+        <div v-if="imagePreview" class="product-image-preview">
+          <img :src="imagePreview" alt="Foto da cesta" />
+          <button type="button" class="product-image-remove" title="Remover foto" @click="clearImage">✕</button>
+        </div>
+        <div class="product-image-upload">
+          <input
+            id="tf-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="form-input"
+            @change="handleImageUpload"
+          />
+          <p class="field-hint">JPEG, PNG, WebP ou GIF. Máximo 5 MB.</p>
+        </div>
       </div>
       <div v-if="isEdit && template" class="template-info">
         <span :class="['status-pill', template.active ? 'status-success' : 'status-muted']">

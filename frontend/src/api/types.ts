@@ -12,6 +12,7 @@ export interface CustomerInput {
   phone: string
   email?: string | null
   notes?: string | null
+  image_url?: string | null
 }
 
 export interface Customer extends CustomerInput {
@@ -19,6 +20,7 @@ export interface Customer extends CustomerInput {
   status: CustomerStatus
   created_at: string
   updated_at: string
+  image_url?: string | null
   warning?: { code: string } | null
 }
 
@@ -129,6 +131,7 @@ export interface BasketTemplate {
   name: string
   active: boolean
   price: string | null
+  image_url?: string | null
   estimated_cost?: string | null
   suggested_price?: string | null
   has_reliable_cost?: boolean

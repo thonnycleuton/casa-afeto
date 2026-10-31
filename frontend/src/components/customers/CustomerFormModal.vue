@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import BaseModal from '../ui/BaseModal.vue'
-import type { Customer, CustomerInput } from '../../api/types'
+import type { Customer } from '../../api/types'
 
 const props = defineProps<{
   open: boolean
@@ -10,7 +10,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'save', payload: CustomerInput): void
+  (e: 'save', payload: { id: number | null; name: string; phone: string; email: string | null; notes: string | null; pendingImage?: File | null }): void
+  (e: 'upload-image', customerId: number, file: File): void
 }>()
 
 const isEdit = ref(false)
@@ -20,6 +21,9 @@ const email = ref('')
 const notes = ref('')
 const apiError = ref('')
 const submitted = ref(false)
+const imagePreview = ref<string | null>(null)
+const imageLoading = ref(false)
+const pendingImageFile = ref<File | null>(null)
 
 const nameError = computed(() => {
   if (!submitted.value) return ''
@@ -53,12 +57,15 @@ watch(
       phone.value = customer.phone
       email.value = customer.email ?? ''
       notes.value = customer.notes ?? ''
+      imagePreview.value = customer.image_url ? `${import.meta.env.VITE_API_BASE_URL || ''}${customer.image_url}` : null
     } else if (isOpen) {
       isEdit.value = false
       name.value = ''
       phone.value = ''
       email.value = ''
       notes.value = ''
+      imagePreview.value = null
+      pendingImageFile.value = null
     }
   },
 )
@@ -75,11 +82,67 @@ function submit(): void {
   if (!name.value.trim() || !phone.value.trim()) return
   if (phoneError.value || emailError.value) return
   emit('save', {
+    id: props.customer?.id ?? null,
     name: name.value.trim(),
     phone: phone.value.trim(),
     email: email.value.trim() || null,
     notes: notes.value.trim() || null,
+    pendingImage: pendingImageFile.value,
   })
+  // Reset pending image after submit
+  pendingImageFile.value = null
+}
+
+async function handleImageUpload(event: Event): Promise<void> {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    apiError.value = 'Selecione uma imagem (JPEG, PNG, WebP ou GIF).'
+    target.value = ''
+    return
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    apiError.value = 'Imagem muito grande. Tamanho máximo: 5 MB.'
+    target.value = ''
+    return
+  }
+
+  // Show preview immediately
+  imagePreview.value = URL.createObjectURL(file)
+  apiError.value = ''
+
+  // If editing an existing customer, upload immediately
+  if (props.customer?.id) {
+    imageLoading.value = true
+    try {
+      emit('upload-image', props.customer.id, file)
+    } finally {
+      imageLoading.value = false
+    }
+  } else {
+    // If creating a new customer, store the file for later upload
+    pendingImageFile.value = file
+  }
+}
+
+function clearImage(): void {
+  imagePreview.value = null
+  pendingImageFile.value = null
+  if (props.customer && props.customer.image_url) {
+    emit('save', {
+      id: props.customer.id,
+      name: props.customer.name,
+      phone: props.customer.phone,
+      email: props.customer.email ?? null,
+      notes: props.customer.notes ?? null,
+      pendingImage: null,
+    })
+  }
 }
 </script>
 
@@ -129,6 +192,23 @@ function submit(): void {
       <div class="form-group">
         <label for="cf-notes">Observações</label>
         <textarea id="cf-notes" v-model="notes" rows="3" class="form-input"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Foto do cliente</label>
+        <div v-if="imagePreview" class="product-image-preview">
+          <img :src="imagePreview" alt="Foto do cliente" />
+          <button type="button" class="product-image-remove" title="Remover foto" @click="clearImage">✕</button>
+        </div>
+        <div class="product-image-upload">
+          <input
+            id="cf-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="form-input"
+            @change="handleImageUpload"
+          />
+          <p class="field-hint">JPEG, PNG, WebP ou GIF. Máximo 5 MB.</p>
+        </div>
       </div>
     </template>
     <template #footer>

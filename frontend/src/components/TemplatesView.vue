@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import DataTable, { type DataColumn } from './ui/DataTable.vue'
 import TemplateFormModal from './templates/TemplateFormModal.vue'
 import {
   addTemplateItem, createTemplate, fetchTemplate, fetchTemplates,
   removeTemplateItem, replaceTemplateItem, setTemplateActive,
-  updateTemplate, updateTemplateItem,
+  updateTemplate, updateTemplateItem, uploadBasketTemplateImage,
 } from '../api/baskets'
 import { fetchProducts } from '../api/products'
 import type { BasketTemplate, Product } from '../api/types'
@@ -16,6 +16,7 @@ const products = ref<Product[]>([])
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
+const apiBaseUrl = computed(() => import.meta.env.VITE_API_BASE_URL ?? '')
 
 // Modal state
 const showFormModal = ref(false)
@@ -69,8 +70,10 @@ function beginEdit(template: BasketTemplate): void {
   showFormModal.value = true
 }
 
-async function handleSave(payload: { name: string; price: string | null; items: { product_id: number; quantity: string }[] }): Promise<void> {
+async function handleSave(payload: { id: number | null; name: string; price: string | null; items: { product_id: number; quantity: string }[]; pendingImage?: File | null }): Promise<void> {
+  const pendingImage = payload.pendingImage
   await run(async () => {
+    let newTemplateId: number | undefined
     if (editingTemplate.value) {
       const trimmed = String(payload.price ?? '').trim()
       await updateTemplate(editingTemplate.value.id, { name: payload.name, price: trimmed === '' ? null : trimmed })
@@ -80,12 +83,26 @@ async function handleSave(payload: { name: string; price: string | null; items: 
       const trimmed = String(payload.price ?? '').trim()
       const items = payload.items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
       const price = trimmed === '' ? null : trimmed
-      await createTemplate(payload.name, items, price)
+      const created = await createTemplate(payload.name, items, price)
+      newTemplateId = created.id
       await reload()
       notice.value = 'Template criado.'
     }
+    // If there's a pending image (from new template creation), upload it now
+    if (pendingImage && newTemplateId) {
+      await uploadBasketTemplateImage(newTemplateId, pendingImage)
+      await reload()
+      notice.value = 'Template criado com foto.'
+    }
     showFormModal.value = false
     editingTemplate.value = null
+  })
+}
+
+async function handleUploadImage(templateId: number, file: File): Promise<void> {
+  await run(async () => {
+    await uploadBasketTemplateImage(templateId, file)
+    await reload()
   })
 }
 
@@ -164,6 +181,23 @@ onMounted(() => { void load() })
         :loading="loading"
         @page-change="handleTemplatesPageChange"
       >
+        <template #cell-name="{ row }: { row: BasketTemplate }">
+          <div class="product-name-cell">
+            <img
+              v-if="(row as BasketTemplate).image_url"
+              :src="`${apiBaseUrl}${(row as BasketTemplate).image_url}`"
+              alt=""
+              class="product-thumb"
+            />
+            <div v-else class="product-thumb product-thumb-placeholder" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none">
+                <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </div>
+            <span>{{ (row as BasketTemplate).name }}</span>
+          </div>
+        </template>
         <template #cell-status="{ row }: { row: BasketTemplate }">
           <span :class="['status-pill', row.active ? 'status-success' : 'status-muted']">
             <span class="status-dot" aria-hidden="true"></span>
@@ -197,6 +231,7 @@ onMounted(() => { void load() })
       :template="editingTemplate"
       :products="products"
       @save="handleSave"
+      @upload-image="handleUploadImage"
       @add-item="(productId, quantity) => handleCompositionEvent('add-item', productId, quantity)"
       @update-item="(productId, quantity) => handleCompositionEvent('update-item', productId, quantity)"
       @remove-item="(productId) => handleCompositionEvent('remove-item', productId)"
