@@ -77,7 +77,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_BASE_URL: /api/v1
+        VITE_API_BASE_URL: ''
     container_name: casa_afeto_frontend_prod
     restart: unless-stopped
     healthcheck:
