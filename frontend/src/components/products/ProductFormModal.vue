@@ -63,7 +63,7 @@ watch(
       unit.value = product.base_unit
       referencePrice.value = product.reference_price ?? ''
       commercialConversionFactor.value = product.commercial_conversion_factor ?? ''
-      imagePreview.value = product.image_url ? `${import.meta.env.VITE_API_URL || ''}${product.image_url}` : null
+      imagePreview.value = product.image_url ? `${import.meta.env.VITE_API_BASE_URL || ''}${product.image_url}` : null
     } else if (isOpen) {
       isEdit.value = false
       name.value = ''

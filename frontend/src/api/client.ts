@@ -117,8 +117,9 @@ export async function apiClient<T>(endpoint: string, options?: RequestInit): Pro
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
   const token = getAccessToken()
 
+  const isFormData = options?.body instanceof FormData
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     Accept: 'application/json',
     ...options?.headers as Record<string, string>,
   }

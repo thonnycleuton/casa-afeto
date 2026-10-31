@@ -38,7 +38,7 @@ import {
 
 const { isAuthenticated, user, logout, init } = useAuth()
 
-const apiBaseUrl = computed(() => import.meta.env.VITE_API_URL ?? '')
+const apiBaseUrl = computed(() => import.meta.env.VITE_API_BASE_URL ?? '')
 
 const section = ref<'products' | 'inventory' | 'templates' | 'customers' | 'sales' | 'purchases' | 'expiry' | 'replenishment' | 'importantDates' | 'users'>('products')
 
