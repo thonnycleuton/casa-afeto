@@ -23,6 +23,7 @@ def create_product(db: Session, payload: ProductCreate) -> Product:
         product = Product(
             name=payload.name,
             base_unit=payload.base_unit.value,
+            image_url=payload.image_url,
             reference_price=payload.reference_price,
             commercial_conversion_factor=payload.commercial_conversion_factor,
             active=True,
@@ -55,6 +56,8 @@ def update_product(
             product.reference_price = payload.reference_price
         if "commercial_conversion_factor" in payload.model_fields_set:
             product.commercial_conversion_factor = payload.commercial_conversion_factor
+        if "image_url" in payload.model_fields_set:
+            product.image_url = payload.image_url
         db.flush()
         db.refresh(product)
     return product
