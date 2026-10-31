@@ -60,7 +60,7 @@ defineExpose({ handlePaymentSuccess })
     :open="open"
     @update:open="emit('update:open', $event)"
     :title="sale ? `Venda #${sale.id} — ${sale.customer_name}` : 'Detalhes da Venda'"
-    width="1300px"
+    width="1400px"
   >
     <template #body>
       <div v-if="sale" class="sale-detail-modal-body">

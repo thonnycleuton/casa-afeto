@@ -242,6 +242,20 @@ Keep the reusable vocabulary small and use the existing frontend architecture. S
 
 Extracted from the SaleDetailView refactoring, these patterns define the visual identity for detail modals with tabs, sidebars, and panel-based layouts. All classes are defined in `frontend/src/style.css` under the "Modal Detail Patterns" section.
 
+### Modal Width Tiers
+
+All modals must use one of the standardized widths below. Do not invent custom widths — pick the tier that matches the modal's purpose. If a modal seems to need a width between tiers, choose the nearest wider tier rather than creating a new one.
+
+| Tier | Width | Use | Current modals |
+| --- | --- | --- | --- |
+| Compact | `480px` | Simple forms: password recovery, payment, re-open | ForgotPasswordModal, ResetPasswordModal, PaymentModal, SaleReopenModal |
+| Standard | `520px` | CRUD forms: user, customer, product | UserFormModal, CustomerFormModal, ProductFormModal |
+| Medium | `640px` | Forms with more fields or a small list | SaleFormModal, ImportantDatesModal |
+| Wide | `800px` | Complex forms with nested sections | TemplateFormModal |
+| Detail | `1400px` | Two-column detail modals with sidebar | InventoryModal, SaleDetailModal |
+
+**Why:** Without standardized widths, each modal drifts to a different size, breaking visual consistency. Two-column detail modals (Inventory, SaleDetail) must share the same width (`1400px`) so the layout feels uniform across the application.
+
 ### Sale summary card
 
 A compact header card showing the sale identity, client, status, total, and actions. Uses `.sale-summary` with grid layout.
@@ -352,29 +366,32 @@ Create a Vue component only when the same behavior-bearing visual pattern is rep
 
 The standard layout for detail modals that display product or entity information alongside a sidebar of related activity. First implemented in `InventoryModal.vue`, this pattern is the default for all future detail modals. Mockup reference: `docs/design/mockups/casa_afeto_modal_estoque_mockup.html`.
 
-**Structure:** A wide modal (`width="1000px"`) with a two-column grid layout. The main column contains the entity card, metrics panels, data tables, and action forms. The sidebar (`aside`) displays recent activity in a scrollable panel.
+**Structure:** A wide modal (`width="1400px"`, Detail tier) with a two-column grid layout (`minmax(0, 1fr) 390px`). The main column contains the merged product header, balance metrics, operations tabs, and stock listing table. The sidebar (`aside`) displays recent activity in a scrollable panel.
 
-**Header:** The modal header includes a subtitle below the title to provide context: "Acompanhe o saldo, movimentações e informações do produto."
+**Header:** The modal header includes a subtitle: "Acompanhe o saldo, movimentações e entradas de lote."
 
 | Class | Purpose |
 | --- | --- |
-| `.inv-layout` | Two-column grid: `1fr 300px`; gap between main and sidebar |
+| `.inv-layout` | Two-column grid: `minmax(0, 1fr) 390px`; gap between main and sidebar |
 | `.inv-main` | Main column: vertical flex container for panels |
 | `.inv-side` | Sidebar column: sticky position, scrollable panel |
 | `.inv-side-panel` | Sidebar panel with max-height and overflow |
 
-**Product card:** Identifies the entity at the top of the main column with a thumbnail icon, name, unit chip, and status pill.
+**Merged product header:** A single horizontal panel (`.inv-product-header-merged`) that combines the product identity (thumbnail, name, status) on the left with product reference data (unit, price, conversion factor, equivalence) on the right, separated by a vertical border. This replaces the separate product card and info panel.
 
 | Class | Purpose |
 | --- | --- |
-| `.inv-product-card` | Flex row: thumbnail, name, status |
-| `.inv-product-thumb` | 48px square icon container with surface-elevated background |
-| `.inv-product-name` | Name heading with text overflow ellipsis |
-| `.inv-product-meta` | Unit chip and base unit label |
-| `.inv-chip` | Small bordered badge for unit display |
-| `.inv-status-pill` | Active/Inactive status with colored dot |
+| `.inv-product-header-merged` | Flex row: product info left + meta data right, gradient background |
+| `.inv-product-info-left` | Flex container: thumbnail + name + status |
+| `.inv-thumb` | 64px square icon container with beige background |
+| `.inv-pname` | Name heading with text overflow ellipsis |
+| `.inv-status-tag` | Inline status text with colored dot (below name) |
+| `.inv-product-meta-right` | Flex row of meta items, separated by left border |
+| `.inv-meta-item` | Vertical stack: label + value |
+| `.inv-meta-label` | Muted label text |
+| `.inv-meta-val` | Bold value text |
 
-**Metrics panel:** Displays key numerical values in a three-column grid.
+**Metrics panel:** Displays key numerical values (Available, Reserved, Total) in a three-column grid.
 
 | Class | Purpose |
 | --- | --- |
@@ -383,46 +400,57 @@ The standard layout for detail modals that display product or entity information
 | `.inv-metric-label` | Muted eyebrow label |
 | `.inv-metric-value` | Large primary text with tabular numerals |
 
-**Panel pattern:** All content sections use the `.inv-panel` base with an icon prefix in the title row.
+**Operations tabs:** Entry and adjustment forms are unified in a single panel with tab navigation (`.inv-tabs-header`). The "Registrar Entrada" tab is active by default.
 
 | Class | Purpose |
 | --- | --- |
-| `.inv-panel` | Bordered card with surface background and padding |
-| `.inv-panel-title` | Title row: icon + text + optional action button |
-| `.inv-panel-icon` | 24px icon container |
-| `.inv-panel-title-text` | Heading + description text block |
+| `.inv-tabs-header` | Horizontal tab bar with bottom border |
+| `.inv-tab-btn` | Individual tab button with icon |
+| `.inv-tab-active` | Active tab: primary border-bottom, elevated background |
+| `.inv-tab-content` | Tab content area with padding |
 
-**Info grid:** Read-only key-value display for product reference data.
-
-| Class | Purpose |
-| --- | --- |
-| `.inv-info-grid` | Two-column grid for info cards |
-| `.inv-info` | Individual info card: label, value, hint |
-| `.inv-info-label` | Muted label text |
-| `.inv-info-value` | Bold value with tabular numerals |
-| `.inv-equiv` | Full-width equivalence calculation card |
-
-**Movements sidebar:** Recent activity list with type-colored icons and compact card layout.
+**Form grid:** Forms inside tabs use a multi-column grid layout (`.inv-form-grid`) with fields aligned horizontally and the action button at the end.
 
 | Class | Purpose |
 | --- | --- |
-| `.inv-movements` | Vertical flex list of movement cards |
-| `.inv-move` | Single movement: icon + content |
-| `.inv-move-icon` | 28px colored icon bubble (green for entry, indigo for adjustment) |
-| `.inv-move-content` | Type label, quantity, description, and timestamp |
-| `.inv-move-entry` | Entry-type text color (primary accent) |
-| `.inv-move-adjustment` | Adjustment-type text color (muted) |
-
-**Form inputs:** Scoped form elements for entry and adjustment operations.
-
-| Class | Purpose |
-| --- | --- |
-| `.inv-entry-form` | Vertical form layout |
-| `.inv-form-row` | Two-column grid for side-by-side fields |
-| `.inv-form-group` | Label + input + error/hint stack |
-| `.inv-form-input` | Dark recessed input with focus border |
+| `.inv-form-grid` | Multi-column grid: `1.5fr 1fr 1fr 1fr auto`; aligned to end |
+| `.inv-form-group` | Label + input stack |
+| `.inv-form-control` | Dark recessed input/select with focus border |
+| `.inv-form-actions` | Action button container, aligned to end |
 | `.inv-field-error` | Red error message |
 | `.inv-field-hint` | Muted hint text |
+
+**Panel pattern:** All content sections use the `.inv-panel` base with `overflow: hidden`.
+
+| Class | Purpose |
+| --- | --- |
+| `.inv-panel` | Bordered card with surface background, overflow hidden |
+| `.inv-panel-title` | Title row: icon + heading |
+| `.inv-panel-icon` | 24px icon container |
+
+**Stock listing table:** Complete inventory batch listing with columns: Lote ID/Origem, Validade, Qtd. Disponível, Custo Unitário, Ações.
+
+| Class | Purpose |
+| --- | --- |
+| `.inv-table-wrap` | Horizontal scroll container |
+| `.inv-table` | Full-width collapsed table |
+| `.inv-numeric` | Right-aligned numeric cell with tabular numerals |
+| `.inv-expiry-badge` | Colored expiry status badge with dot |
+| `.inv-expiry-ok` | Green expiry badge |
+| `.inv-expiry-warning` | Amber expiry badge |
+| `.inv-expiry-expired` | Red expiry badge |
+
+**Movements sidebar:** Recent activity list with type-colored circular icons and compact card layout.
+
+| Class | Purpose |
+| --- | --- |
+| `.inv-movements` | Vertical list of movement cards |
+| `.inv-move` | Grid row: 36px icon + content |
+| `.inv-move-icon` | 36px circular colored icon (green for entry, amber for adjustment) |
+| `.inv-move-content` | Type + quantity label, description, and timestamp |
+| `.inv-move-entry` | Entry-type text color (green) |
+| `.inv-move-adjustment` | Adjustment-type text color (muted) |
+| `.inv-move-output` | Output-type text color (red) |
 
 **Buttons:** Compact buttons consistent with the `.btn` family but scoped to the inventory modal.
 
@@ -434,17 +462,18 @@ The standard layout for detail modals that display product or entity information
 
 **Responsive behavior:**
 
-- **≤1050px:** Two-column layout becomes single column; sidebar moves below main content
-- **≤620px:** Product card wraps; metrics become single column; info grid becomes single column; form rows become single column
+- **≤1050px:** Two-column layout becomes single column; sidebar moves below main content; product header stacks vertically; form grid becomes single column
+- **≤620px:** Thumbnail shrinks to 48px; metrics become single column; product meta stacks vertically
 
 **Usage guidelines:**
 
-1. Use `width="1000px"` on `BaseModal` for two-column modals.
-2. Place the entity identification card at the top of the main column.
-3. Use panels with icon prefixes for each logical section.
-4. Keep the sidebar for related activity or history that complements the main content.
-5. All CSS classes use the `inv-` prefix to avoid conflicts with global styles.
-6. Styles are scoped to the component; do not leak to other modals.
+1. Use `width="1400px"` (Detail tier) on `BaseModal` for two-column detail modals.
+2. Merge entity identification and reference data into a single horizontal header panel.
+3. Use tabs to unify related operations (entry/adjustment) in one panel.
+4. Use `.inv-form-grid` for horizontal form layouts inside tabs.
+5. Keep the sidebar for related activity or history that complements the main content.
+6. All CSS classes use the `inv-` prefix to avoid conflicts with global styles.
+7. Styles are scoped to the component; do not leak to other modals.
 
 ## Tables
 

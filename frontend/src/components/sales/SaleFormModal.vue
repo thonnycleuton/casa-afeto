@@ -66,7 +66,7 @@ function submit(): void {
 </script>
 
 <template>
-  <BaseModal :open="open" @update:open="emit('update:open', $event)" title="Nova Venda (Rascunho)" width="600px">
+  <BaseModal :open="open" @update:open="emit('update:open', $event)" title="Nova Venda (Rascunho)" width="640px">
     <template #body>
       <div class="form-group">
         <label>Cliente (apenas clientes ativos):</label>
