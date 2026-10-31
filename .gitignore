@@ -67,3 +67,7 @@ Thumbs.db
 
 # Database files
 *.db
+
+# Upload directories (runtime only)
+uploads/
+backend/app/uploads/
