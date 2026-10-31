@@ -190,15 +190,16 @@ class TestUpcomingRecurringNextYear:
         customer_id = _create_customer(f"Cliente-{marker}")
         _cleanup(customer_id)
 
+        today = date.today()
         _create_important_date(
-            customer_id, f"{marker}-Hoje", True, day=26, month=10
+            customer_id, f"{marker}-Hoje", True, day=today.day, month=today.month
         )
 
         response = client.get("/api/v1/important-dates/upcoming?days=7")
         assert response.status_code == 200
         item = _find_item(response.json(), marker)
         assert item is not None
-        assert item["next_occurrence"].startswith("2026-10-26")
+        assert item["next_occurrence"] == today.isoformat()
 
 
 class TestUpcomingFebruary29:
@@ -264,15 +265,16 @@ class TestUpcomingNonRecurring:
         customer_id = _create_customer(f"Cliente-{marker}")
         _cleanup(customer_id)
 
+        today = date.today()
         _create_important_date(
-            customer_id, f"{marker}-Hoje", False, date_value=date(2026, 10, 26)
+            customer_id, f"{marker}-Hoje", False, date_value=today
         )
 
         response = client.get("/api/v1/important-dates/upcoming?days=1")
         assert response.status_code == 200
         item = _find_item(response.json(), marker)
         assert item is not None
-        assert item["next_occurrence"] == "2026-10-26"
+        assert item["next_occurrence"] == today.isoformat()
 
 
 class TestUpcomingDaysWindow:
