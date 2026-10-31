@@ -32,6 +32,7 @@ class CustomerCreate(BaseModel):
     phone: str
     email: Optional[str] = None
     notes: Optional[str] = None
+    image_url: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -67,6 +68,7 @@ class CustomerUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     notes: Optional[str] = None
+    image_url: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -124,6 +126,7 @@ class CustomerRead(BaseModel):
     phone: str
     email: Optional[str] = None
     notes: Optional[str] = None
+    image_url: Optional[str] = None
     status: CustomerStatus
     created_at: datetime
     updated_at: datetime

@@ -28,6 +28,7 @@ class Customer(Base):
     phone: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[str] = mapped_column(
         String(10), nullable=False, default=CustomerStatus.ACTIVE.value
     )

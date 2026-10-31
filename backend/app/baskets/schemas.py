@@ -50,6 +50,7 @@ class BasketTemplateCreate(BaseModel):
 
     name: str
     price: Decimal | None = None
+    image_url: str | None = None
     items: list[BasketItemInput] = Field(default_factory=list)
 
     @field_validator("name")
@@ -71,6 +72,7 @@ class BasketTemplateUpdate(BaseModel):
 
     name: str | None = None
     price: Decimal | None = None
+    image_url: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -114,6 +116,7 @@ class BasketTemplateRead(BaseModel):
     name: str
     active: bool
     price: Decimal | None = None
+    image_url: str | None = None
     estimated_cost: Decimal | None = None
     suggested_price: Decimal | None = None
     has_reliable_cost: bool = False

@@ -111,10 +111,11 @@ def create_template(
     name: str,
     items: list[BasketItemInput],
     price: Decimal | None = None,
+    image_url: str | None = None,
 ) -> BasketTemplate:
     with db.begin():
         normalized_items = _normalized_items(db, items)
-        template = BasketTemplate(name=name, price=price, active=True)
+        template = BasketTemplate(name=name, price=price, image_url=image_url, active=True)
         db.add(template)
         db.flush()
         template.items = [
@@ -150,6 +151,7 @@ def update_template(
     name: str | None = None,
     price: Decimal | None = None,
     update_price: bool = False,
+    image_url: str | None = None,
 ) -> BasketTemplate:
     with db.begin():
         template = _template_or_raise(db, template_id, lock=True)
@@ -157,6 +159,8 @@ def update_template(
             template.name = name
         if update_price:
             template.price = price
+        if image_url is not None:
+            template.image_url = image_url
         _touch(template)
         db.flush()
     return template

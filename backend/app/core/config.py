@@ -1,5 +1,7 @@
-from typing import List, Union
+from typing import List, Set, Union
 import json
+import os
+from pathlib import Path
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -38,6 +40,11 @@ class Settings(BaseSettings):
     # Frontend URL (for password reset links)
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # Image upload configuration
+    UPLOAD_DIR: str = "uploads"
+    ALLOWED_IMAGE_TYPES: Set[str] = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+    MAX_IMAGE_SIZE: int = 5 * 1024 * 1024  # 5 MB
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
@@ -64,6 +71,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def uploads_base_path(self) -> Path:
+        """Return the absolute path to the uploads directory."""
+        base = Path(os.path.dirname(os.path.dirname(__file__)))
+        return base / self.UPLOAD_DIR
+
+    def entity_upload_path(self, entity: str) -> Path:
+        """Return the upload path for a specific entity (e.g., 'products', 'customers')."""
+        return self.uploads_base_path / entity
 
 
 settings = Settings()

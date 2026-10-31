@@ -1,8 +1,11 @@
+import os
+import uuid
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.customers.models import Customer
 from app.customers.schemas import (
@@ -145,3 +148,50 @@ def set_customer_date_status(
 ) -> ImportantDateRead:
     date_record = set_important_date_status(db, customer_id, date_id, payload.status)
     return ImportantDateRead.model_validate(date_record, from_attributes=True)
+
+
+@router.post(
+    "/{customer_id}/image",
+    response_model=CustomerRead,
+)
+async def upload_customer_image(
+    customer_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> CustomerRead:
+    """Upload an image for a customer."""
+    # Validate file type
+    if file.content_type not in settings.ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.",
+        )
+
+    # Read and validate file size
+    content = await file.read()
+    if len(content) > settings.MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem muito grande. Tamanho máximo: 5 MB.",
+        )
+
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    filename = f"{uuid.uuid4().hex}{ext}"
+
+    # Ensure upload directory exists
+    upload_dir = settings.entity_upload_path("customers")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filepath = upload_dir / filename
+
+    # Save file
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    # Update customer with image URL
+    from app.customers.schemas import CustomerUpdate
+
+    customer = update_customer(
+        db, customer_id, CustomerUpdate(image_url=f"/api/v1/customers/uploads/{filename}")
+    )
+    return _customer_response(customer)

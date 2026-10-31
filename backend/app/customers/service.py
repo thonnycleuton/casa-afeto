@@ -49,6 +49,7 @@ def create_customer(db: Session, payload: CustomerCreate) -> Customer:
             phone=normalize_phone(payload.phone),
             email=payload.email.strip() if payload.email else None,
             notes=payload.notes.strip() if payload.notes else None,
+            image_url=payload.image_url,
             status=CustomerStatus.ACTIVE.value,
         )
         db.add(customer)
@@ -115,6 +116,8 @@ def update_customer(
                 if payload.notes and payload.notes.strip()
                 else None
             )
+        if "image_url" in payload.model_fields_set:
+            customer.image_url = payload.image_url
         db.flush()
         db.refresh(customer)
     return customer

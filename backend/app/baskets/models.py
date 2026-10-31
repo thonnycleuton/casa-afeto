@@ -29,6 +29,7 @@ class BasketTemplate(Base):
     price: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 2, asdecimal=True), nullable=True
     )
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

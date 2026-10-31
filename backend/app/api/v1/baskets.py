@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, status
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.baskets import service
 from app.baskets.schemas import (
     BasketItemAdd,
@@ -23,7 +27,7 @@ def create_template(
     payload: BasketTemplateCreate, db: Session = Depends(get_db)
 ) -> BasketTemplateRead:
     template = service.create_template(
-        db, payload.name, payload.items, price=payload.price
+        db, payload.name, payload.items, price=payload.price, image_url=payload.image_url
     )
     return service.template_read(db, template)
 
@@ -55,6 +59,7 @@ def update_template(
         name=payload.name,
         price=payload.price,
         update_price="price" in payload.model_fields_set,
+        image_url=payload.image_url if "image_url" in payload.model_fields_set else None,
     )
     return service.template_read(db, template)
 
@@ -123,6 +128,51 @@ def replace_template_item(
 ) -> BasketTemplateRead:
     template = service.replace_template_item(
         db, template_id, product_id, payload.product_id
+    )
+    return service.template_read(db, template)
+
+
+@templates_router.post(
+    "/{template_id}/image",
+    response_model=BasketTemplateRead,
+)
+async def upload_template_image(
+    template_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> BasketTemplateRead:
+    """Upload an image for a basket template."""
+    # Validate file type
+    if file.content_type not in settings.ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.",
+        )
+
+    # Read and validate file size
+    content = await file.read()
+    if len(content) > settings.MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem muito grande. Tamanho máximo: 5 MB.",
+        )
+
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    filename = f"{uuid.uuid4().hex}{ext}"
+
+    # Ensure upload directory exists
+    upload_dir = settings.entity_upload_path("basket-templates")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filepath = upload_dir / filename
+
+    # Save file
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    # Update template with image URL
+    template = service.update_template(
+        db, template_id, image_url=f"/api/v1/basket-templates/uploads/{filename}"
     )
     return service.template_read(db, template)
 

@@ -1,5 +1,3 @@
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -63,10 +61,15 @@ def create_application() -> FastAPI:
     app.include_router(important_dates_router, prefix="/api/v1")
     register_error_handlers(app)
 
-    # Mount static files for product images
-    upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "products")
-    os.makedirs(upload_dir, exist_ok=True)
-    app.mount("/api/v1/products/uploads", StaticFiles(directory=upload_dir), name="product_images")
+    # Mount static files for uploaded images
+    for entity, mount_prefix, name in [
+        ("products", "/api/v1/products/uploads", "product_images"),
+        ("customers", "/api/v1/customers/uploads", "customer_images"),
+        ("basket-templates", "/api/v1/basket-templates/uploads", "basket_template_images"),
+    ]:
+        upload_dir = settings.entity_upload_path(entity)
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        app.mount(mount_prefix, StaticFiles(directory=str(upload_dir)), name=name)
 
     return app
 

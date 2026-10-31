@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.inventory import service as inventory_service
 from app.products.models import MovementType, Product
@@ -152,12 +153,6 @@ def check_inventory_availability(
     return inventory_service.check_availability(db, product_id, payload.quantity)
 
 
-# Image upload endpoint
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "uploads", "products")
-
-
 @router.post(
     "/{product_id}/image",
     response_model=ProductRead,
@@ -169,7 +164,7 @@ async def upload_product_image(
 ) -> ProductRead:
     """Upload an image for a product."""
     # Validate file type
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
+    if file.content_type not in settings.ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tipo de arquivo não permitido. Use JPEG, PNG, WebP ou GIF.",
@@ -177,7 +172,7 @@ async def upload_product_image(
 
     # Read and validate file size
     content = await file.read()
-    if len(content) > MAX_IMAGE_SIZE:
+    if len(content) > settings.MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Imagem muito grande. Tamanho máximo: 5 MB.",
@@ -188,8 +183,9 @@ async def upload_product_image(
     filename = f"{uuid.uuid4().hex}{ext}"
 
     # Ensure upload directory exists
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    upload_dir = settings.entity_upload_path("products")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filepath = upload_dir / filename
 
     # Save file
     with open(filepath, "wb") as f:
