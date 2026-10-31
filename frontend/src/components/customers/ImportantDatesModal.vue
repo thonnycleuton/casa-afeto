@@ -100,7 +100,7 @@ async function saveDate(): Promise<void> {
       : {
           description: form.value.description.trim(),
           recurring: false,
-          date: form.value.date,
+          date: form.value.date || undefined,
         }
     if (editingDateId.value === null) {
       await createImportantDate(props.customerId, input)

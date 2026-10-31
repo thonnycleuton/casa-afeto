@@ -182,7 +182,7 @@ function saveDelivery(basketId: number): void {
   emit('update-delivery', props.sale.id, basketId, {
     recipient_name: form.recipient_name,
     delivery_address: form.delivery_address,
-    delivery_date: form.delivery_date,
+    delivery_date: form.delivery_date || '',
     delivery_time: form.delivery_time,
   })
 }
