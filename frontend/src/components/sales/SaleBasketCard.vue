@@ -107,6 +107,13 @@ function handleCompositionReplace(productId: number, replacementProductId: numbe
   item.base_unit = product.base_unit
   item.inventory_balance = product.inventory_balance
 }
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+
+function findProductImage(productId: number): string | undefined {
+  const product = props.products.find((p) => p.id === productId)
+  return product?.image_url ? `${apiBaseUrl}${product.image_url}` : undefined
+}
+
 const delivering = ref(false)
 const deliveryOperator = ref('')
 const showHistories = ref(false)
@@ -211,8 +218,19 @@ function formatCurrency(val: string): string {
           <tbody>
             <tr v-for="it in basket.items" :key="it.id">
               <td class="col-product">
-                <span class="product-name">{{ it.product_name }}</span>
-                <span class="product-unit">{{ it.product_unit }}</span>
+                <div class="product-name-cell">
+                  <template v-if="findProductImage(it.product_id)">
+                    <img :src="findProductImage(it.product_id)!" alt="" class="product-thumb" />
+                  </template>
+                  <div v-else class="product-thumb product-thumb-placeholder" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none">
+                      <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                  </div>
+                  <span class="product-name">{{ it.product_name }}</span>
+                  <span class="product-unit">{{ it.product_unit }}</span>
+                </div>
               </td>
               <td class="col-quantity">{{ it.quantity }}</td>
               <td class="col-stock">—</td>

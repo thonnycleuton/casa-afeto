@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import BaseModal from '../ui/BaseModal.vue'
 import type { InventoryMovement, Product, StockBatch } from '../../api/types'
-import { formatDate, formatDateTime, formatDateShort } from '../../utils/date'
+import { formatDateTime, formatDateShort } from '../../utils/date'
 
 const props = defineProps<{
   open: boolean
@@ -13,17 +13,29 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'entry', quantity: string, unitCost: string | null, expiryDate: string | null): void
-  (e: 'adjustment', quantity: string): void
+  (e: 'entry', quantity: string, unitCost: string | null, expiryDate: string | null, source: string): void
+  (e: 'adjustment', quantity: string, adjustmentType: string, note: string): void
 }>()
 
+// Tab state: 'entry' or 'adjustment'
+const activeTab = ref<'entry' | 'adjustment'>('entry')
+
+// Entry form fields
 const entryQuantity = ref('')
 const entryUnitCost = ref('')
 const entryExpiryDate = ref('')
+const entrySource = ref('supplier')
+
+// Adjustment form fields
 const adjustmentQuantity = ref('')
+const adjustmentType = ref('loss')
+const adjustmentNote = ref('')
+
 const entryError = ref('')
 const adjustmentError = ref('')
 const showAllMovements = ref(false)
+
+const apiBaseUrl = computed(() => import.meta.env.VITE_API_BASE_URL ?? '')
 
 const entryQuantityError = computed(() => {
   if (!entryQuantity.value) return ''
@@ -45,7 +57,7 @@ const entryCostError = computed(() => {
 const adjustmentQuantityError = computed(() => {
   if (!adjustmentQuantity.value) return ''
   const num = Number(adjustmentQuantity.value)
-  if (isNaN(num) || num === 0) return 'Informe um valor diferente de zero.'
+  if (isNaN(num) || num <= 0) return 'Informe uma quantidade maior que zero.'
   return ''
 })
 
@@ -89,10 +101,14 @@ watch(
   () => [props.open, props.product],
   ([isOpen]) => {
     if (isOpen) {
+      activeTab.value = 'entry'
       entryQuantity.value = ''
       entryUnitCost.value = ''
       entryExpiryDate.value = ''
+      entrySource.value = 'supplier'
       adjustmentQuantity.value = ''
+      adjustmentType.value = 'loss'
+      adjustmentNote.value = ''
       entryError.value = ''
       adjustmentError.value = ''
       showAllMovements.value = false
@@ -115,19 +131,26 @@ function formatCurrency(value: string | null | undefined): string {
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function switchTab(tab: 'entry' | 'adjustment'): void {
+  activeTab.value = tab
+}
+
 function submitEntry(): void {
   if (entryQuantityError.value) return
   if (entryCostError.value) return
-  emit('entry', entryQuantity.value, entryUnitCost.value.trim() || null, entryExpiryDate.value.trim() || null)
+  emit('entry', entryQuantity.value, entryUnitCost.value.trim() || null, entryExpiryDate.value.trim() || null, entrySource.value)
   entryQuantity.value = ''
   entryUnitCost.value = ''
   entryExpiryDate.value = ''
+  entrySource.value = 'supplier'
 }
 
 function submitAdjustment(): void {
   if (adjustmentQuantityError.value) return
-  emit('adjustment', adjustmentQuantity.value)
+  emit('adjustment', adjustmentQuantity.value, adjustmentType.value, adjustmentNote.value.trim())
   adjustmentQuantity.value = ''
+  adjustmentType.value = 'loss'
+  adjustmentNote.value = ''
 }
 
 function toggleAllMovements(): void {
@@ -160,12 +183,6 @@ function movementSourceLabel(movement: InventoryMovement): string {
   return '—'
 }
 
-function expiryStatusLabel(status: string | null | undefined): string {
-  if (status === 'EXPIRED') return 'Vencido'
-  if (status === 'WARNING') return 'Próximo'
-  return 'OK'
-}
-
 function expiryStatusClass(status: string | null | undefined): string {
   if (status === 'EXPIRED') return 'inv-expiry-expired'
   if (status === 'WARNING') return 'inv-expiry-warning'
@@ -185,13 +202,6 @@ function getMoveTypeClass(type: string): string {
   return ''
 }
 
-function focusEntryForm(): void {
-  entryQuantity.value = ''
-  entryUnitCost.value = ''
-  entryExpiryDate.value = ''
-  const input = document.getElementById('inv-entry-qty')
-  if (input) input.focus()
-}
 </script>
 
 <template>
@@ -199,38 +209,51 @@ function focusEntryForm(): void {
     :open="open"
     @update:open="emit('update:open', $event)"
     title="Estoque do produto"
-    width="1000px"
+    width="1400px"
   >
     <template #header-actions>
-      <p class="inv-modal-subtitle">Acompanhe o saldo, movimentações e informações do produto.</p>
+      <p class="inv-modal-subtitle">Acompanhe o saldo, movimentações e entradas de lote.</p>
     </template>
     <template #body>
       <div v-if="product" class="inv-modal-content">
         <div class="inv-layout">
           <main class="inv-main">
 
-            <!-- Product card -->
-            <section class="inv-product-card">
-              <div class="inv-product-thumb" aria-hidden="true">
-                <svg viewBox="0 0 20 20" fill="none" width="24" height="24">
-                  <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
-                  <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-              </div>
-              <div class="inv-product-name">
-                <h2>{{ product.name }}</h2>
-                <div class="inv-product-meta">
-                  <span class="inv-chip">{{ product.base_unit }}</span>
-                  <span>• Unidade base</span>
+            <!-- 1. Merged Product Header: Product + Info -->
+            <section class="inv-panel inv-product-header-merged">
+              <div class="inv-product-info-left">
+                <img
+                  v-if="product.image_url"
+                  :src="`${apiBaseUrl}${product.image_url}`"
+                  alt=""
+                  class="inv-thumb inv-thumb-img"
+                />
+                <div v-else class="inv-thumb" aria-hidden="true">◉</div>
+                <div class="inv-pname">
+                  <h2>{{ product.name }}</h2>
+                  <div :class="['inv-status-tag', product.active ? 'inv-status-active-text' : 'inv-status-inactive-text']">
+                    <span class="inv-status-dot" aria-hidden="true"></span>
+                    {{ product.active ? 'Ativo' : 'Inativo' }}
+                  </div>
                 </div>
               </div>
-              <span :class="['inv-status-pill', product.active ? 'inv-status-active' : 'inv-status-inactive']">
-                <span class="inv-status-dot" aria-hidden="true"></span>
-                {{ product.active ? 'Ativo' : 'Inativo' }}
-              </span>
+              <div class="inv-product-meta-right">
+                <div class="inv-meta-item">
+                  <span class="inv-meta-label">{{ product.base_unit }} | Unidade base</span>
+                  <span class="inv-meta-label">Preço ref.: <strong>{{ product.reference_price ? formatCurrency(product.reference_price) : '—' }}</strong></span>
+                </div>
+                <div class="inv-meta-item">
+                  <span class="inv-meta-label">Fator de conversão</span>
+                  <span class="inv-meta-val">{{ product.commercial_conversion_factor ? formatQuantity(product.commercial_conversion_factor) + ' ' + product.base_unit : '—' }}</span>
+                </div>
+                <div v-if="unitPricePerBase" class="inv-meta-item">
+                  <span class="inv-meta-label">↔ Equivalência</span>
+                  <span class="inv-meta-val">{{ formatCurrency(unitPricePerBase) }} / {{ product.base_unit }}</span>
+                </div>
+              </div>
             </section>
 
-            <!-- Balance panel -->
+            <!-- 2. Balance panel (kept per user request) -->
             <section class="inv-panel">
               <div class="inv-panel-title">
                 <span class="inv-panel-icon" aria-hidden="true">▦</span>
@@ -252,55 +275,162 @@ function focusEntryForm(): void {
               </div>
             </section>
 
-            <!-- Lots panel -->
+            <!-- 3. Operations panel with tabs: Entry / Adjustment -->
+            <section class="inv-panel">
+              <div class="inv-tabs-header">
+                <button
+                  :class="['inv-tab-btn', activeTab === 'entry' ? 'inv-tab-active' : '']"
+                  type="button"
+                  @click="switchTab('entry')"
+                >
+                  <span aria-hidden="true">⤓</span> Registrar Entrada
+                </button>
+                <button
+                  :class="['inv-tab-btn', activeTab === 'adjustment' ? 'inv-tab-active' : '']"
+                  type="button"
+                  @click="switchTab('adjustment')"
+                >
+                  <span aria-hidden="true">⇄</span> Ajustar Estoque
+                </button>
+              </div>
+
+              <!-- Entry tab content -->
+              <div v-show="activeTab === 'entry'" class="inv-tab-content">
+                <form class="inv-form-grid" @submit.prevent="submitEntry">
+                  <div class="inv-form-group">
+                    <label for="inv-entry-source">Lote / Origem</label>
+                    <select id="inv-entry-source" v-model="entrySource" class="inv-form-control">
+                      <option value="supplier">Entrada fornecedor</option>
+                      <option value="manual">Entrada manual</option>
+                      <option value="production">Produção própria</option>
+                    </select>
+                  </div>
+                  <div class="inv-form-group">
+                    <label for="inv-entry-qty">Qtd. disponível</label>
+                    <input
+                      id="inv-entry-qty"
+                      v-model="entryQuantity"
+                      type="number"
+                      :step="product.base_unit === 'UN' ? '1' : 'any'"
+                      min="0"
+                      :placeholder="'0 ' + product.base_unit"
+                      required
+                      class="inv-form-control"
+                      :class="{ 'inv-form-input-error': entryQuantityError }"
+                    />
+                    <p v-if="entryQuantityError" class="inv-field-error">{{ entryQuantityError }}</p>
+                  </div>
+                  <div class="inv-form-group">
+                    <label for="inv-entry-cost">Custo unitário</label>
+                    <input
+                      id="inv-entry-cost"
+                      v-model="entryUnitCost"
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="R$ 0,00"
+                      class="inv-form-control"
+                      :class="{ 'inv-form-input-error': entryCostError }"
+                    />
+                    <p v-if="entryCostError" class="inv-field-error">{{ entryCostError }}</p>
+                  </div>
+                  <div class="inv-form-group">
+                    <label for="inv-entry-expiry">Validade</label>
+                    <input
+                      id="inv-entry-expiry"
+                      v-model="entryExpiryDate"
+                      type="date"
+                      class="inv-form-control"
+                    />
+                  </div>
+                  <div class="inv-form-group inv-form-actions">
+                    <button class="inv-btn inv-btn-primary" type="submit" :disabled="!product.active">
+                      Adicionar Lote
+                    </button>
+                    <p v-if="!product.active" class="inv-field-hint">Reative este produto para alterar o estoque.</p>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Adjustment tab content -->
+              <div v-show="activeTab === 'adjustment'" class="inv-tab-content">
+                <form class="inv-form-grid" @submit.prevent="submitAdjustment">
+                  <div class="inv-form-group">
+                    <label for="inv-adjust-type">Tipo de Ajuste</label>
+                    <select id="inv-adjust-type" v-model="adjustmentType" class="inv-form-control">
+                      <option value="loss">Perda / Avaria</option>
+                      <option value="inventory">Inventário / Correção</option>
+                    </select>
+                  </div>
+                  <div class="inv-form-group">
+                    <label for="inv-adjust-qty">Quantidade</label>
+                    <input
+                      id="inv-adjust-qty"
+                      v-model="adjustmentQuantity"
+                      type="number"
+                      :step="product.base_unit === 'UN' ? '1' : 'any'"
+                      min="0"
+                      :placeholder="'0 ' + product.base_unit"
+                      required
+                      class="inv-form-control"
+                      :class="{ 'inv-form-input-error': adjustmentQuantityError }"
+                    />
+                    <p v-if="adjustmentQuantityError" class="inv-field-error">{{ adjustmentQuantityError }}</p>
+                  </div>
+                  <div class="inv-form-group">
+                    <label for="inv-adjust-note">Observação</label>
+                    <input
+                      id="inv-adjust-note"
+                      v-model="adjustmentNote"
+                      type="text"
+                      placeholder="Motivo do ajuste"
+                      class="inv-form-control"
+                    />
+                  </div>
+                  <div class="inv-form-group inv-form-actions">
+                    <button class="inv-btn inv-btn-primary" type="submit" :disabled="!product.active">
+                      Salvar Ajuste
+                    </button>
+                    <p v-if="!product.active" class="inv-field-hint">Reative este produto para alterar o estoque.</p>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <!-- 4. Stock listing table -->
             <section class="inv-panel">
               <div class="inv-panel-title">
-                <span class="inv-panel-icon" aria-hidden="true">⬡</span>
-                <div class="inv-panel-title-text">
-                  <h3>Lotes em estoque</h3>
-                  <p>Entradas com custo de aquisição próprio.</p>
-                </div>
-                <button
-                  class="inv-btn inv-btn-primary"
-                  type="button"
-                  :disabled="!product.active"
-                  @click="focusEntryForm()"
-                >
-                  ＋ Adicionar lote
-                </button>
+                <span class="inv-panel-icon" aria-hidden="true">▦</span>
+                <h3>Listagem de Estoque Completa</h3>
               </div>
               <div v-if="batches.length" class="inv-table-wrap">
                 <table class="inv-table">
                   <thead>
                     <tr>
-                      <th>Lote / origem</th>
-                      <th class="inv-numeric">Qtd. disponível</th>
-                      <th class="inv-numeric">Custo unitário</th>
-                      <th>Vencimento</th>
+                      <th>Lote ID / Origem</th>
+                      <th>Validade</th>
+                      <th class="inv-numeric">Qtd. Disponível</th>
+                      <th class="inv-numeric">Custo Unitário</th>
                       <th>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="batch in batches" :key="batch.id">
                       <td>
-                        <strong>{{ batch.purchase_id ? 'Compra #' + batch.purchase_id : 'Entrada manual' }}</strong>
-                        <small>{{ formatDate(batch.created_at) }}</small>
+                        <strong>{{ batch.purchase_id ? 'Lote #' + batch.purchase_id : 'Entrada manual' }}</strong>
                       </td>
-                      <td class="inv-numeric"><strong>{{ formatQuantity(batch.quantity_remaining) }} {{ product.base_unit }}</strong></td>
-                      <td>{{ batch.unit_cost ? formatCurrency(batch.unit_cost) : '—' }}</td>
                       <td>
                         <template v-if="batch.expiry_date">
                           <span :class="['inv-expiry-badge', expiryStatusClass(batch.expiry_status)]">
                             <span class="inv-expiry-dot" aria-hidden="true"></span>
                             {{ formatDateShort(batch.expiry_date) }}
                           </span>
-                          <small>{{ expiryStatusLabel(batch.expiry_status) }}</small>
                         </template>
                         <template v-else>
                           <span>—</span>
-                          <small>Sem validade</small>
                         </template>
                       </td>
+                      <td class="inv-numeric"><strong>{{ formatQuantity(batch.quantity_remaining) }} {{ product.base_unit }}</strong></td>
+                      <td>{{ batch.unit_cost ? formatCurrency(batch.unit_cost) : '—' }}</td>
                       <td>
                         <button class="inv-link-btn" type="button" aria-label="Ações do lote">•••</button>
                       </td>
@@ -313,128 +443,12 @@ function focusEntryForm(): void {
               </div>
             </section>
 
-            <!-- Product info panel -->
-            <section class="inv-panel">
-              <div class="inv-panel-title">
-                <span class="inv-panel-icon" aria-hidden="true">ⓘ</span>
-                <div class="inv-panel-title-text">
-                  <h3>Informações do produto</h3>
-                  <p>Preço de referência e conversão comercial cadastrados.</p>
-                </div>
-              </div>
-              <div class="inv-info-grid">
-                <div class="inv-info">
-                  <div class="inv-info-label">Preço de referência</div>
-                  <div class="inv-info-value">{{ product.reference_price ? formatCurrency(product.reference_price) : '—' }}</div>
-                  <small>Opcional</small>
-                </div>
-                <div class="inv-info">
-                  <div class="inv-info-label">Fator de conversão</div>
-                  <div class="inv-info-value">{{ product.commercial_conversion_factor ? formatQuantity(product.commercial_conversion_factor) + ' ' + product.base_unit : '—' }}</div>
-                  <small>Por unidade comercial</small>
-                </div>
-                <div v-if="unitPricePerBase" class="inv-equiv">
-                  <div class="inv-equiv-label">↔ Equivalência informativa</div>
-                  <strong>{{ formatCurrency(unitPricePerBase) }} / {{ product.base_unit }}</strong>
-                  <small>{{ formatCurrency(product.reference_price!) }} ÷ {{ product.commercial_conversion_factor }}</small>
-                </div>
-              </div>
-            </section>
-
-            <!-- Entry form -->
-            <section class="inv-panel">
-              <div class="inv-panel-title">
-                <span class="inv-panel-icon" aria-hidden="true">↧</span>
-                <div class="inv-panel-title-text">
-                  <h3>Registrar entrada</h3>
-                  <p>Uma entrada aumenta o saldo disponível.</p>
-                </div>
-              </div>
-              <form class="inv-entry-form" @submit.prevent="submitEntry">
-                <div class="inv-form-row">
-                  <div class="inv-form-group">
-                    <label for="inv-entry-qty">Quantidade ({{ product.base_unit }})</label>
-                    <input
-                      id="inv-entry-qty"
-                      v-model="entryQuantity"
-                      type="number"
-                      :step="product.base_unit === 'UN' ? '1' : 'any'"
-                      min="0"
-                      required
-                      class="inv-form-input"
-                      :class="{ 'inv-form-input-error': entryQuantityError }"
-                    />
-                    <p v-if="entryQuantityError" class="inv-field-error">{{ entryQuantityError }}</p>
-                  </div>
-                  <div class="inv-form-group">
-                    <label for="inv-entry-cost">Custo unitário (R$, opcional)</label>
-                    <input
-                      id="inv-entry-cost"
-                      v-model="entryUnitCost"
-                      type="text"
-                      inputmode="decimal"
-                      placeholder="Opcional (ex.: 15.50)"
-                      class="inv-form-input"
-                      :class="{ 'inv-form-input-error': entryCostError }"
-                    />
-                    <p v-if="entryCostError" class="inv-field-error">{{ entryCostError }}</p>
-                    <p v-else class="inv-field-hint">Custo de aquisição deste lote.</p>
-                  </div>
-                </div>
-                <div class="inv-form-group">
-                  <label for="inv-entry-expiry">Data de validade (opcional)</label>
-                  <input
-                    id="inv-entry-expiry"
-                    v-model="entryExpiryDate"
-                    type="date"
-                    class="inv-form-input"
-                  />
-                  <p class="inv-field-hint">Opcional — para controle de validade do lote.</p>
-                </div>
-                <button class="inv-btn inv-btn-primary" type="submit" :disabled="!product.active">
-                  Registrar entrada
-                </button>
-                <p v-if="!product.active" class="inv-field-hint">Reative este produto para alterar o estoque.</p>
-              </form>
-            </section>
-
-            <!-- Adjustment form -->
-            <section class="inv-panel">
-              <div class="inv-panel-title">
-                <span class="inv-panel-icon" aria-hidden="true">↔</span>
-                <div class="inv-panel-title-text">
-                  <h3>Ajustar estoque</h3>
-                  <p>Use um valor positivo para aumentar ou negativo para reduzir.</p>
-                </div>
-              </div>
-              <form class="inv-entry-form" @submit.prevent="submitAdjustment">
-                <div class="inv-form-group">
-                  <label for="inv-adjust-qty">Quantidade com sinal ({{ product.base_unit }})</label>
-                  <input
-                    id="inv-adjust-qty"
-                    v-model="adjustmentQuantity"
-                    type="number"
-                    :step="product.base_unit === 'UN' ? '1' : 'any'"
-                    required
-                    class="inv-form-input"
-                    :class="{ 'inv-form-input-error': adjustmentQuantityError }"
-                  />
-                  <p v-if="adjustmentQuantityError" class="inv-field-error">{{ adjustmentQuantityError }}</p>
-                </div>
-                <button class="inv-btn inv-btn-primary" type="submit" :disabled="!product.active">
-                  Registrar ajuste
-                </button>
-                <p v-if="!product.active" class="inv-field-hint">Reative este produto para alterar o estoque.</p>
-              </form>
-            </section>
-
           </main>
 
           <!-- Sidebar: Recent movements -->
           <aside class="inv-side">
             <section class="inv-panel inv-side-panel">
               <div class="inv-side-head">
-                <span class="inv-panel-icon" aria-hidden="true">⌁</span>
                 <h3>Movimentações recentes</h3>
                 <button
                   v-if="movements.length > 2"
@@ -452,12 +466,9 @@ function focusEntryForm(): void {
                   </div>
                   <div class="inv-move-content">
                     <div class="inv-move-top">
-                      <span :class="['inv-move-type', getMoveTypeClass(movement.type)]">
-                        {{ movementTypeLabel(movement.type) }}
+                      <span :class="[getMoveTypeClass(movement.type)]">
+                        {{ movementTypeLabel(movement.type) }}: <strong>{{ movement.quantity.startsWith('-') ? '−' : '+' }} {{ formatQuantity(movement.quantity) }} {{ product.base_unit }}</strong>
                       </span>
-                      <strong :class="['inv-move-quantity', getMoveTypeClass(movement.type)]">
-                        {{ movement.quantity.startsWith('-') ? '−' : '+' }} {{ formatQuantity(movement.quantity) }} {{ product.base_unit }}
-                      </strong>
                     </div>
                     <div class="inv-move-detail">
                       <span>{{ movementSourceLabel(movement) }}</span>
@@ -480,6 +491,7 @@ function focusEntryForm(): void {
     </template>
     <template #footer>
       <button class="inv-btn" type="button" @click="emit('update:open', false)">Fechar</button>
+      <span class="inv-foot-info">O saldo é atualizado após cada operação.</span>
     </template>
   </BaseModal>
 </template>
@@ -493,15 +505,21 @@ function focusEntryForm(): void {
   color: var(--color-text-muted);
 }
 
+/* Footer info */
+.inv-foot-info {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 /* Main content wrapper */
 .inv-modal-content {
   min-height: 400px;
 }
 
-/* Two-column layout: main + sidebar */
+/* Two-column layout: main + sidebar (390px) */
 .inv-layout {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: minmax(0, 1fr) 390px;
   gap: var(--space-4);
   align-items: start;
 }
@@ -511,6 +529,7 @@ function focusEntryForm(): void {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  min-width: 0;
 }
 
 /* Sidebar */
@@ -523,116 +542,22 @@ function focusEntryForm(): void {
   overflow-y: auto;
 }
 
-/* Product card */
-.inv-product-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-lg);
-}
-.inv-product-thumb {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-surface-elevated);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-.inv-product-name {
-  flex: 1;
-  min-width: 0;
-}
-.inv-product-name h2 {
-  margin: 0;
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.inv-product-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  margin-top: 2px;
-}
-.inv-chip {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background-color: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-
-/* Status pill in product card */
-.inv-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  flex-shrink: 0;
-}
-.inv-status-active {
-  background-color: var(--color-status-success-bg);
-  border: 1px solid var(--color-status-success-border);
-  color: var(--color-status-success-text);
-}
-.inv-status-inactive {
-  background-color: var(--color-status-muted-bg);
-  color: var(--color-text-muted);
-}
-.inv-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: currentColor;
-}
-
 /* Panel base */
 .inv-panel {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-4);
+  overflow: hidden;
 }
+
+/* Panel title (for panels with header) */
 .inv-panel-title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-2);
 }
-.inv-panel-title-text {
-  flex: 1;
-  min-width: 0;
-}
-.inv-panel-title-text h3 {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-.inv-panel-title-text p {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-.inv-panel > h3 {
+.inv-panel-title h3 {
   margin: 0;
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -649,11 +574,105 @@ function focusEntryForm(): void {
   color: var(--color-text-muted);
 }
 
-/* Metrics grid */
+/* ===== Merged Product Header ===== */
+.inv-product-header-merged {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(110deg, var(--color-surface-elevated), var(--color-surface));
+  gap: var(--space-4);
+}
+.inv-product-info-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.inv-thumb {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #eee7d5;
+  color: #8d6b3e;
+  border-radius: var(--border-radius-md);
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.inv-thumb-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.inv-pname {
+  flex: 1;
+  min-width: 0;
+}
+.inv-pname h2 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inv-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  margin-top: 6px;
+}
+.inv-status-active-text {
+  color: var(--color-status-success-text);
+}
+.inv-status-inactive-text {
+  color: var(--color-text-muted);
+}
+.inv-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+.inv-product-meta-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-4);
+}
+.inv-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.inv-meta-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.inv-meta-label strong {
+  color: var(--color-text-primary);
+}
+.inv-meta-val {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* ===== Metrics grid ===== */
 .inv-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
+  padding: 0 var(--space-4) var(--space-4);
 }
 .inv-metric {
   display: flex;
@@ -662,9 +681,6 @@ function focusEntryForm(): void {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--border-radius-md);
   background-color: var(--color-surface-elevated);
-}
-.inv-metric + .inv-metric {
-  border-left: none;
 }
 .inv-metric-label {
   font-size: var(--font-size-xs);
@@ -677,9 +693,80 @@ function focusEntryForm(): void {
   font-variant-numeric: tabular-nums;
 }
 
-/* Table wrapper */
+/* ===== Tabs ===== */
+.inv-tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface-elevated);
+}
+.inv-tab-btn {
+  padding: 14px var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.inv-tab-btn:hover {
+  color: var(--color-text-primary);
+}
+.inv-tab-active {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-primary);
+  background-color: var(--color-surface);
+}
+.inv-tab-content {
+  padding: var(--space-4);
+}
+
+/* ===== Form grid (inside tabs) ===== */
+.inv-form-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+.inv-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inv-form-group label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.inv-form-control {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: 9px 12px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.inv-form-control:focus {
+  border-color: var(--color-primary);
+}
+.inv-form-input-error {
+  border-color: var(--color-error) !important;
+}
+.inv-form-actions {
+  align-self: end;
+}
+
+/* ===== Table ===== */
 .inv-table-wrap {
   overflow-x: auto;
+  padding: 0 var(--space-4) var(--space-3);
 }
 .inv-table {
   width: 100%;
@@ -711,116 +798,8 @@ function focusEntryForm(): void {
 .inv-table tbody tr:last-child td {
   border-bottom: none;
 }
-.inv-table tbody td small {
-  display: block;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  margin-top: 1px;
-}
 
-/* Info grid */
-.inv-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
-}
-.inv-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-surface-elevated);
-}
-.inv-info-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-.inv-info-value {
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  font-variant-numeric: tabular-nums;
-}
-.inv-info small {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-.inv-equiv {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-surface-elevated);
-}
-.inv-equiv-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-.inv-equiv strong {
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-  font-variant-numeric: tabular-nums;
-}
-.inv-equiv small {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-/* Entry form */
-.inv-entry-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.inv-form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-}
-.inv-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.inv-form-group label {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-.inv-form-input {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.inv-form-input:focus {
-  border-color: var(--color-primary);
-}
-.inv-form-input-error {
-  border-color: var(--color-error) !important;
-}
-
-/* Field messages */
-.inv-field-error {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-error);
-}
-.inv-field-hint {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-/* Buttons */
+/* ===== Buttons ===== */
 .inv-btn {
   display: inline-flex;
   align-items: center;
@@ -837,6 +816,7 @@ function focusEntryForm(): void {
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
   line-height: 1.4;
+  white-space: nowrap;
 }
 .inv-btn:hover:not(:disabled) {
   background-color: var(--color-surface-hover);
@@ -868,7 +848,19 @@ function focusEntryForm(): void {
   text-decoration: underline;
 }
 
-/* Empty state */
+/* ===== Field messages ===== */
+.inv-field-error {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+.inv-field-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Empty state ===== */
 .inv-empty {
   padding: var(--space-3);
   text-align: center;
@@ -876,46 +868,46 @@ function focusEntryForm(): void {
   color: var(--color-text-muted);
 }
 
-/* Sidebar head */
+/* ===== Sidebar head ===== */
 .inv-side-head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-3) var(--space-2);
 }
 .inv-side-head h3 {
-  flex: 1;
   margin: 0;
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
-/* Movements list */
+/* ===== Movements list ===== */
 .inv-movements {
   display: flex;
   flex-direction: column;
+  padding: 0 var(--space-3) var(--space-3);
 }
 .inv-move {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px 1fr;
   gap: var(--space-2);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
 }
-.inv-move:last-child {
-  border-bottom: none;
+.inv-move + .inv-move {
+  border-top: 1px solid var(--color-border);
 }
 .inv-move-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--border-radius-md);
+  font-size: 16px;
+  flex-shrink: 0;
   background-color: var(--color-operation-icon-entry-bg);
   color: var(--color-operation-icon-entry-text);
-  font-size: 14px;
-  flex-shrink: 0;
 }
 .inv-move-adjust {
   background-color: var(--color-operation-icon-adjustment-bg);
@@ -931,13 +923,8 @@ function focusEntryForm(): void {
 }
 .inv-move-top {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-}
-.inv-move-type {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
+  font-size: var(--font-size-sm);
 }
 .inv-move-entry {
   color: var(--color-movement-entry-text);
@@ -948,25 +935,18 @@ function focusEntryForm(): void {
 .inv-move-output {
   color: var(--color-movement-output-text);
 }
-.inv-move-quantity {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 .inv-move-detail {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .inv-move-detail time {
   white-space: nowrap;
 }
 
-/* Expiry badges */
+/* ===== Expiry badges ===== */
 .inv-expiry-badge {
   display: inline-flex;
   align-items: center;
@@ -999,7 +979,7 @@ function focusEntryForm(): void {
   color: var(--color-status-error-text);
 }
 
-/* Responsive breakpoints */
+/* ===== Responsive breakpoints ===== */
 @media (max-width: 1050px) {
   .inv-layout {
     grid-template-columns: 1fr;
@@ -1010,28 +990,39 @@ function focusEntryForm(): void {
   .inv-side-panel {
     max-height: none;
   }
+  .inv-product-header-merged {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .inv-product-meta-right {
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2);
+    width: 100%;
+    justify-content: space-between;
+  }
+  .inv-form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 620px) {
-  .inv-product-card {
-    flex-wrap: wrap;
-    padding: var(--space-2) var(--space-3);
+  .inv-thumb {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
   }
-  .inv-product-thumb {
-    width: 40px;
-    height: 40px;
-  }
-  .inv-product-name h2 {
+  .inv-pname h2 {
     font-size: var(--font-size-sm);
   }
   .inv-metrics {
     grid-template-columns: 1fr;
   }
-  .inv-info-grid {
-    grid-template-columns: 1fr;
-  }
-  .inv-form-row {
-    grid-template-columns: 1fr;
+  .inv-product-meta-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
   }
 }
 </style>

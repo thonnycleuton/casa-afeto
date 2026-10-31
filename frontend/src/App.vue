@@ -173,6 +173,11 @@ function formatCurrency(value: string | null | undefined): string {
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function findProductImage(productId: number): string | undefined {
+  const product = products.value.find((p: Product) => p.id === productId)
+  return product?.image_url ? `${apiBaseUrl.value}${product.image_url}` : undefined
+}
+
 function formatQuantity(value: string): string {
   const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value)
   if (!match) return value
@@ -295,7 +300,7 @@ async function openInventory(product: Product): Promise<void> {
 }
 
 async function handleInventoryEntry(
-  quantity: string, unitCost: string | null, expiryDate: string | null
+  quantity: string, unitCost: string | null, expiryDate: string | null, _source: string
 ): Promise<void> {
   if (!inventoryProduct.value) return
   await runAction(async () => {
@@ -316,7 +321,9 @@ async function handleInventoryEntry(
   })
 }
 
-async function handleInventoryAdjustment(quantity: string): Promise<void> {
+async function handleInventoryAdjustment(
+  quantity: string, _adjustmentType: string, _note: string
+): Promise<void> {
   if (!inventoryProduct.value) return
   await runAction(async () => {
     await adjustInventory(inventoryProduct.value!.id, quantity)
@@ -832,7 +839,20 @@ watch(upcomingDaysFilter, () => {
               </thead>
               <tbody>
                 <tr v-for="alert in expiryAlerts" :key="alert.batch_id">
-                  <td><strong>{{ alert.product_name }}</strong></td>
+                  <td>
+                    <div class="product-name-cell">
+                      <template v-if="findProductImage(alert.product_id)">
+                        <img :src="findProductImage(alert.product_id)!" alt="" class="product-thumb" />
+                      </template>
+                      <div v-else class="product-thumb product-thumb-placeholder" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none">
+                          <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
+                          <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                      </div>
+                      <strong>{{ alert.product_name }}</strong>
+                    </div>
+                  </td>
                   <td>{{ formatDate(alert.expiry_date) }}</td>
                   <td>
                     <span v-if="alert.days_until_expiry < 0" class="expiry-expired">
@@ -938,7 +958,20 @@ watch(upcomingDaysFilter, () => {
               </thead>
               <tbody>
                 <tr v-for="item in replenishmentItems" :key="item.product_id">
-                  <td><strong>{{ item.product_name }}</strong></td>
+                  <td>
+                    <div class="product-name-cell">
+                      <template v-if="findProductImage(item.product_id)">
+                        <img :src="findProductImage(item.product_id)!" alt="" class="product-thumb" />
+                      </template>
+                      <div v-else class="product-thumb product-thumb-placeholder" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none">
+                          <path d="m3 6 7-3 7 3v8l-7 3-7-3V6Z" stroke="currentColor" stroke-width="1.5"/>
+                          <path d="m3.5 6.2 6.5 3 6.5-3M10 9.4v7.2" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                      </div>
+                      <strong>{{ item.product_name }}</strong>
+                    </div>
+                  </td>
                   <td>{{ Number(item.stock_quantity).toLocaleString('pt-BR') }}</td>
                   <td>{{ Number(item.estimated_need).toLocaleString('pt-BR') }}</td>
                   <td>{{ Number(item.urgent_need).toLocaleString('pt-BR') }}</td>
