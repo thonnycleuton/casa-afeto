@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -18,6 +19,9 @@ from app.core.database import Base
 
 class Purchase(Base):
     __tablename__ = "purchases"
+    __table_args__ = (
+        UniqueConstraint("access_key", name="uq_purchases_access_key"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     purchased_at: Mapped[datetime] = mapped_column(
@@ -25,6 +29,9 @@ class Purchase(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    access_key: Mapped[str | None] = mapped_column(
+        String(44), nullable=True
     )
 
     items: Mapped[list["PurchaseItem"]] = relationship(

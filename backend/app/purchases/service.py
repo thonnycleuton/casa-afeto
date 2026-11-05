@@ -53,7 +53,7 @@ def create_purchase(db: Session, data: CreatePurchase) -> PurchaseRead:
 
     # Create purchase
     purchased_at = data.purchased_at if data.purchased_at else datetime.now()
-    purchase = Purchase(purchased_at=purchased_at)
+    purchase = Purchase(purchased_at=purchased_at, access_key=data.access_key)
     db.add(purchase)
     db.flush()
     db.refresh(purchase)
@@ -152,5 +152,6 @@ def _purchase_to_read(db: Session, purchase: Purchase) -> PurchaseRead:
     return PurchaseRead(
         id=purchase.id,
         purchased_at=purchase.purchased_at,
+        access_key=purchase.access_key,
         items=items,
     )

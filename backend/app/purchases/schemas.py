@@ -64,6 +64,7 @@ class CreatePurchase(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     purchased_at: Optional[datetime] = None
+    access_key: Optional[str] = None
     items: list[CreatePurchaseItem]
 
     @field_validator("items")
@@ -71,6 +72,18 @@ class CreatePurchase(BaseModel):
     def validate_items(cls, value: list[CreatePurchaseItem]) -> list[CreatePurchaseItem]:
         if not value:
             raise ValueError("A compra deve conter pelo menos um item.")
+        return value
+
+    @field_validator("access_key")
+    @classmethod
+    def validate_access_key(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        if not (len(value) == 44 and all(c in "0123456789" for c in value)):
+            raise ValueError("A chave de acesso deve conter exatamente 44 dígitos numéricos.")
         return value
 
 
@@ -93,6 +106,7 @@ class PurchaseRead(BaseModel):
 
     id: int
     purchased_at: datetime
+    access_key: Optional[str] = None
     items: list[PurchaseItemRead] = []
 
 
