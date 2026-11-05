@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { createPurchase, fetchPurchases } from '../api/purchases'
 import { fetchProducts } from '../api/products'
 import type { Product, Purchase, PurchaseItem, PurchaseItemInput, PurchaseCreateInput } from '../api/types'
+import DataTable, { type DataColumn } from './ui/DataTable.vue'
+import OCRImportModal from './OCRImportModal.vue'
 
 const products = ref<Product[]>([])
 const purchases = ref<Purchase[]>([])
@@ -16,6 +18,7 @@ const filterUntil = ref('')
 
 // Create form
 const showCreateForm = ref(false)
+const showOcrModal = ref(false)
 const purchasedAt = ref('')
 const formItems = ref<Array<{
   product_id: number
@@ -28,6 +31,14 @@ const formItems = ref<Array<{
 
 // Detail view
 const selectedPurchase = ref<Purchase | null>(null)
+const purchasesPage = ref(1)
+
+const columns: DataColumn[] = [
+  { key: 'id', label: 'ID' },
+  { key: 'purchased_at', label: 'Data' },
+  { key: 'items', label: 'Produtos' },
+  { key: 'itemCount', label: 'Qtd', align: 'center' as const },
+]
 
 const activeProducts = computed(() => products.value.filter((p) => p.active))
 
@@ -356,9 +367,14 @@ onMounted(async () => {
         <h1>Gestão de compras</h1>
         <p class="page-description">Registre compras e acompanhe as entradas de estoque.</p>
       </div>
-      <button class="button primary" type="button" @click="beginCreate">
-        Nova compra
-      </button>
+      <div style="display:flex;gap:8px">
+        <button class="button primary" type="button" @click="beginCreate">
+          Nova compra
+        </button>
+        <button class="button secondary" type="button" @click="showOcrModal = true">
+          Importar documento
+        </button>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -388,51 +404,42 @@ onMounted(async () => {
 
     <!-- Table -->
     <div class="card table-card">
-      <div class="table-heading">
-        <div>
-          <h2>Lista de compras</h2>
-          <p>Compras registradas e seus itens.</p>
-        </div>
-        <span class="table-count">{{ new Intl.NumberFormat('pt-BR').format(purchases.length) }} compras</span>
-      </div>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Data de aquisição</th>
-              <th>Itens</th>
-              <th class="numeric">Total itens</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="purchase in purchases" :key="purchase.id">
-              <td><strong>{{ purchase.id }}</strong></td>
-              <td>{{ formatDateTime(purchase.purchased_at) }}</td>
-              <td>
-                <span v-for="(item, i) in purchase.items" :key="i">
-                  {{ item.product_name }}
-                  <span v-if="i < purchase.items.length - 1">, </span>
-                </span>
-              </td>
-              <td class="numeric">{{ purchase.items.length }}</td>
-              <td class="row-actions">
-                <button class="button compact secondary" type="button" @click="viewPurchase(purchase)">
-                  Detalhes
-                </button>
-              </td>
-            </tr>
-            <tr v-if="purchases.length === 0">
-              <td colspan="5" class="empty-state">
-                <strong>Nenhuma compra registrada.</strong>
-                <span>Clique em "Nova compra" para registrar uma compra recebida.</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :columns="columns"
+        :rows="purchases"
+        :page-size="10"
+        :page="purchasesPage"
+        :loading="loading"
+        @page-change="purchasesPage = $event"
+      >
+        <template #cell-id="{ row }: { row: Purchase }">
+          <span class="col-id">#{{ row.id }}</span>
+        </template>
+        <template #cell-purchased_at="{ row }: { row: Purchase }">
+          <span class="col-date">{{ formatDateTime(row.purchased_at) }}</span>
+        </template>
+        <template #cell-items="{ row }: { row: Purchase }">
+          <span class="col-items" :title="row.items.map(i => i.product_name).join(', ')">
+            {{ row.items.map(i => i.product_name).join(', ') }}
+          </span>
+        </template>
+        <template #cell-itemCount="{ row }: { row: Purchase }">
+          {{ row.items.length }}
+        </template>
+        <template #actions="{ row }: { row: Purchase }">
+          <button class="button compact secondary" type="button" @click="viewPurchase(row)">
+            Detalhes
+          </button>
+        </template>
+        <template #empty>
+          <strong>Nenhuma compra registrada.</strong>
+          <span>Clique em "Nova compra" para registrar uma compra recebida.</span>
+        </template>
+      </DataTable>
     </div>
+
+    <!-- OCR Import Modal -->
+    <OCRImportModal v-model:open="showOcrModal" />
   </div>
 </template>
 
@@ -502,5 +509,28 @@ onMounted(async () => {
 
 .danger:hover {
   background: var(--color-danger-bg);
+}
+
+.col-id {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.col-items {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 250px;
+}
+
+/* Override global row-actions min-width for purchases table */
+:deep(.row-actions) {
+  min-width: 0;
+}
+
+/* Allow wrapping in purchases table cells to prevent excessive width */
+:deep(td.col-items) {
+  max-width: 250px;
 }
 </style>
