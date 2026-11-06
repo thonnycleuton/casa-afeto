@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shutil
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -27,13 +28,19 @@ from app.ocr.schemas import (
     ConfirmImportTotals,
     ConfirmedItemRead,
     ExcludedItemRead,
+    OCRDiscount,
     OCRItem,
     OCRSession,
     OCRStatus,
 )
 from app.ocr.state import store
-from app.purchases.schemas import CreatePurchase, CreatePurchaseItem
-from app.purchases.service import create_purchase as _create_purchase
+from app.purchases.schemas import (
+    CreateDraft,
+    CreateDraftItem,
+    DocumentDiscountCreate,
+    ItemDiscount,
+)
+from app.purchases.service import create_draft as _create_draft
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +114,9 @@ async def _process_document(session_id: str) -> None:
         store.update(session)
         logger.info("OCR completed for session %s with %d items", session_id, len(result.items))
 
-        # Delete temp file only on success (D-13)
-        _delete_file_silent(file_path)
-        session.file_path = None
-        store.update(session)
+        # Do NOT delete temp file on success — preserve until confirm_import copies it
+        # to permanent storage (Step 5 requirement).
+        # The temp file is deleted after successful draft creation in confirm_import().
 
     except Exception as exc:
         logger.error("OCR failed for session %s: %s", session_id, exc)
@@ -438,58 +444,90 @@ def _calculate_lot_price(
     return (item_price * lot_factor / item_factor).quantize(Decimal("0.01"))
 
 
-def _build_create_purchase(
+def _build_create_draft(
     session: OCRSession,
     request: ConfirmImportRequest,
     access_key: str,
-) -> CreatePurchase:
-    """Build a CreatePurchase from the confirmed items.
+) -> CreateDraft:
+    """Build a CreateDraft from the confirmed items.
 
-    Expands lots into individual CreatePurchaseItem entries.
+    Expands lots into individual CreateDraftItem entries.
     Calculates lot prices from item prices and conversion factors.
+    Transports discounts from OCR items and document discounts.
     """
     purchased_at: datetime | None = None
     if session.purchased_at is not None:
         purchased_at = session.purchased_at
 
-    purchase_items: list[CreatePurchaseItem] = []
+    # Build original item map for discount lookup
+    original_map = {item.item_id: item for item in session.items}
+
+    draft_items: list[CreateDraftItem] = []
 
     for confirmed in request.confirmed_items:
+        # Get discounts from original OCR item
+        original = original_map.get(confirmed.item_id)
+        item_discounts: list[ItemDiscount] | None = None
+        if original and original.discounts:
+            item_discounts = [
+                ItemDiscount(
+                    value=d.value,
+                    nature=d.nature,
+                    description=d.description,
+                )
+                for d in original.discounts
+            ]
+
         if confirmed.lots:
-            # Expand lots into individual purchase items
+            # Expand lots into individual draft items
             for lot in confirmed.lots:
                 lot_price = _calculate_lot_price(
                     confirmed.commercial_unit_price,
                     confirmed.conversion_factor,
                     lot.conversion_factor,
                 )
-                purchase_items.append(
-                    CreatePurchaseItem(
+                draft_items.append(
+                    CreateDraftItem(
                         product_id=confirmed.product_id,
                         commercial_unit=lot.commercial_unit,
                         conversion_factor=lot.conversion_factor,
                         commercial_quantity=lot.commercial_quantity,
                         commercial_unit_price=lot_price,
                         expiry_date=lot.expiry_date,
+                        item_discounts=item_discounts,
                     )
                 )
         else:
             # Single item without lot split
-            purchase_items.append(
-                CreatePurchaseItem(
+            draft_items.append(
+                CreateDraftItem(
                     product_id=confirmed.product_id,
                     commercial_unit=confirmed.commercial_unit,
                     conversion_factor=confirmed.conversion_factor,
                     commercial_quantity=confirmed.commercial_quantity,
                     commercial_unit_price=confirmed.commercial_unit_price,
                     expiry_date=confirmed.expiry_date,
+                    item_discounts=item_discounts,
                 )
             )
 
-    return CreatePurchase(
+    # Transport document discounts from OCR session
+    document_discounts: list[DocumentDiscountCreate] | None = None
+    if session.document_discounts:
+        document_discounts = [
+            DocumentDiscountCreate(
+                value=d.value or Decimal("0"),
+                nature=d.nature,
+                description=d.description,
+            )
+            for d in session.document_discounts
+        ]
+
+    return CreateDraft(
         purchased_at=purchased_at,
         access_key=access_key,
-        items=purchase_items,
+        items=draft_items,
+        document_discounts=document_discounts,
     )
 
 
@@ -553,25 +591,68 @@ def _calculate_launched_total(request: ConfirmImportRequest) -> Decimal:
     return total
 
 
+def _copy_to_permanent_storage(
+    session: OCRSession,
+    purchase_id: int,
+) -> str | None:
+    """Copy the temporary OCR file to permanent purchase storage.
+
+    Returns the relative path (e.g. "purchases/123_abc.jpg") or None if
+    the temp file is not available.
+
+    The permanent file is named {purchase_id}_{session_id}.{ext}.
+
+    If shutil.copy2() fails, the destination file is removed (if partially
+    created) and the exception is propagated. The source temp file is preserved.
+    """
+    if not session.file_path or not Path(session.file_path).exists():
+        return None
+
+    src = Path(session.file_path)
+    dest_dir = settings.entity_upload_path("purchases")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    # Derive extension from the temp file
+    ext = src.suffix or ".jpg"
+    dest_name = f"{purchase_id}_{session.session_id}{ext}"
+    dest = dest_dir / dest_name
+
+    try:
+        shutil.copy2(str(src), str(dest))
+    except Exception:
+        # Remove partially created destination file to avoid orphans
+        if dest.exists():
+            try:
+                dest.unlink()
+            except OSError:
+                pass
+        raise
+
+    # Return relative path for document_path storage
+    return f"purchases/{dest_name}"
+
+
 def confirm_import(
     db: Session,
     session_id: str,
     request: ConfirmImportRequest,
 ) -> ConfirmImportResponse:
-    """Confirm an OCR import and create the purchase.
+    """Confirm an OCR import and create a DRAFT purchase.
 
     This function:
     1. Claims the session atomically (completed → confirming).
     2. Validates the access key (44 ASCII digits).
     3. Validates item coverage (all original items represented exactly once).
     4. Validates lot quantity conservation.
-    5. Builds CreatePurchase from confirmed items.
-    6. Calls create_purchase() to create the purchase.
-    7. Calculates totals.
+    5. Copies the temp file to permanent storage (if available).
+    6. Builds CreateDraft from confirmed items with discounts.
+    7. Calls create_draft() to create the DRAFT purchase.
+    8. Calculates totals.
 
     The caller (endpoint) is responsible for:
     - db.commit() after success
     - db.rollback() on failure
+    - Deleting the temp file after successful commit
     - Restoring session to 'completed' on pre-commit failure
     - Removing session after successful commit
 
@@ -598,7 +679,23 @@ def confirm_import(
         if original is not None:
             _validate_lots_conservation(confirmed, original)
 
-    # 5. Calculate totals
+    # 5. Copy temp file to permanent storage (before draft creation)
+    #    This must happen before create_draft so document_path can be set.
+    #    For OCR imports, missing document prevents draft creation.
+    document_path = _copy_to_permanent_storage(session, 0)
+    if document_path is None:
+        raise BusinessRuleError(
+            "O documento original não está mais disponível para cópia permanente."
+        )
+
+    # 6. Build CreateDraft with document_path and discounts
+    draft_data = _build_create_draft(session, request, access_key)
+    draft_data.document_path = document_path
+
+    # 7. Create DRAFT purchase (does NOT commit — caller responsibility)
+    purchase_read = _create_draft(db, draft_data)
+
+    # 8. Calculate totals
     extracted_total, items_without_subtotal = _calculate_extracted_total(session)
     launched_total = _calculate_launched_total(request)
 
@@ -608,13 +705,7 @@ def confirm_import(
         items_without_subtotal_count=items_without_subtotal,
     )
 
-    # 6. Build CreatePurchase
-    purchase_data = _build_create_purchase(session, request, access_key)
-
-    # 7. Create purchase (does NOT commit — caller responsibility)
-    purchase_read = _create_purchase(db, purchase_data)
-
-    # 8. Build response
+    # 9. Build response
     confirmed_reads: list[ConfirmedItemRead] = []
     for confirmed in request.confirmed_items:
         confirmed_reads.append(
@@ -644,6 +735,7 @@ def confirm_import(
         purchase_id=purchase_read.id,
         purchased_at=purchase_read.purchased_at,
         access_key=purchase_read.access_key,
+        status=purchase_read.status,
         confirmed_items=confirmed_reads,
         excluded_items=excluded_reads,
         totals=totals,

@@ -133,6 +133,12 @@ class MatchSuggestion:
             "product_name": self.product.name,
             "match_type": self.match_type,
             "confidence": self.confidence,
+            "base_unit": self.product.base_unit,
+            "commercial_conversion_factor": (
+                str(self.product.commercial_conversion_factor)
+                if self.product.commercial_conversion_factor is not None
+                else None
+            ),
         }
 
 

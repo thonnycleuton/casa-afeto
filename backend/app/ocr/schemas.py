@@ -268,11 +268,16 @@ class ExcludedItemRead(BaseModel):
 
 
 class ConfirmImportResponse(BaseModel):
-    """Resposta da confirmação de importação OCR."""
+    """Resposta da confirmação de importação OCR.
+
+    A compra criada está em estado DRAFT — o operador deve confirmá-la
+    separadamente via POST /purchases/{id}/confirm para gerar ENTRY.
+    """
 
     purchase_id: int
     purchased_at: datetime
     access_key: str | None = None
+    status: str = "DRAFT"
     confirmed_items: list[ConfirmedItemRead]
     excluded_items: list[ExcludedItemRead] = Field(default_factory=list)
     totals: ConfirmImportTotals
