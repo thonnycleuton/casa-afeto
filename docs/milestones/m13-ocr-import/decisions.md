@@ -117,7 +117,19 @@ Os resultados do OCR não são persistidos no banco de dados antes da confirmaç
 
 ## D-13 — Política de retenção dos documentos
 
-Os documentos enviados são excluídos do servidor após o processamento concluído — independentemente de a compra ter sido confirmada ou rejeitada. O arquivo é retido apenas durante o processamento e a revisão; após o processamento concluído, o arquivo é excluído. Não há retenção permanente nem temporária — o reprocessamento requer reenvio do documento.
+O ciclo de vida do documento OCR segue estas regras:
+
+1. **Arquivo temporário:** O documento enviado é salvo em `uploads/ocr/` como arquivo temporário. Ele é preservado enquanto a sessão aguarda a confirmação da importação. Após a confirmação bem-sucedida (criação do rascunho e commit), o arquivo temporário é excluído.
+
+2. **Documento permanente:** No momento da confirmação da importação, o arquivo temporário é copiado para `uploads/purchases/` como documento permanente, vinculado à compra por `document_path`. Este documento nunca é removido pelo ciclo de vida da sessão OCR.
+
+3. **Falha na confirmação:** Se a criação do rascunho ou o commit falhar, o arquivo temporário é preservado para nova tentativa. O arquivo permanente recém-criado (se existir) é removido para evitar órfãos.
+
+4. **Descarte de sessão:** Ao descartar uma sessão OCR falhada, apenas o arquivo temporário é excluído. O documento permanente (se já criado) não é afetado.
+
+5. **Compras manuais:** Compras criadas manualmente podem não possuir documento. O campo `document_path` é opcional.
+
+6. **Importações OCR:** A ausência do documento original impede a criação do rascunho. Não criar silenciosamente uma compra OCR sem documento.
 
 ---
 
@@ -147,7 +159,14 @@ A conferência financeira compara o total informado no documento com a soma dos 
 
 ## D-18 — Tratamento de descontos
 
-Os descontos são ignorados no M13. O operador informa o preço líquido manualmente quando o documento contém descontos. A distribuição proporcional de descontos é registrada como melhoria futura — ver `future-improvements.md`.
+Os descontos são preservados como informações documentais, sem aplicação automática aos custos de estoque. Dois tipos de desconto são persistidos:
+
+- **Descontos por item:** coluna JSONB `item_discounts` em `PurchaseItem`, contendo uma lista de objetos com `value`, `nature` e `description`.
+- **Descontos gerais do documento:** tabela `purchase_document_discounts` com `purchase_id`, `value`, `nature` e `description`.
+
+Os descontos não alteram o preço de compra, custo unitário ou movimentações de estoque. Compras DRAFT permitem edição dos descontos; compras CONFIRMED rejeitam alterações com HTTP 409.
+
+A distribuição proporcional de descontos é registrada como melhoria futura — ver `future-improvements.md`.
 
 ---
 
@@ -177,7 +196,11 @@ O modelo e versão do Gemini são configuráveis via variável de ambiente, perm
 
 ## D-22 — Tratamento de falhas e repetição
 
-Se o processamento do OCR falhar, o operador é notificado e pode tentar novamente. Não há reprocessamento automático — a repetição é manual. O arquivo do documento é retido no servidor até o processamento concluído, permitindo que o operador tente novamente sem reenviar o arquivo. Após o processamento concluído (com sucesso ou falha), o arquivo é excluído conforme D-13.
+Se o processamento do OCR falhar, o operador é notificado e pode tentar novamente. Não há reprocessamento automático — a repetição é manual. O arquivo do documento é retido no servidor até a confirmação da importação (criação do rascunho), permitindo que o operador tente novamente sem reenviar o arquivo.
+
+Após o processamento OCR concluído com sucesso, o arquivo temporário **não** é excluído — permanece disponível até a confirmação da importação. Isso permite que o operador revise os dados extraídos e confirme a importação sem pressão de tempo.
+
+Após a confirmação bem-sucedida, o arquivo temporário é excluído e o documento permanente já está em `uploads/purchases/`.
 
 ---
 
