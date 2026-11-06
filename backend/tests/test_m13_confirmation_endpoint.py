@@ -94,9 +94,14 @@ def _make_request_json(
 def _mock_response(purchase_id: str = "p-1") -> MagicMock:
     """Create a mock ConfirmImportResponse."""
     mock = MagicMock()
-    mock.id = purchase_id
+    # Extract numeric ID from "p-1" format, or default to 1
+    try:
+        mock.purchase_id = int(purchase_id.replace("p-", ""))
+    except (ValueError, AttributeError):
+        mock.purchase_id = 1
     mock.purchased_at = datetime(2025, 6, 15, 10, 0, 0)
     mock.access_key = "1" * 44
+    mock.status = "DRAFT"
     # Totals must be real Decimal values for response_model validation
     mock.totals.extracted_total = Decimal("50.00")
     mock.totals.launched_total = Decimal("50.00")

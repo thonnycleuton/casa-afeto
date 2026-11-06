@@ -416,8 +416,12 @@ class TestBackgroundProcessing:
         assert data["error"] is not None
         assert "API key" in data["error"] or "inválida" in data["error"]
 
-    def test_file_deleted_after_processing(self, client: TestClient) -> None:
-        """Temporary file is deleted after processing completes (D-13)."""
+    def test_file_preserved_after_ocr_processing(self, client: TestClient) -> None:
+        """Temporary file is preserved after OCR processing completes (Step 5).
+
+        The file is kept until confirm_import copies it to permanent storage.
+        This allows the operator to review and confirm without time pressure.
+        """
         headers = _get_auth_headers(client)
         files = {"file": ("document.jpg", io.BytesIO(_create_jpeg()), "image/jpeg")}
 
@@ -438,17 +442,19 @@ class TestBackgroundProcessing:
         session_id = resp.json()["session_id"]
         time.sleep(0.5)
 
-        # Check that file_path is None after processing
+        # Check that session is completed
         resp = client.get(
             f"/api/v1/ocr/{session_id}/status",
             headers=headers,
         )
         assert resp.status_code == 200
 
-        # Verify file is deleted from disk
+        # Verify file is PRESERVED after OCR processing (Step 5 change)
         session = store.get(session_id)
         assert session is not None
-        assert session.file_path is None
+        assert session.status == "completed"
+        assert session.file_path is not None
+        assert Path(session.file_path).exists()
 
     def test_file_preserved_on_failure(self, client: TestClient) -> None:
         """Temporary file is preserved when processing fails so it can be retried (M13)."""
@@ -760,6 +766,44 @@ class TestMatching:
         assert _levenshtein_distance("arroz", "arroz") == 0
         assert _levenshtein_distance("arroz", "arroz ") == 1
         assert _levenshtein_distance("", "") == 0
+
+    def test_match_suggestion_includes_conversion_factor(self) -> None:
+        """MatchSuggestion.to_dict() includes commercial_conversion_factor and base_unit."""
+        from decimal import Decimal
+
+        from app.ocr.matching import MatchSuggestion
+        from app.products.models import Product
+
+        product = Product(
+            id=1,
+            name="Arroz 5kg",
+            base_unit="KG",
+            commercial_conversion_factor=Decimal("12"),
+        )
+        suggestion = MatchSuggestion(product, "exact", 1.0)
+        d = suggestion.to_dict()
+
+        assert d["product_id"] == 1
+        assert d["product_name"] == "Arroz 5kg"
+        assert d["base_unit"] == "KG"
+        assert d["commercial_conversion_factor"] == "12"
+
+    def test_match_suggestion_with_null_conversion_factor(self) -> None:
+        """MatchSuggestion handles None commercial_conversion_factor."""
+        from app.ocr.matching import MatchSuggestion
+        from app.products.models import Product
+
+        product = Product(
+            id=2,
+            name="Feijao 1kg",
+            base_unit="KG",
+            commercial_conversion_factor=None,
+        )
+        suggestion = MatchSuggestion(product, "fuzzy", 0.8)
+        d = suggestion.to_dict()
+
+        assert d["base_unit"] == "KG"
+        assert d["commercial_conversion_factor"] is None
 
 
 # ─── Store tests ───

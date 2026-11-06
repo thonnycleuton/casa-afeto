@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.core.database import SessionLocal
 from app.main import app
 from app.products.models import InventoryMovement, Product
-from app.purchases.models import PurchaseItem, Purchase
+from app.purchases.models import PurchaseItem, Purchase, PurchaseDocumentDiscount
 from app.inventory.models import StockBatch
 
 
@@ -28,6 +28,10 @@ def register_product_for_cleanup() -> Iterator[Callable[[int], None]]:
         ).distinct().all()
         purchase_id_list = [p[0] for p in purchase_ids]
         if purchase_id_list:
+            # Clean up document discounts first (CASCADE from purchase)
+            db.query(PurchaseDocumentDiscount).filter(
+                PurchaseDocumentDiscount.purchase_id.in_(purchase_id_list)
+            ).delete(synchronize_session=False)
             db.query(PurchaseItem).filter(
                 PurchaseItem.purchase_id.in_(purchase_id_list)
             ).delete(synchronize_session=False)

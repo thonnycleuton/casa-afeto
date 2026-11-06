@@ -76,14 +76,27 @@ def _make_session(
     status: str = "completed",
     access_key: str | None = "1" * 44,
     purchased_at: datetime | None = None,
+    file_path: str | None = None,
 ) -> OCRSession:
-    return OCRSession(
+    # Create a temp file for OCR document requirement (Step 5)
+    if file_path is None:
+        import tempfile
+        import os
+        tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False, prefix="ocr-test-")
+        tmp.write(b"\xff\xd8\xff\xe0test")
+        tmp.close()
+        file_path = tmp.name
+
+    session = OCRSession(
         session_id=session_id,
         status=status,
         items=items or [_make_ocr_item()],
         access_key=access_key,
         purchased_at=purchased_at or datetime(2025, 6, 15, 10, 0, 0),
+        file_path=file_path,
+        file_mime_type="image/jpeg",
     )
+    return session
 
 
 def _make_confirmed_item(
@@ -538,10 +551,10 @@ class TestConfirmImport:
             ]
         )
 
-        # Mock create_purchase to avoid DB dependency
+        # Mock create_draft to avoid DB dependency
         mock_db = MagicMock(spec=Session)
         with patch(
-            "app.ocr.service._create_purchase"
+            "app.ocr.service._create_draft"
         ) as mock_create:
             from app.purchases.schemas import PurchaseRead, PurchaseItemRead
 
@@ -549,6 +562,7 @@ class TestConfirmImport:
                 id=1,
                 purchased_at=session.purchased_at,
                 access_key="1" * 44,
+                status="DRAFT",
                 items=[
                     PurchaseItemRead(
                         id=1,
@@ -608,13 +622,14 @@ class TestConfirmImport:
         )
 
         mock_db = MagicMock(spec=Session)
-        with patch("app.ocr.service._create_purchase") as mock_create:
+        with patch("app.ocr.service._create_draft") as mock_create:
             from app.purchases.schemas import PurchaseRead, PurchaseItemRead
 
             mock_create.return_value = PurchaseRead(
                 id=1,
                 purchased_at=session.purchased_at,
                 access_key="1" * 44,
+                status="DRAFT",
                 items=[
                     PurchaseItemRead(
                         id=1,
@@ -802,13 +817,14 @@ class TestConfirmImport:
         mock_db = MagicMock(spec=Session)
 
         # First claim succeeds
-        with patch("app.ocr.service._create_purchase") as mock_create:
+        with patch("app.ocr.service._create_draft") as mock_create:
             from app.purchases.schemas import PurchaseRead, PurchaseItemRead
 
             mock_create.return_value = PurchaseRead(
                 id=1,
                 purchased_at=session.purchased_at,
                 access_key="1" * 44,
+                status="DRAFT",
                 items=[
                     PurchaseItemRead(
                         id=1, product_id=1, product_name="P", base_unit="UN",
@@ -853,7 +869,7 @@ class TestConfirmImport:
         mock_db = MagicMock(spec=Session)
 
         with patch(
-            "app.ocr.service._create_purchase",
+            "app.ocr.service._create_draft",
             side_effect=BusinessRuleError("Produto inativo."),
         ):
             with pytest.raises(BusinessRuleError, match="Produto inativo"):
@@ -907,13 +923,14 @@ class TestConfirmImport:
         )
         mock_db = MagicMock(spec=Session)
 
-        with patch("app.ocr.service._create_purchase") as mock_create:
+        with patch("app.ocr.service._create_draft") as mock_create:
             from app.purchases.schemas import PurchaseRead, PurchaseItemRead
 
             mock_create.return_value = PurchaseRead(
                 id=1,
                 purchased_at=session.purchased_at,
                 access_key="1" * 44,
+                status="DRAFT",
                 items=[
                     PurchaseItemRead(
                         id=1, product_id=1, product_name="P", base_unit="UN",
@@ -932,17 +949,17 @@ class TestConfirmImport:
 
             response = confirm_import(mock_db, "s1", request)
 
-        # Verify _create_purchase was called with expanded items
+        # Verify _create_draft was called with expanded items
         call_args = mock_create.call_args
-        purchase_data = call_args[0][1]  # Second positional arg
-        assert len(purchase_data.items) == 2
+        draft_data = call_args[0][1]  # Second positional arg
+        assert len(draft_data.items) == 2
 
         # Lot 1: same unit as item → price = 60.00 × (24/24) = 60.00
-        lot1 = purchase_data.items[0]
+        lot1 = draft_data.items[0]
         assert lot1.commercial_unit_price == Decimal("60.00")
 
         # Lot 2: different unit → price = 60.00 × (1/24) = 2.50
-        lot2 = purchase_data.items[1]
+        lot2 = draft_data.items[1]
         assert lot2.commercial_unit_price == Decimal("2.50")
 
     def test_response_includes_totals(self) -> None:
@@ -973,13 +990,14 @@ class TestConfirmImport:
         )
         mock_db = MagicMock(spec=Session)
 
-        with patch("app.ocr.service._create_purchase") as mock_create:
+        with patch("app.ocr.service._create_draft") as mock_create:
             from app.purchases.schemas import PurchaseRead, PurchaseItemRead
 
             mock_create.return_value = PurchaseRead(
                 id=1,
                 purchased_at=session.purchased_at,
                 access_key="1" * 44,
+                status="DRAFT",
                 items=[
                     PurchaseItemRead(
                         id=1, product_id=1, product_name="P", base_unit="UN",
@@ -997,3 +1015,112 @@ class TestConfirmImport:
         # launched_total uses confirmed qty × price
         assert response.totals.launched_total == Decimal("50.00")
         assert response.totals.items_without_subtotal_count == 0
+
+    def test_confirm_preserves_operator_conversion_factor(self) -> None:
+        """Confirmation preserves the conversion_factor provided by the operator."""
+        session = _make_session(
+            "s1",
+            items=[
+                _make_ocr_item(
+                    "item-1",
+                    quantity=Decimal("3"),
+                    commercial_unit="caixa",
+                    commercial_unit_price=Decimal("60.00"),
+                    product_id=1,
+                    conversion_factor=Decimal("24"),
+                )
+            ],
+        )
+        store.add(session)
+
+        # Operator confirms with factor 12 (different from OCR's 24)
+        request = _make_request(
+            confirmed_items=[
+                _make_confirmed_item(
+                    "item-1",
+                    product_id=1,
+                    commercial_quantity=Decimal("3"),
+                    commercial_unit="caixa",
+                    commercial_unit_price=Decimal("60.00"),
+                    conversion_factor=Decimal("12"),
+                )
+            ]
+        )
+        mock_db = MagicMock(spec=Session)
+
+        with patch("app.ocr.service._create_draft") as mock_create:
+            from app.purchases.schemas import PurchaseRead, PurchaseItemRead
+
+            mock_create.return_value = PurchaseRead(
+                id=1,
+                purchased_at=session.purchased_at,
+                access_key="1" * 44,
+                status="DRAFT",
+                items=[
+                    PurchaseItemRead(
+                        id=1, product_id=1, product_name="P", base_unit="UN",
+                        commercial_quantity=Decimal("3"),
+                        commercial_unit_price=Decimal("60.00"),
+                        conversion_factor=Decimal("12"),
+                    )
+                ],
+            )
+
+            response = confirm_import(mock_db, "s1", request)
+
+        # The confirmed item should have the operator's factor, not the OCR's
+        assert response.confirmed_items[0].conversion_factor == Decimal("12")
+
+    def test_confirm_accepts_factor_1_with_different_units(self) -> None:
+        """Factor 1 with different units is accepted — alert is frontend-only."""
+        session = _make_session(
+            "s1",
+            items=[
+                _make_ocr_item(
+                    "item-1",
+                    quantity=Decimal("10"),
+                    commercial_unit="caixa",
+                    commercial_unit_price=Decimal("5.00"),
+                    product_id=1,
+                    conversion_factor=Decimal("1"),
+                )
+            ],
+        )
+        store.add(session)
+
+        request = _make_request(
+            confirmed_items=[
+                _make_confirmed_item(
+                    "item-1",
+                    product_id=1,
+                    commercial_quantity=Decimal("10"),
+                    commercial_unit="caixa",
+                    commercial_unit_price=Decimal("5.00"),
+                    conversion_factor=Decimal("1"),
+                )
+            ]
+        )
+        mock_db = MagicMock(spec=Session)
+
+        with patch("app.ocr.service._create_draft") as mock_create:
+            from app.purchases.schemas import PurchaseRead, PurchaseItemRead
+
+            mock_create.return_value = PurchaseRead(
+                id=1,
+                purchased_at=session.purchased_at,
+                access_key="1" * 44,
+                status="DRAFT",
+                items=[
+                    PurchaseItemRead(
+                        id=1, product_id=1, product_name="P", base_unit="UN",
+                        commercial_quantity=Decimal("10"),
+                        commercial_unit_price=Decimal("5.00"),
+                        conversion_factor=Decimal("1"),
+                    )
+                ],
+            )
+
+            # Should NOT raise — factor 1 with different units is allowed
+            response = confirm_import(mock_db, "s1", request)
+
+        assert response.confirmed_items[0].conversion_factor == Decimal("1")

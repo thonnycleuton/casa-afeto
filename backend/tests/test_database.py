@@ -22,6 +22,7 @@ def test_tables_in_metadata() -> None:
         "sale_cancellation_inspection",
         "purchases",
         "purchase_items",
+        "purchase_document_discounts",
         "stock_batches",
         # Auth tables (M12)
         "users",
