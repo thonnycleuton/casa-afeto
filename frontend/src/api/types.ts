@@ -269,10 +269,47 @@ export interface PurchaseItem {
   expiry_date?: string | null
 }
 
+export type PurchaseStatus = 'DRAFT' | 'CONFIRMED'
+
 export interface Purchase {
   id: number
   purchased_at: string
+  status: PurchaseStatus
+  supplier_name?: string | null
+  cnpj?: string | null
+  invoice_number?: string | null
+  access_key?: string | null
+  document_path?: string | null
   items: PurchaseItem[]
+}
+
+// --- M13: Draft lifecycle types ---
+
+export interface PurchaseDraftItemInput {
+  product_id: number
+  commercial_unit?: string | null
+  conversion_factor: string
+  commercial_quantity: string
+  commercial_unit_price: string
+  expiry_date?: string | null
+}
+
+export interface PurchaseDraftInput {
+  purchased_at?: string | null
+  supplier_name?: string | null
+  cnpj?: string | null
+  invoice_number?: string | null
+  access_key?: string | null
+  items?: PurchaseDraftItemInput[]
+}
+
+export interface PurchaseDraftUpdateInput {
+  purchased_at?: string | null
+  supplier_name?: string | null
+  cnpj?: string | null
+  invoice_number?: string | null
+  access_key?: string | null
+  items?: PurchaseDraftItemInput[]
 }
 
 // --- M10: Important Dates (Upcoming) ---

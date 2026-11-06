@@ -2,6 +2,8 @@ import { apiClient } from './client'
 import type {
   Purchase,
   PurchaseCreateInput,
+  PurchaseDraftInput,
+  PurchaseDraftUpdateInput,
 } from './types'
 
 export function fetchPurchases(
@@ -27,5 +29,25 @@ export function createPurchase(payload: PurchaseCreateInput): Promise<Purchase> 
   return apiClient<Purchase>('/api/v1/purchases', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export function createDraft(payload: PurchaseDraftInput): Promise<Purchase> {
+  return apiClient<Purchase>('/api/v1/purchases/draft', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateDraft(id: number, payload: PurchaseDraftUpdateInput): Promise<Purchase> {
+  return apiClient<Purchase>(`/api/v1/purchases/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function confirmPurchase(id: number): Promise<Purchase> {
+  return apiClient<Purchase>(`/api/v1/purchases/${id}/confirm`, {
+    method: 'POST',
   })
 }
