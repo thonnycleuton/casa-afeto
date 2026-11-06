@@ -9,7 +9,7 @@ import {
   discardOCRSession,
 } from '../api/ocr'
 import type { Product, ProductUnit } from '../api/types'
-import type { OcrItem, OcrStatus, ConfirmImportResponse } from '../api/ocr'
+import type { OcrItem, OcrDiscount, OcrStatus, ConfirmImportResponse } from '../api/ocr'
 
 const props = defineProps<{
   open: boolean
@@ -49,6 +49,9 @@ const discardError = ref<string | null>(null)
 // Financial indicators from backend polling (D-17)
 const backendExtractedTotal = ref<string | null>(null)
 const backendItemsWithoutSubtotal = ref<number>(0)
+
+// Document-level discounts from OCR (D-18)
+const documentDiscounts = ref<OcrDiscount[]>([])
 
 // Confirmation state
 const confirming = ref(false)
@@ -143,6 +146,8 @@ function startPolling() {
       // Capture financial indicators from backend (D-17)
       backendExtractedTotal.value = response.extracted_total
       backendItemsWithoutSubtotal.value = response.items_without_subtotal_count
+      // Capture document-level discounts (D-18)
+      documentDiscounts.value = response.document_discounts ?? []
 
       if (response.status === 'completed') {
         sessionItems.value = response.items
@@ -200,6 +205,7 @@ async function handleDiscard(): Promise<void> {
     documentTotal.value = null
     purchasedAt.value = null
     accessKey.value = null
+    documentDiscounts.value = []
     confirmationResult.value = null
     confirmationError.value = null
     uploadError.value = null
@@ -272,7 +278,14 @@ function matchProduct(index: number, productId: number) {
   const product = products.value.find((p) => p.id === productId)
   if (product) {
     sessionItems.value[index].product_id = productId
-    sessionItems.value[index].conversion_factor = '1'
+    // Use the product's registered conversion factor as suggestion.
+    // If the item already has a conversion_factor from OCR review, keep it.
+    const item = sessionItems.value[index]
+    if (!item.conversion_factor || item.conversion_factor === '1') {
+      if (product.commercial_conversion_factor) {
+        item.conversion_factor = product.commercial_conversion_factor
+      }
+    }
   }
 }
 
@@ -324,7 +337,14 @@ async function submitQuickProduct(): Promise<void> {
     if (index >= 0 && index < sessionItems.value.length) {
       sessionItems.value[index].product_id = newProduct.id
       sessionItems.value[index].is_new_product = true
-      sessionItems.value[index].conversion_factor = '1'
+      // For a newly created product, the base unit is the commercial unit.
+      // Default conversion factor to '1' — the operator can adjust.
+      if (
+        !sessionItems.value[index].conversion_factor
+        || sessionItems.value[index].conversion_factor === ''
+      ) {
+        sessionItems.value[index].conversion_factor = '1'
+      }
     }
 
     // Reload products list to include the new product
@@ -457,6 +477,25 @@ const itemsWithoutSubtotal = computed(() => {
 const activeItemCount = computed(() => sessionItems.value.filter((i) => !i.is_deleted).length)
 const deletedItemCount = computed(() => sessionItems.value.filter((i) => i.is_deleted).length)
 
+// ─── Conversion Alert ───
+
+function getConversionAlert(item: OcrItem): string | null {
+  // Alert when commercial_unit differs from base_unit and effective factor is 1
+  const factor = item.conversion_factor
+  if (!factor || Number(factor) !== 1) return null
+  const commercialUnit = item.commercial_unit
+  if (!commercialUnit) return null
+  const product = item.product_id
+    ? products.value.find((p) => p.id === item.product_id)
+    : null
+  const baseUnit = product?.base_unit || ''
+  if (!baseUnit) return null
+  if (commercialUnit.toUpperCase() !== baseUnit.toUpperCase()) {
+    return `Unidade comercial (${commercialUnit}) diferente da unidade base (${baseUnit}) com fator 1. Verifique se a conversão está correta.`
+  }
+  return null
+}
+
 // ─── Formatting ───
 
 function formatCurrency(value: string | number): string {
@@ -469,10 +508,40 @@ function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('pt-BR')
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   } catch {
     return dateStr
   }
+}
+
+function formatItemDiscounts(discounts: OcrDiscount[]): string {
+  return discounts
+    .map((d) => {
+      const label = d.description || 'Desconto'
+      const value = d.value ? formatCurrency(String(d.value)) : '—'
+      return `${label}: ${value}`
+    })
+    .join('\n')
+}
+
+// ─── Document Preview ───
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+
+function getDocumentPreviewUrl(): string {
+  if (!sessionId.value) return ''
+  return `${API_BASE_URL}/api/v1/ocr/${sessionId.value}/preview`
+}
+
+function onImageError() {
+  // Image failed to load — the preview endpoint may not be available
+  // The empty state will be shown by the v-else
 }
 
 // ─── Confirmation ───
@@ -829,7 +898,21 @@ onUnmounted(() => {
                   :class="{ active: activeTab === 'itens' }"
                   @click="activeTab = 'itens'"
                 >
-                  📦 ITENS ({{ sessionItems.length }})
+                  📦 ITENS DA NOTA ({{ sessionItems.length }})
+                </button>
+                <button
+                  class="ocr-tab"
+                  :class="{ active: activeTab === 'emissao' }"
+                  @click="activeTab = 'emissao'"
+                >
+                  📋 DADOS DA EMISSÃO
+                </button>
+                <button
+                  class="ocr-tab"
+                  :class="{ active: activeTab === 'comprovante' }"
+                  @click="activeTab = 'comprovante'"
+                >
+                  🖼️ COMPROVANTE DIGITALIZADO
                 </button>
               </nav>
 
@@ -865,8 +948,10 @@ onUnmounted(() => {
                       <table>
                         <thead>
                           <tr>
-                            <th style="width:30%">Produto</th>
+                            <th style="width:28%">Produto</th>
                             <th style="text-align:center">Qtd</th>
+                            <th style="text-align:center">Un.</th>
+                            <th style="text-align:center">Fator</th>
                             <th style="text-align:right">Preço Unit.</th>
                             <th style="text-align:right">Subtotal</th>
                             <th style="text-align:center">Vencimento</th>
@@ -928,7 +1013,40 @@ onUnmounted(() => {
                                 :value="item.quantity"
                                 @change="item.quantity = ($event.target as HTMLInputElement).value"
                               />
-                              <span v-if="item.commercial_unit" class="ocr-unit-label">{{ item.commercial_unit }}</span>
+                            </td>
+
+                            <!-- Commercial Unit -->
+                            <td style="text-align:center">
+                              <input
+                                class="ocr-unit-input"
+                                type="text"
+                                maxlength="10"
+                                :value="item.commercial_unit || ''"
+                                placeholder="—"
+                                @change="item.commercial_unit = ($event.target as HTMLInputElement).value || null"
+                              />
+                            </td>
+
+                            <!-- Conversion Factor -->
+                            <td style="text-align:center">
+                              <div class="ocr-factor-cell">
+                                <input
+                                  class="ocr-factor-input"
+                                  type="number"
+                                  step="any"
+                                  min="0.0001"
+                                  :value="item.conversion_factor || ''"
+                                  @change="item.conversion_factor = ($event.target as HTMLInputElement).value || null"
+                                />
+                                <!-- Conversion alert: factor 1 but units differ -->
+                                <span
+                                  v-if="getConversionAlert(item)"
+                                  class="ocr-conversion-alert"
+                                  :title="getConversionAlert(item) ?? ''"
+                                >
+                                  ⚠
+                                </span>
+                              </div>
                             </td>
 
                             <!-- Price -->
@@ -946,6 +1064,13 @@ onUnmounted(() => {
                             <!-- Subtotal -->
                             <td class="ocr-subtotal-cell">
                               {{ getItemDisplaySubtotal(item) }}
+                              <span
+                                v-if="item.discounts && item.discounts.length > 0"
+                                class="ocr-discount-badge"
+                                :title="formatItemDiscounts(item.discounts)"
+                              >
+                                🏷
+                              </span>
                             </td>
 
                             <!-- Expiry -->
@@ -1211,6 +1336,95 @@ onUnmounted(() => {
                   </button>
                 </div>
 
+              </section>
+
+              <!-- Emissão Tab -->
+              <section v-show="activeTab === 'emissao'" class="ocr-emissao-section">
+                <article class="ocr-basket">
+                  <div class="ocr-basket-head">
+                    <div>
+                      <div class="ocr-basket-title-line">
+                        <div class="ocr-basket-title">Dados da Emissão</div>
+                      </div>
+                      <div class="ocr-basket-sub">
+                        Informações fiscais extraídas do documento.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="ocr-emissao-grid">
+                    <div class="ocr-emissao-field">
+                      <label>Data de compra</label>
+                      <div class="ocr-emissao-value">{{ purchasedAt ? formatDate(purchasedAt) : '—' }}</div>
+                    </div>
+                    <div class="ocr-emissao-field">
+                      <label>Chave de acesso NF-e</label>
+                      <div class="ocr-emissao-value">{{ accessKey || '—' }}</div>
+                    </div>
+                    <div class="ocr-emissao-field">
+                      <label>Total do documento</label>
+                      <div class="ocr-emissao-value">{{ documentTotal ? formatCurrency(documentTotal) : '—' }}</div>
+                    </div>
+                  </div>
+
+                  <!-- Document-level discounts (D-18) -->
+                  <div v-if="documentDiscounts.length > 0" class="ocr-discount-section">
+                    <h4>Descontos do Documento</h4>
+                    <div class="ocr-discount-list">
+                      <div
+                        v-for="(discount, idx) in documentDiscounts"
+                        :key="idx"
+                        class="ocr-discount-row"
+                      >
+                        <span class="ocr-discount-desc">
+                          {{ discount.description || 'Desconto' }}
+                        </span>
+                        <span class="ocr-discount-value">
+                          -{{ formatCurrency(discount.value ?? '0') }}
+                        </span>
+                      </div>
+                    </div>
+                    <p class="field-hint ocr-discount-note">
+                      Os descontos acima são informativos e não alteram o custo unitário dos produtos.
+                    </p>
+                  </div>
+
+                  <div class="ocr-emissao-note">
+                    <p class="field-hint">
+                      Os dados acima foram extraídos automaticamente pelo OCR do documento.
+                      Para editar a chave de acesso, utilize o campo no painel lateral.
+                    </p>
+                  </div>
+                </article>
+              </section>
+
+              <!-- Comprovante Tab -->
+              <section v-show="activeTab === 'comprovante'" class="ocr-comprovante-section">
+                <article class="ocr-basket">
+                  <div class="ocr-basket-head">
+                    <div>
+                      <div class="ocr-basket-title-line">
+                        <div class="ocr-basket-title">Comprovante Digitalizado</div>
+                      </div>
+                      <div class="ocr-basket-sub">
+                        Documento original enviado para processamento OCR.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="ocr-receipt-preview">
+                    <img
+                      v-if="sessionId"
+                      :src="getDocumentPreviewUrl()"
+                      alt="Documento original"
+                      class="ocr-receipt-image"
+                      @error="onImageError"
+                    />
+                    <div v-else class="ocr-receipt-empty">
+                      <p>Nenhum documento disponível para visualização.</p>
+                    </div>
+                  </div>
+                </article>
               </section>
 
               <!-- Footer hint -->
@@ -1729,6 +1943,41 @@ onUnmounted(() => {
   font-size: 11px;
 }
 
+.ocr-unit-input {
+  width: 60px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.ocr-factor-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.ocr-factor-input {
+  width: 65px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.ocr-conversion-alert {
+  color: var(--color-warning, #e69308);
+  font-size: 14px;
+  cursor: help;
+}
+
 .ocr-subtotal-cell {
   font-weight: 700;
   color: var(--color-text-primary);
@@ -1921,6 +2170,114 @@ onUnmounted(() => {
   color: var(--color-warning);
   border-color: rgb(245 158 11 / 24%);
   background: var(--color-status-warning-bg);
+}
+
+/* ─── Emissão Tab ─── */
+.ocr-emissao-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.ocr-emissao-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ocr-emissao-value {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.ocr-emissao-note {
+  padding: 12px 0 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: 12px;
+}
+
+/* ─── Discounts ─── */
+.ocr-discount-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.ocr-discount-section h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.ocr-discount-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ocr-discount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--color-surface-hover);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.ocr-discount-desc {
+  color: var(--color-text-primary);
+}
+
+.ocr-discount-value {
+  font-weight: 600;
+  color: var(--color-error, #dc2626);
+}
+
+.ocr-discount-note {
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.ocr-discount-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+/* ─── Comprovante Tab ─── */
+.ocr-receipt-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  padding: 16px;
+  background: var(--color-surface-hover);
+  border-radius: 8px;
+}
+
+.ocr-receipt-image {
+  max-width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.ocr-receipt-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 40px;
 }
 
 /* ─── Footer ─── */
