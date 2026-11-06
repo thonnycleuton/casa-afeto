@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     ALLOWED_IMAGE_TYPES: Set[str] = {"image/jpeg", "image/png", "image/webp", "image/gif"}
     MAX_IMAGE_SIZE: int = 5 * 1024 * 1024  # 5 MB
 
+    # Gemini OCR configuration (D-21)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:

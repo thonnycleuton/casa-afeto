@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +12,7 @@ from app.api.v1.expiry_alerts import router as expiry_alerts_router
 from app.api.v1.health import router as health_router
 from app.api.v1.important_dates import router as important_dates_router
 from app.api.v1.inspections import router as inspections_router
+from app.api.v1.ocr import router as ocr_router
 from app.api.v1.payments import router as payments_router
 from app.api.v1.products import router as products_router
 from app.api.v1.purchases import router as purchases_router
@@ -18,6 +21,19 @@ from app.api.v1.sales import router as sales_router
 from app.api.v1.users import router as users_router
 from app.core.config import settings
 from app.core.errors import register_error_handlers
+from app.ocr.state import cleanup_orphan_files
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan — startup and shutdown tasks."""
+    # Startup: clean up orphan OCR files from previous crashes
+    ocr_dir = settings.entity_upload_path("ocr")
+    removed = cleanup_orphan_files(ocr_dir)
+    if removed:
+        import logging
+        logging.getLogger(__name__).info("Cleaned up %d orphan OCR file(s) on startup", removed)
+    yield
 
 
 def create_application() -> FastAPI:
@@ -29,6 +45,7 @@ def create_application() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        lifespan=lifespan,
     )
 
     # Configure CORS
@@ -59,6 +76,7 @@ def create_application() -> FastAPI:
     app.include_router(expiry_alerts_router, prefix="/api/v1")
     app.include_router(replenishment_router, prefix="/api/v1")
     app.include_router(important_dates_router, prefix="/api/v1")
+    app.include_router(ocr_router, prefix="/api/v1")
     register_error_handlers(app)
 
     # Mount static files for uploaded images
